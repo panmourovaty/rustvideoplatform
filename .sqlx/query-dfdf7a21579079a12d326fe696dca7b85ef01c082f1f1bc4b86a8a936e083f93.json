@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE videos SET dislikes = dislikes + 1 WHERE id=$1 RETURNING dislikes;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dislikes",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "dfdf7a21579079a12d326fe696dca7b85ef01c082f1f1bc4b86a8a936e083f93"
+}
