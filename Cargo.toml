@@ -1,0 +1,21 @@
+[package]
+name = "rustvideoplatform"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+strip = true
+lto = true
+
+[dependencies]
+mimalloc = { version = "*", features = ["secure"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+axum = "0.7"
+memory-serve = "0.5"
+serde = { version = "1.0", features = ["derive"] }
+sqlx = { version = "0.7", features = [ "postgres", "runtime-tokio-rustls" ] }
+askama = "0.12"
+serde_json = "*"
+minify-html-onepass = "0.15"
+axum_static = "1.7"
+chrono = "0.4"

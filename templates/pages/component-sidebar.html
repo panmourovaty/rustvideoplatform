@@ -1,0 +1,44 @@
+<div class="sidebar d-flex flex-column text-white text-center">
+    <a href="/" class="text-white text-decoration-none my-3">
+        <span class="fs-4">{{ config.instancename }}</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="#" class="nav-link {% if active_item == " home" %}active{% endif %} text-white
+                text-decoration-none">
+                <i class="fa-solid fa-house"></i>
+                Home
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link {% if active_item == " trending" %}active{% endif %} text-white
+                text-decoration-none">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                Trending
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link {% if active_item == " subscribed" %}active{% endif %} text-white
+                text-decoration-none">
+                <i class="fa-solid fa-bell"></i>
+                Subscribed
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link {% if active_item == " favourites" %}active{% endif %} text-white
+                text-decoration-none">
+                <i class="fa-solid fa-heart"></i>
+                Favourites
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link {% if active_item == " yourvideos" %}active{% endif %} text-white
+                text-decoration-none">
+                <i class="fa-solid fa-user"></i>
+                Your videos
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebarbackground"></div>
