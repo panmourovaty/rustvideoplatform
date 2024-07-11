@@ -18,3 +18,9 @@ CREATE TABLE public."comments" (
 	"time" int8 DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
 	CONSTRAINT comments_pk PRIMARY KEY (id)
 );
+CREATE TABLE public.users (
+	login varchar(40) NOT NULL,
+	name varchar(100) NOT NULL,
+	password_hash varchar NOT NULL,
+	CONSTRAINT users_pk PRIMARY KEY (login)
+);
