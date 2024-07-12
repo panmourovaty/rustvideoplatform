@@ -23,7 +23,7 @@ use serde::Serialize;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::sync::Arc;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 
 #[derive(Deserialize, Clone)]
 struct Config {
@@ -42,7 +42,8 @@ async fn main() {
 
     let memory_router = MemoryServe::new(load_assets!("assets/static")).into_router();
 
-    let session_store: Arc<Mutex<AHashMap<String, String>>> = Arc::new(Mutex::new(AHashMap::default()));
+    let session_store: Arc<Mutex<AHashMap<String, String>>> =
+        Arc::new(Mutex::new(AHashMap::default()));
 
     let app = Router::new()
         .route("/login", get(login))
@@ -321,7 +322,10 @@ async fn hx_login(
     {
         let session_cookie_value = generate_secure_string();
         let session_cookie_set = format!("session={}; Path=/", session_cookie_value);
-        session_store.lock().unwrap().insert(session_cookie_value.clone(), form.login);
+        session_store
+            .lock()
+            .await
+            .insert(session_cookie_value.clone(), form.login);
 
         let mut response_headers = HeaderMap::new();
         response_headers.insert("Set-Cookie", session_cookie_set.parse().unwrap());
@@ -343,14 +347,14 @@ async fn hx_logout(
         .get("session")
         .unwrap()
         .to_owned();
-    session_store.lock().unwrap().remove_entry(&session_cookie);
+    session_store.lock().await.remove_entry(&session_cookie);
     Html("<h1>LOGOUT SUCESS</h1><script>window.location.replace(\"/\");</script>".to_owned())
 }
 
 #[derive(Template)]
 #[template(path = "pages/login.html", escape = "none")]
 struct LoginTemplate {
-    config: Config
+    config: Config,
 }
 async fn login(Extension(config): Extension<Config>) -> axum::response::Html<Vec<u8>> {
     let template = LoginTemplate { config };
@@ -377,8 +381,7 @@ async fn hx_usernav(
         let user = try_user.unwrap();
         let template = HXUsernavTemplate { user };
         return Html(minifi_html(template.render().unwrap()));
-    }
-    else {
+    } else {
         let result = format!("<a href=\"/login\"><button class=\"btn text-white\"><i class=\"fa-solid fa-user mx-2\"></i>Log in</button></a>");
         return Html(minifi_html(result));
     }
@@ -389,26 +392,21 @@ async fn get_user_login(
     pool: PgPool,
     session_store: Arc<Mutex<AHashMap<String, String>>>,
 ) -> Option<User> {
-    println!("{:?}", headers);
-    println!("{:?}", session_store.lock().unwrap());
-    let session_cookie = parse_cookie_header(headers.get("Cookie").unwrap().to_str().unwrap())
-        .get("session")
-        .unwrap()
+    let session_cookie = parse_cookie_header(headers.get("Cookie")?.to_str().ok()?)
+        .get("session")?
         .to_owned();
-    println!("{}",session_cookie);
-    if !session_store.lock().unwrap().contains_key(&session_cookie) {
-        return None;
-    }
 
-    let login = session_store.lock().unwrap().get(&session_cookie).unwrap().to_owned();
+    let session_store_guard = session_store.lock().await;
+    let login = session_store_guard.get(&session_cookie)?;
 
     let name = sqlx::query!("SELECT name FROM users WHERE login=$1;", login)
         .fetch_one(&pool)
         .await
-        .unwrap()
+        .ok()?
         .name;
 
-    let result: User = User { login, name };
-
-    return Some(result);
+    Some(User {
+        login: login.to_owned(),
+        name,
+    })
 }
