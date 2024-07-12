@@ -8,9 +8,15 @@
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="https://{{ common_headers.host }}/video/{{ video_id }}" />
     <meta property="og:image" content="https://{{ common_headers.host }}/source/{{ video_id }}/thumbnail.jpg" />
-    <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ video_id }}/video.webm" />
-    <meta property="og:video:type" content="video/webm" />
     <meta property="og:description" content="{{ video_description }}" />
+    <meta property="og:site_name" content="{{ config.instancename }}" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ video_id }}/video.webm" />
+    <meta property="og:video:secure_url" content="https://{{ common_headers.host }}/source/{{ video_id }}/video.webm" />
+    <meta property="og:video:type" content="video/webm" />
+    <meta property="og:video:width" content="1280" />
+    <meta property="og:video:height" content="720" />
 </head>
 
 <body>
