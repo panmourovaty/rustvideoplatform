@@ -3,6 +3,14 @@
 
 <head>
     {% include "component-dependencies.html" %}
+
+    <meta property="og:title" content="{{ video_name }}" />
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:url" content="/video/{{ video_id }}" />
+    <meta property="og:image" content="/source/{{ video_id }}/thumbnail.avif" />
+    <meta property="og:video" content="/source/{{ video_id }}/video.webm" />
+    <meta property="og:video:type" content="video/webm" />
+    <meta property="og:description" content="{{ video_description }}" />
 </head>
 
 <body>
@@ -27,14 +35,21 @@
                             <h1>{{ video_name }}</h1>
                         </li>
                         <li>
-                            <h5><a href="/channel/{{ video_owner }}" class="text-secondary text-decoration-none">{{ video_owner }}</a></h5>
+                            <h5><a href="/channel/{{ video_owner }}" class="text-secondary text-decoration-none">{{
+                                    video_owner }}</a></h5>
                         </li>
                     </ul>
                     <ul class="list-group list-unstyled list-group-horizontal mt-3 py-3 px-2"
                         style="float:right;background-color: #511730;">
-                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;" hx-get="/hx/like/{{ video_id }}" hx-trigger="click once" hx-target="#video_likes"><i class="fa-solid fa-thumbs-up fa-xl"></i>&nbsp;<b id="video_likes">{{ video_likes }}</b></a></li>
+                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;"
+                                hx-get="/hx/like/{{ video_id }}" hx-trigger="click once" hx-target="#video_likes"><i
+                                    class="fa-solid fa-thumbs-up fa-xl"></i>&nbsp;<b id="video_likes">{{ video_likes
+                                    }}</b></a></li>
                         <li>|</li>
-                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;" hx-get="/hx/dislike/{{ video_id }}" hx-trigger="click once" hx-target="#video_dislikes"><i class="fa-solid fa-thumbs-down fa-xl"></i>&nbsp;<b id="video_dislikes">{{ video_dislikes }}</b></a></li>
+                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;"
+                                hx-get="/hx/dislike/{{ video_id }}" hx-trigger="click once"
+                                hx-target="#video_dislikes"><i class="fa-solid fa-thumbs-down fa-xl"></i>&nbsp;<b
+                                    id="video_dislikes">{{ video_dislikes }}</b></a></li>
                         <li class="mx-4"><a href="/source/{{ video_id }}/video.webm"
                                 class="text-white text-decoration-none" download><i
                                     class="fa-solid fa-download fa-xl"></i></a></li>
@@ -42,7 +57,8 @@
                 </div>
                 <hr>
                 <div class="my-1">
-                    <b class="text-secondary" hx-get="/hx/new_view/{{ video_id }}" hx-trigger="load delay:5s">{{ video_views }}</b><b class="text-secondary"> views, uploaded: {{ video_upload }}</b>
+                    <b class="text-secondary" hx-get="/hx/new_view/{{ video_id }}" hx-trigger="load delay:5s">{{
+                        video_views }}</b><b class="text-secondary"> views, uploaded: {{ video_upload }}</b>
                     <p style="overflow-y: scroll;">{{ video_description }}</p>
                 </div>
             </div>
