@@ -83,9 +83,9 @@ struct SidebarComponentTemplate {
     config: Config,
     active_item: String,
 }
-fn generate_sidebar(config: Config, active_item: String) -> String {
+fn generate_sidebar(config: &Config, active_item: String) -> String {
     let template = SidebarComponentTemplate {
-        config,
+        config:config.to_owned(),
         active_item,
     };
     template.render().unwrap()
@@ -172,6 +172,7 @@ struct VideoTemplate {
     video_dislikes: i64,
     video_upload: String,
     video_views: i64,
+    config: Config,
     common_headers: CommonHeaders
 }
 async fn video(
@@ -189,7 +190,7 @@ async fn video(
     .await
     .expect("Nemohu provést dotaz");
 
-    let sidebar = generate_sidebar(config, "".to_owned());
+    let sidebar = generate_sidebar(&config, "".to_owned());
     let template = VideoTemplate {
         sidebar,
         video_id: video.id,
@@ -200,6 +201,7 @@ async fn video(
         video_dislikes: video.dislikes,
         video_upload: prettyunixtime(video.upload).await,
         video_views: video.views,
+        config,
         common_headers
     };
     Html(minifi_html(template.render().unwrap()))
