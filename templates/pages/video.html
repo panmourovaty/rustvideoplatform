@@ -4,6 +4,8 @@
 <head>
     {% include "component-dependencies.html" %}
 
+    <title>{{ video_name }}</title>
+
     <meta property="og:title" content="{{ video_name }}" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="https://{{ common_headers.host }}/video/{{ video_id }}" />
