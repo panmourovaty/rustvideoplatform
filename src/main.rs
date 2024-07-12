@@ -13,7 +13,7 @@ use argon2::password_hash::{rand_core::OsRng, PasswordHash};
 use askama::Template;
 use axum::{
     extract::Form, extract::Path, http::header::HeaderMap, response::Html, response::IntoResponse,
-    routing::get, routing::post, Extension, Router,
+    routing::get, routing::post, Extension, Router, http::header::{HOST, USER_AGENT, ACCEPT_LANGUAGE, COOKIE}
 };
 use chrono::{DateTime, Datelike, Local, Timelike};
 use memory_serve::{load_assets, MemoryServe};
@@ -130,6 +130,36 @@ async fn prettyunixtime(unix_time: i64) -> String {
     )
 }
 
+#[derive(Serialize, Deserialize)]
+struct CommonHeaders {
+    host: String,
+    user_agent: Option<String>,
+    accept_language: Option<String>,
+    cookie: Option<String>
+}
+fn extract_common_headers(headers: &HeaderMap) -> Result<CommonHeaders, &'static str> {
+    let host = headers
+        .get(HOST)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
+        .ok_or("Missing or invalid 'Host' header")?;
+
+    let user_agent = get_header_value(headers, USER_AGENT);
+    let accept_language = get_header_value(headers, ACCEPT_LANGUAGE);
+    let cookie = get_header_value(headers, COOKIE);
+
+    Ok(CommonHeaders {
+        host,
+        user_agent,
+        accept_language,
+        cookie,
+    })
+}
+fn get_header_value(headers: &HeaderMap, header_name: axum::http::header::HeaderName) -> Option<String> {
+    headers.get(header_name).and_then(|v| v.to_str().ok()).map(|s| s.to_string())
+}
+
+
 #[derive(Template)]
 #[template(path = "pages/video.html", escape = "none")]
 struct VideoTemplate {
@@ -142,12 +172,15 @@ struct VideoTemplate {
     video_dislikes: i64,
     video_upload: String,
     video_views: i64,
+    common_headers: CommonHeaders
 }
 async fn video(
     Extension(config): Extension<Config>,
     Extension(pool): Extension<PgPool>,
+    headers: HeaderMap,
     Path(videoid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
+    let common_headers = extract_common_headers(&headers).unwrap();
     let video = sqlx::query!(
         "SELECT id,name,description,upload,owner,likes,dislikes,views FROM videos WHERE id=$1;",
         videoid
@@ -167,6 +200,7 @@ async fn video(
         video_dislikes: video.dislikes,
         video_upload: prettyunixtime(video.upload).await,
         video_views: video.views,
+        common_headers
     };
     Html(minifi_html(template.render().unwrap()))
 }
