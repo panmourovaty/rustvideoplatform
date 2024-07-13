@@ -35,3 +35,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function applyColorScheme() {
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const htmlElement = document.documentElement;
+
+    if (isDarkMode) {
+        htmlElement.setAttribute('data-bs-theme', 'dark');
+    } else {
+        htmlElement.setAttribute('data-bs-theme', 'light');
+    }
+}
+applyColorScheme();
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    applyColorScheme();
+});
