@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,name,owner FROM videos WHERE public=true ORDER BY random() LIMIT 20;",
+  "query": "SELECT id,name,owner,views FROM videos WHERE public=true ORDER BY likes DESC LIMIT 100;",
   "describe": {
     "columns": [
       {
@@ -17,6 +17,11 @@
         "ordinal": 2,
         "name": "owner",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "views",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
@@ -25,8 +30,9 @@
     "nullable": [
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "8cb5438ffec4f2de13bf16e633d58ac77df4f9f93330b90cccf1a4bb85bb5c5e"
+  "hash": "ad5743eedb3aa37d1b48d9de78fdec6cb8a27a9bde7a6002a36030efd3cf52d6"
 }
