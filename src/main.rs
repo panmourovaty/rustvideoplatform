@@ -69,6 +69,8 @@ async fn main() {
         .route("/hx/usernav", get(hx_usernav))
         .route("/hx/sidebar/:active_item", get(hx_sidebar))
         .route("/hx/searchsuggestions", post(hx_search_suggestions))
+        .route("/search", get(search))
+        .route("/hx/search/:pageid", post(hx_search))
         .nest("/source", axum_static::static_router("source"))
         .layer(Extension(pool))
         .layer(Extension(config))
@@ -580,7 +582,7 @@ async fn hx_search_suggestions(
     let search_term = format!("%{}%", form.search);
     let suggestions = sqlx::query_as!(
         Video,
-        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 10;",
+        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 5;",
         search_term
     )
     .fetch_all(&pool)
@@ -593,4 +595,67 @@ async fn hx_search_suggestions(
 
     let template = HXSearchSuggestions { suggestions };
     Html(template.render().unwrap())
+}
+
+#[derive(Template)]
+#[template(path = "pages/hx-search.html", escape = "none")]
+struct HXSearchTemplate {
+    search_results: Vec<Video>,
+    next_page: i64,
+    search_term: String,
+}
+async fn hx_search(
+    Extension(pool): Extension<PgPool>,
+    Path(pageid): Path<i64>,
+    Form(form): Form<HXSearch>,
+) -> axum::response::Html<String> {
+    if form.search.trim().is_empty() {
+        return Html("".to_owned());
+    }
+
+    let offset = pageid * 10;
+    let next_page = pageid + 1;
+
+    let search_querry = format!("%{}%", form.search);
+    let search_results = sqlx::query_as!(
+        Video,
+        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 10 OFFSET $2;",
+        search_querry,
+        offset
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_else(|_| vec![]);
+
+    if search_results.is_empty() {
+        return Html("<li><b>Nothing found</b></li>".to_owned());
+    }
+
+    let template = HXSearchTemplate {
+        search_results,
+        next_page,
+        search_term: form.search,
+    };
+    Html(template.render().unwrap())
+}
+
+#[derive(Template)]
+#[template(path = "pages/search.html", escape = "none")]
+struct SearchTemplate {
+    sidebar: String,
+    config: Config,
+    common_headers: CommonHeaders,
+}
+async fn search(
+    Extension(config): Extension<Config>,
+    headers: HeaderMap,
+) -> axum::response::Html<Vec<u8>> {
+    let sidebar = generate_sidebar(&config, "search".to_owned());
+    let common_headers = extract_common_headers(&headers).unwrap();
+    let template = SearchTemplate {
+        sidebar,
+        config,
+        common_headers,
+    };
+    Html(minifi_html(template.render().unwrap()))
 }

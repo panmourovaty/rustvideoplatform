@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% include "component-dependencies.html" %}
+
+    <title>Search</title>
+
+    <meta property="og:title" content="{{ config.instancename }} Search" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://{{ common_headers.host }}/search" />
+</head>
+
+<body>
+    {{ sidebar }}
+    {% include "component-navbar.html" %}
+    <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <div class="card py-3 px-3 text-white" style="min-height: 80vh;">
+                <h3 class="my-2 mx-3">Search</h3>
+                <hr>
+                <form class="d-flex justify-content-center">
+                    <input class="form-control searchinput" id="search" name="search" hx-post="/hx/search/0" hx-target="#searchresults" hx-trigger="keyup changed delay:400ms" style="width:50vw;background-color:var(--bs-primary)" />
+                </form>
+                <ul id="searchresults" class="row mb-3 px-3 list-unstyled">
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

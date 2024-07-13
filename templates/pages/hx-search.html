@@ -1,0 +1,23 @@
+{% for video in search_results %}
+<a href="/video/{{ video.id }}" class="suggestionitem p-1 m-1 px-3">
+    <li>
+        <table class="my-3">
+            <tr>
+                <td>
+                    <img src="/source/{{ video.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
+                </td>
+                <td>
+                    <b class="text-white font-weight-bold">{{ video.name }}</b>
+                    <p class="text-secondary">{{ video.owner }}<br>{{ video.views }} views</p>
+                </td>
+            </tr>
+        </table>
+    </li>
+</a>
+{% endfor %}
+<form hx-post="/hx/search/{{ next_page }}" hx-trigger="revealed" hx-swap="outerHTML">
+    <input type="hidden" id="search" name="search" value="{{ search_term }}" />
+    <div class="text-center my-4">
+        <i class="fa-solid fa-spinner fa-spin-pulse fa-8x"></i>
+    </div>
+</form>
