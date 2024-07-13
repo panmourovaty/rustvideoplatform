@@ -471,10 +471,20 @@ async fn get_user_login(
 #[template(path = "pages/trending.html", escape = "none")]
 struct TrendingTemplate {
     sidebar: String,
+    config: Config,
+    common_headers: CommonHeaders,
 }
-async fn trending(Extension(config): Extension<Config>) -> axum::response::Html<Vec<u8>> {
+async fn trending(
+    Extension(config): Extension<Config>,
+    headers: HeaderMap,
+) -> axum::response::Html<Vec<u8>> {
     let sidebar = generate_sidebar(&config, "trending".to_owned());
-    let template = TrendingTemplate { sidebar };
+    let common_headers = extract_common_headers(&headers).unwrap();
+    let template = TrendingTemplate {
+        sidebar,
+        config,
+        common_headers,
+    };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -534,10 +544,19 @@ async fn hx_sidebar(
 struct HomeTemplate {
     sidebar: String,
     config: Config,
+    common_headers: CommonHeaders,
 }
-async fn home(Extension(config): Extension<Config>) -> axum::response::Html<Vec<u8>> {
+async fn home(
+    Extension(config): Extension<Config>,
+    headers: HeaderMap,
+) -> axum::response::Html<Vec<u8>> {
     let sidebar = generate_sidebar(&config, "home".to_owned());
-    let template = HomeTemplate { config, sidebar };
+    let common_headers = extract_common_headers(&headers).unwrap();
+    let template = HomeTemplate {
+        config,
+        sidebar,
+        common_headers,
+    };
     Html(minifi_html(template.render().unwrap()))
 }
 
