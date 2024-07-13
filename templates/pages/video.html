@@ -12,7 +12,6 @@
     <meta property="og:image" content="https://{{ common_headers.host }}/source/{{ video_id }}/thumbnail.jpg" />
     <meta property="og:description" content="{{ video_description }}" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
-    <meta property="og:locale" content="en_US" />
 
     <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ video_id }}/video.webm" />
     <meta property="og:video:secure_url" content="https://{{ common_headers.host }}/source/{{ video_id }}/video.webm" />
@@ -26,8 +25,8 @@
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
-            <div class="card py-3 px-3 text-white" style="min-height: 75vh;">
-                <div class="d-flex justify-content-center" style="min-height: 70vh;">
+            <div class="card py-3 px-3 text-white">
+                <div class="d-flex justify-content-center">
                     <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
                         autoplay>
                         <source src="/source/{{ video_id }}/video.webm" type="video/webm" />
@@ -60,7 +59,7 @@
                                 hx-target="#video_dislikes"><i class="fa-solid fa-thumbs-down fa-xl"></i>&nbsp;<b
                                     id="video_dislikes">{{ video_dislikes }}</b></a></li>
                         <li class="mx-4"><a href="/source/{{ video_id }}/video.webm"
-                                class="text-white text-decoration-none" download><i
+                                class="text-white text-decoration-none" download="{{ video_id }}.webm"><i
                                     class="fa-solid fa-download fa-xl"></i></a></li>
                     </ul>
                 </div>
