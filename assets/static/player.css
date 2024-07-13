@@ -159,3 +159,7 @@
 .vjs-theme-custom .vjs-play-progress {
     border-radius: .2em
 }
+
+.video-js .vjs-picture-in-picture-control {
+    display: none;
+}
