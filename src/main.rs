@@ -68,6 +68,7 @@ async fn main() {
         .route("/hx/logout", get(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
         .route("/hx/sidebar/:active_item", get(hx_sidebar))
+        .route("/hx/searchsuggestions", post(hx_search_suggestions))
         .nest("/source", axum_static::static_router("source"))
         .layer(Extension(pool))
         .layer(Extension(config))
@@ -538,4 +539,39 @@ async fn home(Extension(config): Extension<Config>) -> axum::response::Html<Vec<
     let sidebar = generate_sidebar(&config, "home".to_owned());
     let template = HomeTemplate { config, sidebar };
     Html(minifi_html(template.render().unwrap()))
+}
+
+#[derive(Serialize, Deserialize)]
+struct HXSearch {
+    search: String,
+}
+#[derive(Template)]
+#[template(path = "pages/hx-searchsuggestion.html", escape = "none")]
+struct HXSearchSuggestions {
+    suggestions: Vec<Video>,
+}
+async fn hx_search_suggestions(
+    Extension(pool): Extension<PgPool>,
+    Form(form): Form<HXSearch>,
+) -> axum::response::Html<String> {
+    if form.search.trim().is_empty() {
+        return Html("".to_owned());
+    }
+
+    let search_term = format!("%{}%", form.search);
+    let suggestions = sqlx::query_as!(
+        Video,
+        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 10;",
+        search_term
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_else(|_| vec![]);
+
+    if suggestions.is_empty() {
+        return Html("<li><b>Nothing found</b></li>".to_owned());
+    }
+
+    let template = HXSearchSuggestions { suggestions };
+    Html(template.render().unwrap())
 }

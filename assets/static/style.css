@@ -5056,6 +5056,7 @@ fieldset:disabled .btn {
   background-clip: border-box;
   border: var(--bs-card-border-width) solid var(--bs-card-border-color);
   border-radius: var(--bs-card-border-radius);
+  box-shadow: 0 0 5px var(--bs-black);
 }
 
 .card>hr {
@@ -13959,6 +13960,7 @@ fieldset:disabled .btn {
   float: left;
   z-index: -1;
   background-color: var(--bs-dark);
+  box-shadow: 0 0 5px var(--bs-black);
 }
 
 .searchinput {
@@ -14065,5 +14067,25 @@ fieldset:disabled .btn {
 }
 
 .dropdown-content a:hover {
+  background-color: var(--bs-primary);
+}
+
+#suggestions {
+  position: absolute;
+  z-index: 1000;
+  width: calc(100% - 30px);
+  list-style-type: none;
+  background-color: var(--bs-dark);
+  border-color: var(--bs-dark);
+  width: 450px;
+  box-shadow: 0 0 5px var(--bs-black);
+}
+
+.suggestionitem {
+  color: var(--bs-white);
+  text-decoration: none;
+  border-radius: var(--bs-border-radius);
+}
+.suggestionitem:hover {
   background-color: var(--bs-primary);
 }

@@ -1,13 +1,17 @@
 <div class="d-flex justify-content-end mx-1">
     <form>
         <div class="input-group m-2 text-white">
-            <input type="text" class="form-control searchinput">
+            <input id="searchInput" class="form-control searchinput" hx-post="/hx/searchsuggestions" hx-trigger="keyup changed delay:250ms" hx-target="#suggestions" id="search" name="search" autocomplete="off">
             <div class="input-group-append">
-                <button class="searchbtn btn-primary" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button class="searchbtn btn-primary" type="button">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
             </div>
         </div>
+        <ul id="suggestions" class="list-group bg-dark text-white p-2 m-1" style="display: none;"></ul> <!-- Initially hidden -->
     </form>
     <div class="m-2 mx-4 text-white" hx-get="/hx/usernav" hx-trigger="load">
+        <div style="width:100px;">Log in</div>
     </div>
     <div class="m-2 text-white">
         <button class="btn btn-primary" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
