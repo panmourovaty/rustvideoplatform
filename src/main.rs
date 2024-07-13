@@ -12,8 +12,15 @@ use ahash::AHashMap;
 use argon2::password_hash::{rand_core::OsRng, PasswordHash};
 use askama::Template;
 use axum::{
-    extract::Form, extract::Path, http::header::HeaderMap, response::Html, response::IntoResponse,
-    routing::get, routing::post, Extension, Router, http::header::{HOST, USER_AGENT, ACCEPT_LANGUAGE, COOKIE}
+    extract::Form,
+    extract::Path,
+    http::header::HeaderMap,
+    http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
+    response::Html,
+    response::IntoResponse,
+    routing::get,
+    routing::post,
+    Extension, Router,
 };
 use chrono::{DateTime, Datelike, Local, Timelike};
 use memory_serve::{load_assets, MemoryServe};
@@ -29,6 +36,7 @@ use tokio::sync::Mutex;
 struct Config {
     dbconnection: String,
     instancename: String,
+    welcome: String,
 }
 #[tokio::main]
 async fn main() {
@@ -46,7 +54,10 @@ async fn main() {
         Arc::new(Mutex::new(AHashMap::default()));
 
     let app = Router::new()
+        .route("/", get(home))
         .route("/login", get(login))
+        .route("/trending", get(trending))
+        .route("/hx/trending", get(hx_trending))
         .route("/video/:videoid", get(video))
         .route("/hx/comments/:videoid", get(hx_comments))
         .route("/hx/reccomended/:videoid", get(hx_reccomended))
@@ -56,6 +67,7 @@ async fn main() {
         .route("/hx/login", post(hx_login))
         .route("/hx/logout", get(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
+        .route("/hx/sidebar/:active_item", get(hx_sidebar))
         .nest("/source", axum_static::static_router("source"))
         .layer(Extension(pool))
         .layer(Extension(config))
@@ -85,7 +97,7 @@ struct SidebarComponentTemplate {
 }
 fn generate_sidebar(config: &Config, active_item: String) -> String {
     let template = SidebarComponentTemplate {
-        config:config.to_owned(),
+        config: config.to_owned(),
         active_item,
     };
     template.render().unwrap()
@@ -135,7 +147,7 @@ struct CommonHeaders {
     host: String,
     user_agent: Option<String>,
     accept_language: Option<String>,
-    cookie: Option<String>
+    cookie: Option<String>,
 }
 fn extract_common_headers(headers: &HeaderMap) -> Result<CommonHeaders, &'static str> {
     let host = headers
@@ -155,10 +167,15 @@ fn extract_common_headers(headers: &HeaderMap) -> Result<CommonHeaders, &'static
         cookie,
     })
 }
-fn get_header_value(headers: &HeaderMap, header_name: axum::http::header::HeaderName) -> Option<String> {
-    headers.get(header_name).and_then(|v| v.to_str().ok()).map(|s| s.to_string())
+fn get_header_value(
+    headers: &HeaderMap,
+    header_name: axum::http::header::HeaderName,
+) -> Option<String> {
+    headers
+        .get(header_name)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
 }
-
 
 #[derive(Template)]
 #[template(path = "pages/video.html", escape = "none")]
@@ -173,7 +190,7 @@ struct VideoTemplate {
     video_upload: String,
     video_views: i64,
     config: Config,
-    common_headers: CommonHeaders
+    common_headers: CommonHeaders,
 }
 async fn video(
     Extension(config): Extension<Config>,
@@ -190,7 +207,7 @@ async fn video(
     .await
     .expect("Nemohu provést dotaz");
 
-    let sidebar = generate_sidebar(&config, "".to_owned());
+    let sidebar = generate_sidebar(&config, "video".to_owned());
     let template = VideoTemplate {
         sidebar,
         video_id: video.id,
@@ -202,7 +219,7 @@ async fn video(
         video_upload: prettyunixtime(video.upload).await,
         video_views: video.views,
         config,
-        common_headers
+        common_headers,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -250,6 +267,7 @@ struct Video {
     id: String,
     name: String,
     owner: String,
+    views: i64,
 }
 #[derive(Template)]
 #[template(path = "pages/hx-reccomended.html", escape = "none")]
@@ -261,7 +279,7 @@ async fn hx_reccomended(
     Path(videoid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,name,owner FROM videos WHERE public=true ORDER BY random() LIMIT 20;"
+        "SELECT id,name,owner,views FROM videos WHERE public=true ORDER BY random() LIMIT 20;"
     )
     .fetch_all(&pool)
     .await
@@ -274,6 +292,7 @@ async fn hx_reccomended(
                 id: record.id,
                 name: record.name,
                 owner: record.owner,
+                views: record.views,
             };
             reccomendations.push(new_reccomendation);
         }
@@ -410,7 +429,7 @@ struct HXUsernavTemplate {
 async fn hx_usernav(
     Extension(pool): Extension<PgPool>,
     Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
-    headers: HeaderMap
+    headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let try_user = get_user_login(headers, pool, session_store).await;
     if try_user.is_some() {
@@ -445,4 +464,78 @@ async fn get_user_login(
         login: login.to_owned(),
         name,
     })
+}
+
+#[derive(Template)]
+#[template(path = "pages/trending.html", escape = "none")]
+struct TrendingTemplate {
+    sidebar: String,
+}
+async fn trending(Extension(config): Extension<Config>) -> axum::response::Html<Vec<u8>> {
+    let sidebar = generate_sidebar(&config, "trending".to_owned());
+    let template = TrendingTemplate { sidebar };
+    Html(minifi_html(template.render().unwrap()))
+}
+
+#[derive(Template)]
+#[template(path = "pages/hx-trending.html", escape = "none")]
+struct HXTrendingTemplate {
+    reccomendations: Vec<Video>,
+}
+async fn hx_trending(Extension(pool): Extension<PgPool>) -> axum::response::Html<Vec<u8>> {
+    let comments_records = sqlx::query!(
+        "SELECT id,name,owner,views FROM videos WHERE public=true ORDER BY likes DESC LIMIT 100;"
+    )
+    .fetch_all(&pool)
+    .await
+    .expect("Nemohu provést dotaz");
+
+    let mut reccomendations: Vec<Video> = Vec::new();
+    for record in comments_records {
+        let new_reccomendation: Video = Video {
+            id: record.id,
+            name: record.name,
+            owner: record.owner,
+            views: record.views,
+        };
+        reccomendations.push(new_reccomendation);
+    }
+    let template = HXTrendingTemplate { reccomendations };
+    Html(minifi_html(template.render().unwrap()))
+}
+
+#[derive(Template)]
+#[template(path = "pages/hx-sidebar.html", escape = "none")]
+struct HXSidebarTemplate {
+    active_item: String,
+    login: String,
+}
+async fn hx_sidebar(
+    Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
+    Extension(pool): Extension<PgPool>,
+    Path(active_item): Path<String>,
+    headers: HeaderMap,
+) -> axum::response::Html<Vec<u8>> {
+    let user = get_user_login(headers, pool, session_store).await;
+    if user.is_some() {
+        let template = HXSidebarTemplate {
+            active_item,
+            login: user.unwrap().login,
+        };
+        Html(minifi_html(template.render().unwrap()))
+    } else {
+        Html("".as_bytes().to_vec())
+    }
+}
+
+#[derive(Template)]
+#[template(path = "pages/home.html", escape = "none")]
+struct HomeTemplate {
+    sidebar: String,
+    config: Config,
+}
+async fn home(Extension(config): Extension<Config>) -> axum::response::Html<Vec<u8>> {
+    let sidebar = generate_sidebar(&config, "home".to_owned());
+    let template = HomeTemplate { config, sidebar };
+    Html(minifi_html(template.render().unwrap()))
 }

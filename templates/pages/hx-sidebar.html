@@ -1,0 +1,21 @@
+<li class="nav-item">
+    <a href="/subscriptions" class="nav-link {% if active_item == "subscribed" %}active{% endif %} text-white
+        text-decoration-none my-2 fs-6 mx-3">
+        <i class="fa-solid fa-bell"></i>
+        Subscribed
+    </a>
+</li>
+<li class="nav-item">
+    <a href="/favourites" class="nav-link {% if active_item == "favourites" %}active{% endif %} text-white
+        text-decoration-none my-2 fs-6 mx-3">
+        <i class="fa-solid fa-heart"></i>
+        Favourites
+    </a>
+</li>
+<li class="nav-item">
+    <a href="/channel/{{ login }}" class="nav-link {% if active_item == "yourvideos" %}active{% endif %} text-white
+        text-decoration-none my-2 fs-6 mx-3">
+        <i class="fa-solid fa-user"></i>
+        Your videos
+    </a>
+</li>

@@ -2,16 +2,12 @@
 <a href="/video/{{ video.id }}" class="text-decoration-none">
     <table class="my-3">
         <tr>
-            <td rowspan="2">
+            <td>
                 <img src="/source/{{ video.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
             </td>
             <td>
-                <p class="text-white">{{ video.name }}</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <p class="text-secondary">{{ video.owner }}</p>
+                <b class="text-white font-weight-bold">{{ video.name }}</b>
+                <p class="text-secondary">{{ video.owner }}<br>{{ video.views }} views</p>
             </td>
         </tr>
     </table>
