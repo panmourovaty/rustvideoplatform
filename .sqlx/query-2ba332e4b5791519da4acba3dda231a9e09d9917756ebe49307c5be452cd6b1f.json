@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,name,description,upload,owner,likes,dislikes,views FROM videos WHERE id=$1;",
+  "query": "SELECT id,name,description,upload,owner,likes,dislikes,views,type FROM media WHERE id=$1;",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,11 @@
         "ordinal": 7,
         "name": "views",
         "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "type",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -57,8 +62,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "cfaae670911718e64fb48d1eab57d4b4d6a8e9f9b646620a98f137de1f37750d"
+  "hash": "2ba332e4b5791519da4acba3dda231a9e09d9917756ebe49307c5be452cd6b1f"
 }

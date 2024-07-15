@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE videos SET views = views + 1 WHERE id=$1 RETURNING views;",
+  "query": "UPDATE media SET likes = likes + 1 WHERE id=$1 RETURNING likes;",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "views",
+        "name": "likes",
         "type_info": "Int8"
       }
     ],
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "d877b3101b6b14bdef9a8e23697d40388d61a09b5ce060ac1f6c3837727505c6"
+  "hash": "99f347c8f74696771c7cbfafbe206886ffbfad262599cf0c3e59974fbc45fbb8"
 }

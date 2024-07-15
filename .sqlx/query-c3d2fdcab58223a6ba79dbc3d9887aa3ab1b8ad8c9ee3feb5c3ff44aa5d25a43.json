@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,user,text,time FROM comments WHERE video=$1;",
+  "query": "SELECT id,user,text,time FROM comments WHERE media=$1;",
   "describe": {
     "columns": [
       {
@@ -36,5 +36,5 @@
       false
     ]
   },
-  "hash": "de8bd0f9e28cc90de8b9fbb0d0be4f7bbdd14f4c2324629a0580ddc9932c19f9"
+  "hash": "c3d2fdcab58223a6ba79dbc3d9887aa3ab1b8ad8c9ee3feb5c3ff44aa5d25a43"
 }
