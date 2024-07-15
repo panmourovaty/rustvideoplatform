@@ -204,7 +204,7 @@ async fn medium(
 ) -> axum::response::Html<Vec<u8>> {
     let common_headers = extract_common_headers(&headers).unwrap();
     let medium = sqlx::query!(
-        "SELECT id,name,description,upload,owner,likes,dislikes,views FROM mediums WHERE id=$1;",
+        "SELECT id,name,description,upload,owner,likes,dislikes,views,type FROM media WHERE id=$1;",
         mediumid
     )
     .fetch_one(&pool)
@@ -222,6 +222,7 @@ async fn medium(
         medium_dislikes: medium.dislikes,
         medium_upload: prettyunixtime(medium.upload).await,
         medium_views: medium.views,
+        medium_type: medium.r#type,
         config,
         common_headers,
     };
@@ -245,7 +246,7 @@ async fn hx_comments(
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,user,text,time FROM comments WHERE medium=$1;",
+        "SELECT id,user,text,time FROM comments WHERE media=$1;",
         mediumid
     )
     .fetch_all(&pool)
@@ -284,7 +285,7 @@ async fn hx_reccomended(
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,name,owner,views,type FROM mediums WHERE public=true ORDER BY random() LIMIT 20;"
+        "SELECT id,name,owner,views,type FROM media WHERE public=true ORDER BY random() LIMIT 20;"
     )
     .fetch_all(&pool)
     .await
@@ -312,7 +313,7 @@ async fn hx_new_view(
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_views = sqlx::query!(
-        "UPDATE mediums SET views = views + 1 WHERE id=$1 RETURNING views;",
+        "UPDATE media SET views = views + 1 WHERE id=$1 RETURNING views;",
         mediumid
     )
     .fetch_one(&pool)
@@ -326,7 +327,7 @@ async fn hx_like(
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_likes = sqlx::query!(
-        "UPDATE mediums SET likes = likes + 1 WHERE id=$1 RETURNING likes;",
+        "UPDATE media SET likes = likes + 1 WHERE id=$1 RETURNING likes;",
         mediumid
     )
     .fetch_one(&pool)
@@ -339,7 +340,7 @@ async fn hx_dislike(
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_dislikes = sqlx::query!(
-        "UPDATE mediums SET dislikes = dislikes + 1 WHERE id=$1 RETURNING dislikes;",
+        "UPDATE media SET dislikes = dislikes + 1 WHERE id=$1 RETURNING dislikes;",
         mediumid
     )
     .fetch_one(&pool)
@@ -500,7 +501,7 @@ struct HXTrendingTemplate {
 }
 async fn hx_trending(Extension(pool): Extension<PgPool>) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,name,owner,views,type FROM mediums WHERE public=true ORDER BY likes DESC LIMIT 100;"
+        "SELECT id,name,owner,views,type FROM media WHERE public=true ORDER BY likes DESC LIMIT 100;"
     )
     .fetch_all(&pool)
     .await
@@ -585,8 +586,8 @@ async fn hx_search_suggestions(
 
     let search_term = format!("%{}%", form.search);
     let suggestions = sqlx::query_as!(
-        medium,
-        "SELECT id, name, owner, views FROM mediums WHERE name ILIKE $1 LIMIT 5;",
+        Medium,
+        "SELECT id,name,owner,views,type FROM media WHERE name ILIKE $1 LIMIT 5;",
         search_term
     )
     .fetch_all(&pool)
@@ -622,8 +623,8 @@ async fn hx_search(
 
     let search_querry = format!("%{}%", form.search);
     let search_results = sqlx::query_as!(
-        medium,
-        "SELECT id, name, owner, views FROM mediums WHERE name ILIKE $1 LIMIT 10 OFFSET $2;",
+        Medium,
+        "SELECT id,name,owner,views,type FROM media WHERE name ILIKE $1 LIMIT 10 OFFSET $2;",
         search_querry,
         offset
     )
