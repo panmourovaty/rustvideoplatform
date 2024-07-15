@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% if medium_type == "video" || medium_type == "audio" %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.0/video.min.js"
+        integrity="sha512-I03kmI5p6nU2pjtj+fpMgEeT0koXjwx/j0JMQL1OSx7QVHs9AYU0bHcez6smB3UXSGxuferTgOCW4cgWgT+jCA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.0/video-js.min.css"
+        integrity="sha512-xQ+IvAl0/u0XWFWC0uoJLfQLKE+J3KZ/kPWpD/8ZoTw/pafvsQW0hudKW4lgZwk02eymBBpdwC0QfqrHUOhOhw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {% endif %}
+
+    <title>{{ medium_name }}</title>
+
+    <meta property="og:title" content="{{ medium_name }}" />
+    <meta property="og:url" content="https://{{ common_headers.host }}/m/{{ medium_id }}" />
+    <meta property="og:image" content="https://{{ common_headers.host }}/source/{{ medium_id }}/thumbnail.jpg" />
+    <meta property="og:description" content="{{ medium_description }}" />
+    <meta property="og:site_name" content="{{ config.instancename }}" />
+
+
+    {% if medium_type == "video" %}
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ medium_id }}/video.webm" />
+    <meta property="og:video:secure_url"
+        content="https://{{ common_headers.host }}/source/{{ medium_id }}/video.webm" />
+    <meta property="og:video:type" content="video/webm" />
+    <meta property="og:video:width" content="1280" />
+    <meta property="og:video:height" content="720" />
+    {% else if medium_type == "audio" %}
+    <meta property="og:audio" content="https://{{ common_headers.host }}/source/{{ medium_id }}/audio.ogg" />
+    <meta property="og:audio:secure_url" content="https://{{ common_headers.host }}/source/{{ medium_id }}/audio.ogg" />
+    <meta property="og:audio:type" content="audio/ogg" />
+    {% else if medium_type == "picture" %}
+    <meta property="og:image" content="https://{{ common_headers.host }}/source/{{ medium_id }}/picture.avif" />
+    <meta property="og:image:secure_url"
+        content="https://{{ common_headers.host }}/source/{{ medium_id }}/picture.avif" />
+    <meta property="og:image:type" content="image/avif" />
+    {% endif %}
+</head>
+
+<body>
+    {{ sidebar }}
+    {% include "component-navbar.html" %}
+    <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-9">
+            <div class="card py-3 px-3 text-white">
+                <div class="d-flex justify-content-center" style="max-height: 95vh;">
+                    {% if medium_type == "video" %}
+                    <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
+                        autoplay>
+                        <source src="/source/{{ medium_id }}/video.webm" type="video/webm" />
+                    </video>
+                    <script>
+                        var player = videojs('videoplayer');
+                        player.responsive(true);
+                        player.fluid(true);
+                    </script>
+                    {% else if medium_type == "audio" %}
+                    <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
+                        autoplay>
+                        <source src="/source/{{ medium_id }}/audio.ogg" type="audio/ogg" />
+                    </video>
+                    <script>
+                        var player = videojs('videoplayer');
+                        player.responsive(true);
+                        player.fluid(true);
+                    </script>
+                    {% else if medium_type == "picture" %}
+                    <img src="/source/{{ medium_id }}/picture.avif">
+                    {% endif %}
+                </div>
+                <div>
+                    <ul class="list-group list-unstyled mt-2 mb-1 mx-1" style="float: left;">
+                        <li>
+                            <h1 class="font-weight-bold">{{ medium_name }}</h1>
+                        </li>
+                        <li>
+                            <h5><a href="/channel/{{ medium_owner }}" class="text-secondary text-decoration-none">{{
+                                    medium_owner }}</a></h5>
+                        </li>
+                    </ul>
+                    <ul class="list-group list-unstyled list-group-horizontal mt-3 py-3 px-2"
+                        style="float:right;background-color: var(--bs-primary);">
+                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;"
+                                hx-get="/hx/like/{{ medium_id }}" hx-trigger="click once" hx-target="#medium_likes"><i
+                                    class="fa-solid fa-thumbs-up fa-xl"></i>&nbsp;<b id="medium_likes">{{ medium_likes
+                                    }}</b></a></li>
+                        <li>|</li>
+                        <li class="mx-2"><a class="text-decoration-none text-white" style="cursor: pointer;"
+                                hx-get="/hx/dislike/{{ medium_id }}" hx-trigger="click once"
+                                hx-target="#medium_dislikes"><i class="fa-solid fa-thumbs-down fa-xl"></i>&nbsp;<b
+                                    id="medium_dislikes">{{ medium_dislikes }}</b></a></li>
+                        <li class="mx-4">
+                            {% if medium_type == "video" %}
+                            <a href="/source/{{ medium_id }}/video.webm" class="text-white text-decoration-none"
+                                download="{{ medium_id }}.webm"><i class="fa-solid fa-download fa-xl"></i></a>
+                            {% else if medium_type == "audio" %}
+                            <a href="/source/{{ medium_id }}/audio.ogg" class="text-white text-decoration-none"
+                                download="{{ medium_id }}.ogg"><i class="fa-solid fa-download fa-xl"></i></a>
+                            {% else if medium_type == "picture" %}
+                            <a href="/source/{{ medium_id }}/picture.avif" class="text-white text-decoration-none"
+                                download="{{ medium_id }}.avif"><i class="fa-solid fa-download fa-xl"></i></a>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+                <hr>
+                <div class="my-1">
+                    <b class="text-secondary" hx-get="/hx/new_view/{{ medium_id }}" hx-trigger="load delay:5s">{{
+                        medium_views }}</b><b class="text-secondary"> views, uploaded: {{ medium_upload }}</b>
+                    <p style="overflow-y: scroll;">{{ medium_description }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+            <div class="card py-3 px-3 h-100" style="overflow-x: auto;">
+                <h3 class="my-2 text-white text-center">Reccomended</h3>
+                <hr>
+                <div hx-get="/hx/reccomended/{{ medium_id }}" hx-trigger="load">
+                    <div class="my-4">
+                        <i class="fa-solid fa-spinner fa-spin-pulse fa-8x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-12 col-md-12 col-lg-9">
+            <div class="card py-3 px-3 text-white" style="min-height: 30vh;">
+                <h3 class="my-2">Comments</h3>
+                <hr>
+                <div hx-get="/hx/comments/{{ medium_id }}" hx-trigger="revealed">
+                    <div class="text-center my-4">
+                        <i class="fa-solid fa-spinner fa-spin-pulse fa-8x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

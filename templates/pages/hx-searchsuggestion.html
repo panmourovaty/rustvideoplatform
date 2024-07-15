@@ -1,14 +1,14 @@
-{% for video in suggestions %}
-<a href="/video/{{ video.id }}" class="suggestionitem p-1 m-1 px-3">
+{% for medium in suggestions %}
+<a href="/m/{{ medium.id }}" class="suggestionitem p-1 m-1 px-3">
     <li>
         <table class="my-3">
             <tr>
                 <td>
-                    <img src="/source/{{ video.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
+                    <img src="/source/{{ medium.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
                 </td>
                 <td>
-                    <b class="text-white font-weight-bold">{{ video.name }}</b>
-                    <p class="text-secondary">{{ video.owner }}<br>{{ video.views }} views</p>
+                    <b class="text-white font-weight-bold">{{ medium.name }}</b>
+                    <p class="text-secondary">{{ medium.owner }}<br>{{ medium.views }} views</p>
                 </td>
             </tr>
         </table>

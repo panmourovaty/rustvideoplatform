@@ -58,12 +58,12 @@ async fn main() {
         .route("/login", get(login))
         .route("/trending", get(trending))
         .route("/hx/trending", get(hx_trending))
-        .route("/video/:videoid", get(video))
-        .route("/hx/comments/:videoid", get(hx_comments))
-        .route("/hx/reccomended/:videoid", get(hx_reccomended))
-        .route("/hx/new_view/:videoid", get(hx_new_view))
-        .route("/hx/like/:videoid", get(hx_like))
-        .route("/hx/dislike/:videoid", get(hx_dislike))
+        .route("/m/:mediumid", get(medium))
+        .route("/hx/comments/:mediumid", get(hx_comments))
+        .route("/hx/reccomended/:mediumid", get(hx_reccomended))
+        .route("/hx/new_view/:mediumid", get(hx_new_view))
+        .route("/hx/like/:mediumid", get(hx_like))
+        .route("/hx/dislike/:mediumid", get(hx_dislike))
         .route("/hx/login", post(hx_login))
         .route("/hx/logout", get(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
@@ -181,46 +181,47 @@ fn get_header_value(
 }
 
 #[derive(Template)]
-#[template(path = "pages/video.html", escape = "none")]
-struct VideoTemplate {
+#[template(path = "pages/medium.html", escape = "none")]
+struct MediumTemplate {
     sidebar: String,
-    video_id: String,
-    video_name: String,
-    video_description: String,
-    video_owner: String,
-    video_likes: i64,
-    video_dislikes: i64,
-    video_upload: String,
-    video_views: i64,
+    medium_id: String,
+    medium_name: String,
+    medium_description: String,
+    medium_owner: String,
+    medium_likes: i64,
+    medium_dislikes: i64,
+    medium_upload: String,
+    medium_views: i64,
+    medium_type: String,
     config: Config,
     common_headers: CommonHeaders,
 }
-async fn video(
+async fn medium(
     Extension(config): Extension<Config>,
     Extension(pool): Extension<PgPool>,
     headers: HeaderMap,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let common_headers = extract_common_headers(&headers).unwrap();
-    let video = sqlx::query!(
-        "SELECT id,name,description,upload,owner,likes,dislikes,views FROM videos WHERE id=$1;",
-        videoid
+    let medium = sqlx::query!(
+        "SELECT id,name,description,upload,owner,likes,dislikes,views FROM mediums WHERE id=$1;",
+        mediumid
     )
     .fetch_one(&pool)
     .await
     .expect("Nemohu provést dotaz");
 
-    let sidebar = generate_sidebar(&config, "video".to_owned());
-    let template = VideoTemplate {
+    let sidebar = generate_sidebar(&config, "medium".to_owned());
+    let template = MediumTemplate {
         sidebar,
-        video_id: video.id,
-        video_name: video.name,
-        video_description: video.description,
-        video_owner: video.owner,
-        video_likes: video.likes,
-        video_dislikes: video.dislikes,
-        video_upload: prettyunixtime(video.upload).await,
-        video_views: video.views,
+        medium_id: medium.id,
+        medium_name: medium.name,
+        medium_description: medium.description,
+        medium_owner: medium.owner,
+        medium_likes: medium.likes,
+        medium_dislikes: medium.dislikes,
+        medium_upload: prettyunixtime(medium.upload).await,
+        medium_views: medium.views,
         config,
         common_headers,
     };
@@ -241,11 +242,11 @@ struct HXCommentsTemplate {
 }
 async fn hx_comments(
     Extension(pool): Extension<PgPool>,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,user,text,time FROM comments WHERE video=$1;",
-        videoid
+        "SELECT id,user,text,time FROM comments WHERE medium=$1;",
+        mediumid
     )
     .fetch_all(&pool)
     .await
@@ -266,36 +267,38 @@ async fn hx_comments(
 }
 
 #[derive(Serialize, Deserialize)]
-struct Video {
+struct Medium {
     id: String,
     name: String,
     owner: String,
     views: i64,
+    r#type: String
 }
 #[derive(Template)]
 #[template(path = "pages/hx-reccomended.html", escape = "none")]
 struct HXReccomendedTemplate {
-    reccomendations: Vec<Video>,
+    reccomendations: Vec<Medium>,
 }
 async fn hx_reccomended(
     Extension(pool): Extension<PgPool>,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,name,owner,views FROM videos WHERE public=true ORDER BY random() LIMIT 20;"
+        "SELECT id,name,owner,views,type FROM mediums WHERE public=true ORDER BY random() LIMIT 20;"
     )
     .fetch_all(&pool)
     .await
     .expect("Nemohu provést dotaz");
 
-    let mut reccomendations: Vec<Video> = Vec::new();
+    let mut reccomendations: Vec<Medium> = Vec::new();
     for record in comments_records {
-        if record.id != videoid {
-            let new_reccomendation: Video = Video {
+        if record.id != mediumid {
+            let new_reccomendation: Medium = Medium {
                 id: record.id,
                 name: record.name,
                 owner: record.owner,
                 views: record.views,
+                r#type: record.r#type,
             };
             reccomendations.push(new_reccomendation);
         }
@@ -306,11 +309,11 @@ async fn hx_reccomended(
 
 async fn hx_new_view(
     Extension(pool): Extension<PgPool>,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_views = sqlx::query!(
-        "UPDATE videos SET views = views + 1 WHERE id=$1 RETURNING views;",
-        videoid
+        "UPDATE mediums SET views = views + 1 WHERE id=$1 RETURNING views;",
+        mediumid
     )
     .fetch_one(&pool)
     .await
@@ -320,11 +323,11 @@ async fn hx_new_view(
 
 async fn hx_like(
     Extension(pool): Extension<PgPool>,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_likes = sqlx::query!(
-        "UPDATE videos SET likes = likes + 1 WHERE id=$1 RETURNING likes;",
-        videoid
+        "UPDATE mediums SET likes = likes + 1 WHERE id=$1 RETURNING likes;",
+        mediumid
     )
     .fetch_one(&pool)
     .await
@@ -333,11 +336,11 @@ async fn hx_like(
 }
 async fn hx_dislike(
     Extension(pool): Extension<PgPool>,
-    Path(videoid): Path<String>,
+    Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
     let update_dislikes = sqlx::query!(
-        "UPDATE videos SET dislikes = dislikes + 1 WHERE id=$1 RETURNING dislikes;",
-        videoid
+        "UPDATE mediums SET dislikes = dislikes + 1 WHERE id=$1 RETURNING dislikes;",
+        mediumid
     )
     .fetch_one(&pool)
     .await
@@ -493,23 +496,24 @@ async fn trending(
 #[derive(Template)]
 #[template(path = "pages/hx-trending.html", escape = "none")]
 struct HXTrendingTemplate {
-    reccomendations: Vec<Video>,
+    reccomendations: Vec<Medium>,
 }
 async fn hx_trending(Extension(pool): Extension<PgPool>) -> axum::response::Html<Vec<u8>> {
     let comments_records = sqlx::query!(
-        "SELECT id,name,owner,views FROM videos WHERE public=true ORDER BY likes DESC LIMIT 100;"
+        "SELECT id,name,owner,views,type FROM mediums WHERE public=true ORDER BY likes DESC LIMIT 100;"
     )
     .fetch_all(&pool)
     .await
     .expect("Nemohu provést dotaz");
 
-    let mut reccomendations: Vec<Video> = Vec::new();
+    let mut reccomendations: Vec<Medium> = Vec::new();
     for record in comments_records {
-        let new_reccomendation: Video = Video {
+        let new_reccomendation: Medium = Medium {
             id: record.id,
             name: record.name,
             owner: record.owner,
             views: record.views,
+            r#type: record.r#type
         };
         reccomendations.push(new_reccomendation);
     }
@@ -569,7 +573,7 @@ struct HXSearch {
 #[derive(Template)]
 #[template(path = "pages/hx-searchsuggestion.html", escape = "none")]
 struct HXSearchSuggestions {
-    suggestions: Vec<Video>,
+    suggestions: Vec<Medium>,
 }
 async fn hx_search_suggestions(
     Extension(pool): Extension<PgPool>,
@@ -581,8 +585,8 @@ async fn hx_search_suggestions(
 
     let search_term = format!("%{}%", form.search);
     let suggestions = sqlx::query_as!(
-        Video,
-        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 5;",
+        medium,
+        "SELECT id, name, owner, views FROM mediums WHERE name ILIKE $1 LIMIT 5;",
         search_term
     )
     .fetch_all(&pool)
@@ -600,7 +604,7 @@ async fn hx_search_suggestions(
 #[derive(Template)]
 #[template(path = "pages/hx-search.html", escape = "none")]
 struct HXSearchTemplate {
-    search_results: Vec<Video>,
+    search_results: Vec<Medium>,
     next_page: i64,
     search_term: String,
 }
@@ -618,8 +622,8 @@ async fn hx_search(
 
     let search_querry = format!("%{}%", form.search);
     let search_results = sqlx::query_as!(
-        Video,
-        "SELECT id, name, owner, views FROM videos WHERE name ILIKE $1 LIMIT 10 OFFSET $2;",
+        medium,
+        "SELECT id, name, owner, views FROM mediums WHERE name ILIKE $1 LIMIT 10 OFFSET $2;",
         search_querry,
         offset
     )

@@ -1,13 +1,13 @@
-{% for video in reccomendations %}
-<a href="/video/{{ video.id }}" class="text-decoration-none">
+{% for medium in reccomendations %}
+<a href="/m/{{ medium.id }}" class="text-decoration-none">
     <table class="my-3">
         <tr>
             <td>
-                <img src="/source/{{ video.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
+                <img src="/source/{{ medium.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
             </td>
             <td>
-                <b class="text-white font-weight-bold">{{ video.name }}</b>
-                <p class="text-secondary">{{ video.owner }}<br>{{ video.views }} views</p>
+                <b class="text-white font-weight-bold">{{ medium.name }}</b>
+                <p class="text-secondary">{{ medium.owner }}<br>{{ medium.views }} views</p>
             </td>
         </tr>
     </table>
