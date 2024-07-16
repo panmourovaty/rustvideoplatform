@@ -60,9 +60,10 @@ async fn main() {
         .route("/hx/trending", get(hx_trending))
         .route("/m/:mediumid", get(medium))
         .route("/hx/comments/:mediumid", get(hx_comments))
-        .route("/hx/reccomended/:mediumid", get(hx_reccomended))
+        .route("/hx/reccomended/:mediumid", get(hx_recommended))
         .route("/hx/new_view/:mediumid", get(hx_new_view))
         .route("/hx/like/:mediumid", get(hx_like))
+        .route("/hx/dislike/:mediumid", get(hx_dislike))
         .route("/hx/dislike/:mediumid", get(hx_dislike))
         .route("/hx/login", post(hx_login))
         .route("/hx/logout", get(hx_logout))
@@ -71,6 +72,8 @@ async fn main() {
         .route("/hx/searchsuggestions", post(hx_search_suggestions))
         .route("/search", get(search))
         .route("/hx/search/:pageid", post(hx_search))
+        .route("/channel/:userid", get(channel))
+        .route("/hx/usermedia/:userid", get(hx_usermedia))
         .nest("/source", axum_static::static_router("source"))
         .layer(Extension(pool))
         .layer(Extension(config))
@@ -245,7 +248,7 @@ async fn hx_comments(
     Extension(pool): Extension<PgPool>,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    let comments_records = sqlx::query!(
+    let comments = sqlx::query_as!(Comment,
         "SELECT id,user,text,time FROM comments WHERE media=$1;",
         mediumid
     )
@@ -253,16 +256,6 @@ async fn hx_comments(
     .await
     .expect("Nemohu provést dotaz");
 
-    let mut comments: Vec<Comment> = Vec::new();
-    for record in comments_records {
-        let new_comment: Comment = Comment {
-            id: record.id,
-            user: record.user.unwrap(),
-            text: record.text,
-            time: record.time,
-        };
-        comments.push(new_comment);
-    }
     let template = HXCommentsTemplate { comments };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -273,39 +266,37 @@ struct Medium {
     name: String,
     owner: String,
     views: i64,
-    r#type: String
+    r#type: String,
 }
 #[derive(Template)]
 #[template(path = "pages/hx-reccomended.html", escape = "none")]
 struct HXReccomendedTemplate {
-    reccomendations: Vec<Medium>,
+    recommendations: Vec<Medium>,
 }
-async fn hx_reccomended(
+async fn hx_recommended(
     Extension(pool): Extension<PgPool>,
     Path(mediumid): Path<String>,
-) -> axum::response::Html<Vec<u8>> {
-    let comments_records = sqlx::query!(
-        "SELECT id,name,owner,views,type FROM media WHERE public=true ORDER BY random() LIMIT 20;"
+) -> Result<Html<Vec<u8>>, axum::response::Response> {
+    let recommendations: Vec<Medium> = sqlx::query_as!(
+        Medium,
+        "SELECT id, name, owner, views, type FROM media WHERE public = true AND id != $1 LIMIT 20;",
+        mediumid
     )
     .fetch_all(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .map_err(|_| axum::response::Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .body("Failed to fetch recommendations".into())
+        .unwrap())?;
 
-    let mut reccomendations: Vec<Medium> = Vec::new();
-    for record in comments_records {
-        if record.id != mediumid {
-            let new_reccomendation: Medium = Medium {
-                id: record.id,
-                name: record.name,
-                owner: record.owner,
-                views: record.views,
-                r#type: record.r#type,
-            };
-            reccomendations.push(new_reccomendation);
-        }
+    let template = HXReccomendedTemplate { recommendations };
+    match template.render() {
+        Ok(rendered) => Ok(Html(minifi_html(rendered))),
+        Err(_) => Err(axum::response::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("Failed to render template".into())
+            .unwrap())
     }
-    let template = HXReccomendedTemplate { reccomendations };
-    Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_new_view(
@@ -500,24 +491,12 @@ struct HXTrendingTemplate {
     reccomendations: Vec<Medium>,
 }
 async fn hx_trending(Extension(pool): Extension<PgPool>) -> axum::response::Html<Vec<u8>> {
-    let comments_records = sqlx::query!(
+    let reccomendations = sqlx::query_as!(Medium,
         "SELECT id,name,owner,views,type FROM media WHERE public=true ORDER BY likes DESC LIMIT 100;"
     )
     .fetch_all(&pool)
     .await
     .expect("Nemohu provést dotaz");
-
-    let mut reccomendations: Vec<Medium> = Vec::new();
-    for record in comments_records {
-        let new_reccomendation: Medium = Medium {
-            id: record.id,
-            name: record.name,
-            owner: record.owner,
-            views: record.views,
-            r#type: record.r#type
-        };
-        reccomendations.push(new_reccomendation);
-    }
     let template = HXTrendingTemplate { reccomendations };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -662,5 +641,83 @@ async fn search(
         config,
         common_headers,
     };
+    Html(minifi_html(template.render().unwrap()))
+}
+
+#[derive(Serialize, Deserialize)]
+struct UserChannel {
+    login: String,
+    name: String,
+    profile_picture: String,
+    channel_picture: String,
+    subscribed: i64,
+}
+#[derive(Template)]
+#[template(path = "pages/channel.html", escape = "none")]
+struct ChannelTemplate {
+    sidebar: String,
+    config: Config,
+    common_headers: CommonHeaders,
+    user: UserChannel,
+}
+async fn channel(
+    Extension(pool): Extension<PgPool>,
+    Extension(config): Extension<Config>,
+    headers: HeaderMap,
+    Path(userid): Path<String>,
+) -> axum::response::Html<Vec<u8>> {
+    let user = sqlx::query_as!(
+        UserChannel,
+        "SELECT
+    u.login,
+    u.name,
+    u.profile_picture,
+    u.channel_picture,
+    COALESCE(subs.count, 0) AS subscribed
+FROM
+    users u
+LEFT JOIN
+    (
+        SELECT
+            target,
+            COUNT(*) AS count
+        FROM
+            subscribtions
+        GROUP BY
+            target
+    ) subs
+ON
+    u.login = subs.target
+WHERE
+    u.login = $1;",
+        userid
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let sidebar = generate_sidebar(&config, "channel".to_owned());
+    let common_headers = extract_common_headers(&headers).unwrap();
+    let template = ChannelTemplate {
+        sidebar,
+        config,
+        common_headers,
+        user,
+    };
+    Html(minifi_html(template.render().unwrap()))
+}
+
+#[derive(Template)]
+#[template(path = "pages/hx-usermedia.html", escape = "none")]
+struct HXUserMediaTemplate {
+    usermedia: Vec<Medium>,
+}
+async fn hx_usermedia(Extension(pool): Extension<PgPool>, Path(userid): Path<String>,) -> axum::response::Html<Vec<u8>> {
+    let usermedia = sqlx::query_as!(Medium,
+        "SELECT id,name,owner,views,type FROM media WHERE public=true AND owner=$1 ORDER BY upload DESC;",userid
+    )
+    .fetch_all(&pool)
+    .await
+    .expect("Nemohu provést dotaz");
+    let template = HXUserMediaTemplate { usermedia };
     Html(minifi_html(template.render().unwrap()))
 }

@@ -23,5 +23,11 @@ CREATE TABLE public.users (
 	login varchar(40) NOT NULL,
 	name varchar(100) NOT NULL,
 	password_hash varchar NOT NULL,
+	profile_picture varchar,
+	channel_picture varchar,
 	CONSTRAINT users_pk PRIMARY KEY (login)
+);
+CREATE TABLE public.subscribtions (
+	subscriber varchar(40) NOT NULL,
+	target varchar(40) NOT NULL,
 );

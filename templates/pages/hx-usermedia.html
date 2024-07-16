@@ -1,4 +1,4 @@
-{% for medium in reccomendations %}
+{% for medium in usermedia %}
 <div class="col-xl-2 col-lg-4 col-6 my-3 d-flex justify-content-center">
     <a href="/m/{{ medium.id }}" class="text-decoration-none">
         <table>
@@ -13,7 +13,7 @@
             <tr>
                 <td class="text-center">
                     <b class="text-white font-weight-bold">{{ medium.name }}</b>
-                    <p class="text-secondary">{{ medium.owner }}<br>{{ medium.views }} views
+                    <p class="text-secondary">{{ medium.views }} views
                         {% if medium.type == "video" %}
                         <i class="fa-solid fa-video fa-sm ms-1"></i>
                         {% else if medium.type == "audio" %}
