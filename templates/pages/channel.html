@@ -7,7 +7,9 @@
     <title>{{ user.name }}</title>
 
     <meta property="og:title" content="{{ config.instancename }}" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:profile:username" content="{{ user.login }}" />
+    <meta property="og:profile:first_name" content="{{ user.name }}" />
     <meta property="og:url" content="https://{{ common_headers.host }}" />
 </head>
 

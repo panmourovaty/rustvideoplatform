@@ -90,10 +90,12 @@
     <meta property="og:video:width" content="1280" />
     <meta property="og:video:height" content="720" />
     {% else if medium_type == "audio" %}
+    <meta property="og:type" content="music.song" />
     <meta property="og:audio" content="https://{{ common_headers.host }}/source/{{ medium_id }}/audio.ogg" />
     <meta property="og:audio:secure_url" content="https://{{ common_headers.host }}/source/{{ medium_id }}/audio.ogg" />
     <meta property="og:audio:type" content="audio/ogg" />
     {% else if medium_type == "picture" %}
+    <meta property="og:type" content="image" />
     <meta property="og:image" content="https://{{ common_headers.host }}/source/{{ medium_id }}/picture.avif" />
     <meta property="og:image:secure_url"
         content="https://{{ common_headers.host }}/source/{{ medium_id }}/picture.avif" />
