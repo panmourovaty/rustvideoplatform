@@ -1,6 +1,6 @@
 {% for comment in comments %}
 <div class="my-3">
-    <h5>{{ comment.user }}</h5>
+    <h5>{{ comment.user.clone().unwrap() }}</h5>
     <p>{{comment.text}}</p>
 </div>
 {% endfor %}

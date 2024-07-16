@@ -16,27 +16,27 @@
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-            <div class="card py-3 px-3 text-white" style="min-height: 30vh;">
+            <div class="card pt-3 px-3 text-white" style="min-height: 30vh;">
                 <table>
                     <tr>
-                        <td>
-                            <img src="/source/{{ user.channel_picture }}/picture.avif" style="height:15vh;">
+                        <td class="text-center">
+                            <img src="/source/{{ user.channel_picture.clone().unwrap() }}/picture.avif" style="max-height:15vh;">
                         </td>
                     </tr>
                     <tr>
                         <td class="text-center my-3">
                             <b class="text-white font-weight-bold">{{ user.name }}</b>
-                            <p class="text-secondary">{{ user.login }}<br>{{ user.subscribed }} subscribtions</p>
+                            <p class="text-secondary">{{ user.login }}<br>{{ user.subscribed.unwrap_or(0) }} subscribtions</p>
                         </td>
                     </tr>
                 </table>
             </div>
         </div>
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-            <div class="card py-3 px-3 text-white" style="max-height: 60vh;">
+            <div class="card py-3 px-3 text-white">
                 <h3 class="my-2 mx-3">Latest videos</h3>
                 <hr>
-                <div hx-get="/hx/uservideos/{{ user.login }}" hx-trigger="load" class="row mb-3">
+                <div hx-get="/hx/usermedia/{{ user.login }}" hx-trigger="load" class="row mb-3">
                     <div class="text-center my-4 col">
                         <i class="fa-solid fa-spinner fa-spin-pulse fa-8x"></i>
                     </div>

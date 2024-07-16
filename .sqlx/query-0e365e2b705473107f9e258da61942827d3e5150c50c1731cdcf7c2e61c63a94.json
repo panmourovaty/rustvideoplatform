@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,name,owner,views,type FROM media WHERE public=true ORDER BY random() LIMIT 20;",
+  "query": "SELECT id, name, owner, views, type FROM media WHERE public = true AND id != $1 LIMIT 20;",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -40,5 +42,5 @@
       false
     ]
   },
-  "hash": "afa3b34e524447d9f91d2d60d398182d858975a1a160d9f859d3a9288eb893ff"
+  "hash": "0e365e2b705473107f9e258da61942827d3e5150c50c1731cdcf7c2e61c63a94"
 }

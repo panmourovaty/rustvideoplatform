@@ -64,7 +64,6 @@ async fn main() {
         .route("/hx/new_view/:mediumid", get(hx_new_view))
         .route("/hx/like/:mediumid", get(hx_like))
         .route("/hx/dislike/:mediumid", get(hx_dislike))
-        .route("/hx/dislike/:mediumid", get(hx_dislike))
         .route("/hx/login", post(hx_login))
         .route("/hx/logout", get(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
@@ -235,7 +234,7 @@ async fn medium(
 #[derive(Serialize, Deserialize)]
 struct Comment {
     id: i64,
-    user: String,
+    user: Option<String>,
     text: String,
     time: i64,
 }
@@ -648,9 +647,9 @@ async fn search(
 struct UserChannel {
     login: String,
     name: String,
-    profile_picture: String,
-    channel_picture: String,
-    subscribed: i64,
+    profile_picture: Option<String>,
+    channel_picture: Option<String>,
+    subscribed: Option<i64>,
 }
 #[derive(Template)]
 #[template(path = "pages/channel.html", escape = "none")]
@@ -682,7 +681,7 @@ LEFT JOIN
             target,
             COUNT(*) AS count
         FROM
-            subscribtions
+            subscriptions
         GROUP BY
             target
     ) subs

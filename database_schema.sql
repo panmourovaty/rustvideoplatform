@@ -13,7 +13,7 @@ CREATE TABLE public.media (
 );
 CREATE TABLE public."comments" (
 	id bigserial NOT NULL,
-	video varchar NOT NULL,
+	media varchar NOT NULL,
 	"user" varchar NOT NULL,
 	"text" text NOT NULL,
 	"time" int8 DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE public.users (
 	channel_picture varchar,
 	CONSTRAINT users_pk PRIMARY KEY (login)
 );
-CREATE TABLE public.subscribtions (
+CREATE TABLE public.subscriptions (
 	subscriber varchar(40) NOT NULL,
-	target varchar(40) NOT NULL,
+	target varchar(40) NOT NULL
 );

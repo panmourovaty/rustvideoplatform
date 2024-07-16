@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    u.login,\n    u.name,\n    u.profile_picture,\n    u.channel_picture,\n    COALESCE(subs.count, 0) AS subscribed\nFROM\n    users u\nLEFT JOIN\n    (\n        SELECT\n            target,\n            COUNT(*) AS count\n        FROM\n            subscriptions\n        GROUP BY\n            target\n    ) subs\nON\n    u.login = subs.target\nWHERE\n    u.login = $1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "login",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "profile_picture",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "channel_picture",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "subscribed",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "e42f6099879f4c8b742fa41978697ead19c09d0c674a7189bfbb41a9041045dd"
+}
