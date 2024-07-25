@@ -3,3 +3,4 @@ Cargo.lock
 config.json
 .env
 /source
+env
