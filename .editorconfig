@@ -1,0 +1,50 @@
+# EditorConfig is awesome: https://editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+[*.{js,py,json,yml,toml}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
+# 4 space indentation
+[*.py]
+indent_style = space
+indent_size = 4
+
+# Tab indentation (no size specified)
+[Makefile]
+indent_style = tab
+
+[*.rs]
+max_line_length = 100
+
+[*.md]
+# double whitespace at end of line
+# denotes a line break in Markdown
+trim_trailing_whitespace = false
+
+
+[*.sql]
+ij_sql_alias_case = 1
+ij_sql_custom_type_case = 2
+ij_sql_expr_case_end = 1
+ij_sql_from_el_wrap = 0
+ij_sql_from_indent_join = false
+ij_sql_imp_declare_el_wrap = 1
+ij_sql_imp_if_then_wrap_then = true
+ij_sql_inset_el_wrap = 0
+ij_sql_keep_first_column_comment = false
+ij_sql_keyword_case = 0
+ij_sql_original_case = true
+ij_sql_post_opt_wrap_1 = true
