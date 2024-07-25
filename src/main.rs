@@ -64,6 +64,9 @@ async fn main() {
         .route("/hx/new_view/:mediumid", get(hx_new_view))
         .route("/hx/like/:mediumid", get(hx_like))
         .route("/hx/dislike/:mediumid", get(hx_dislike))
+        .route("/hx/subscribe/:userid", get(hx_subscribe))
+        .route("/hx/unsubscribe/:userid", get(hx_unsubscribe))
+        .route("/hx/subscribebutton/:userid", get(hx_subscribebutton))
         .route("/hx/login", post(hx_login))
         .route("/hx/logout", get(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
@@ -247,7 +250,8 @@ async fn hx_comments(
     Extension(pool): Extension<PgPool>,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    let comments = sqlx::query_as!(Comment,
+    let comments = sqlx::query_as!(
+        Comment,
         "SELECT id,user,text,time FROM comments WHERE media=$1;",
         mediumid
     )
@@ -283,10 +287,12 @@ async fn hx_recommended(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|_| axum::response::Response::builder()
-        .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .body("Failed to fetch recommendations".into())
-        .unwrap())?;
+    .map_err(|_| {
+        axum::response::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("Failed to fetch recommendations".into())
+            .unwrap()
+    })?;
 
     let template = HXReccomendedTemplate { recommendations };
     match template.render() {
@@ -294,7 +300,7 @@ async fn hx_recommended(
         Err(_) => Err(axum::response::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body("Failed to render template".into())
-            .unwrap())
+            .unwrap()),
     }
 }
 
@@ -337,6 +343,74 @@ async fn hx_dislike(
     .await
     .expect("Nemohu provést dotaz");
     Html(update_dislikes.dislikes.to_string())
+}
+async fn hx_subscribe(
+    headers: HeaderMap,
+    Extension(pool): Extension<PgPool>,
+    Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
+    Path(userid): Path<String>,
+) -> axum::response::Html<String> {
+    let user = get_user_login(headers, &pool, session_store).await.unwrap();
+    sqlx::query!(
+        "INSERT INTO subscriptions (subscriber, target) VALUES ($1,$2);",
+        user.login,
+        userid
+    )
+    .execute(&pool)
+    .await
+    .expect("Nemohu provést dotaz");
+    Html(format!("<a hx-get=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",user.login))
+}
+async fn hx_unsubscribe(
+    headers: HeaderMap,
+    Extension(pool): Extension<PgPool>,
+    Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
+    Path(userid): Path<String>,
+) -> axum::response::Html<String> {
+    let user = get_user_login(headers, &pool, session_store).await.unwrap();
+    sqlx::query!(
+        "DELETE FROM subscriptions WHERE subscriber=$1 AND target=$2;",
+        user.login,
+        userid
+    )
+    .execute(&pool)
+    .await
+    .expect("Nemohu provést dotaz");
+    Html(format!("<a hx-get=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",user.login))
+}
+async fn hx_subscribebutton(
+    headers: HeaderMap,
+    Extension(pool): Extension<PgPool>,
+    Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
+    Path(userid): Path<String>,
+) -> axum::response::Html<String> {
+    if let Some(user) = get_user_login(headers, &pool, session_store).await {
+        let issubscribed = sqlx::query!(
+            "SELECT EXISTS(SELECT FROM subscriptions WHERE subscriber=$1 AND target=$2) AS issubscribed;",
+            user.login,
+            userid
+        )
+        .fetch_one(&pool)
+        .await
+        .map(|row| row.issubscribed.unwrap_or(false))
+        .unwrap_or(false);
+
+        let button = if issubscribed {
+            format!(
+                "<a hx-get=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",
+                user.login
+            )
+        } else {
+            format!(
+                "<a hx-get=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",
+                user.login
+            )
+        };
+
+        return Html(button);
+    }
+
+    Html("<a href=\"/login\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>".to_string())
 }
 
 #[derive(Serialize, Deserialize)]
@@ -428,7 +502,7 @@ async fn hx_usernav(
     Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let try_user = get_user_login(headers, pool, session_store).await;
+    let try_user = get_user_login(headers, &pool, session_store).await;
     if try_user.is_some() {
         let user = try_user.unwrap();
         let template = HXUsernavTemplate { user };
@@ -441,7 +515,7 @@ async fn hx_usernav(
 
 async fn get_user_login(
     headers: HeaderMap,
-    pool: PgPool,
+    pool: &PgPool,
     session_store: Arc<Mutex<AHashMap<String, String>>>,
 ) -> Option<User> {
     let session_cookie = parse_cookie_header(headers.get("Cookie")?.to_str().ok()?)
@@ -452,7 +526,7 @@ async fn get_user_login(
     let login = session_store_guard.get(&session_cookie)?;
 
     let name = sqlx::query!("SELECT name FROM users WHERE login=$1;", login)
-        .fetch_one(&pool)
+        .fetch_one(pool)
         .await
         .ok()?
         .name;
@@ -512,7 +586,7 @@ async fn hx_sidebar(
     Path(active_item): Path<String>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let user = get_user_login(headers, pool, session_store).await;
+    let user = get_user_login(headers, &pool, session_store).await;
     if user.is_some() {
         let template = HXSidebarTemplate {
             active_item,
@@ -710,7 +784,10 @@ WHERE
 struct HXUserMediaTemplate {
     usermedia: Vec<Medium>,
 }
-async fn hx_usermedia(Extension(pool): Extension<PgPool>, Path(userid): Path<String>,) -> axum::response::Html<Vec<u8>> {
+async fn hx_usermedia(
+    Extension(pool): Extension<PgPool>,
+    Path(userid): Path<String>,
+) -> axum::response::Html<Vec<u8>> {
     let usermedia = sqlx::query_as!(Medium,
         "SELECT id,name,owner,views,type FROM media WHERE public=true AND owner=$1 ORDER BY upload DESC;",userid
     )

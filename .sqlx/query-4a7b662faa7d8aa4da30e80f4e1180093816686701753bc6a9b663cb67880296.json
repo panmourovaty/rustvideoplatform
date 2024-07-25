@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO subscriptions (subscriber, target) VALUES ($1,$2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a7b662faa7d8aa4da30e80f4e1180093816686701753bc6a9b663cb67880296"
+}

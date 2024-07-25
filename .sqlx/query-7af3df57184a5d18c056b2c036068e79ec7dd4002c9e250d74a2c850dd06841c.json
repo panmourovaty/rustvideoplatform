@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(SELECT FROM subscriptions WHERE subscriber=$1 AND target=$2) AS issubscribed;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "issubscribed",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "7af3df57184a5d18c056b2c036068e79ec7dd4002c9e250d74a2c850dd06841c"
+}

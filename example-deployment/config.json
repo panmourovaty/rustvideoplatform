@@ -1,0 +1,5 @@
+{
+    "dbconnection":"postgresql://vids:YOURPASSWORD@postgres:5432/vids",
+    "instancename":"vids.cz",
+    "welcome":"Welcome to our experimental open-source multimedia sharing platform! Dive into a vibrant community where creativity knows no bounds. Whether you're a photographer, musician, filmmaker, or digital artist, our site offers the perfect space to showcase your work, connect with like-minded individuals, and explore an endless stream of inspiration. Join us today and start sharing your creativity with the world!"
+}

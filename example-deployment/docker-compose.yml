@@ -1,0 +1,24 @@
+services:
+ rustapp:
+   image: panmourovaty/rustvideoplatform
+   ports:
+    - "8080:8080"
+   deploy:
+     resources:
+       limits:
+         memory: 2G
+   volumes:
+     - ./source:/source
+     - ./config.json:/config.json
+   depends_on:
+     - postgres
+ postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=YOURPASSWORD
+      - POSTGRES_USER=vids
+      - POSTGRES_DB=vids

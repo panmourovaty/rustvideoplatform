@@ -159,8 +159,13 @@
                             </h1>
                         </li>
                         <li>
-                            <h5><a href="/channel/{{ medium_owner }}" class="text-secondary text-decoration-none">{{
-                                    medium_owner }}</a></h5>
+                            <div class="row">
+                                <a href="/channel/{{ medium_owner }}"
+                                    class="text-secondary text-center mt-1 text-decoration-none fs-5 col-sm">{{
+                                    medium_owner }}</a>
+                                <div hx-get="/hx/subscribebutton/{{ medium_owner }}" hx-trigger="load" class="col-sm">
+                                </div>
+                            </div>
                         </li>
                     </ul>
                     <ul class="list-group list-unstyled list-group-horizontal mt-3 py-3 px-2"
