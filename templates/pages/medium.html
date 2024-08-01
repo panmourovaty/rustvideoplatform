@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.0/video-js.min.css"
         integrity="sha512-xQ+IvAl0/u0XWFWC0uoJLfQLKE+J3KZ/kPWpD/8ZoTw/pafvsQW0hudKW4lgZwk02eymBBpdwC0QfqrHUOhOhw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/5.1.1/videojs-dash.min.js"
+        integrity="sha512-jmpCwJ7o9/MxR36dZX+SQc4Ta2PDvMwM5MHmW0oDcy/UzkuppIj+F9FiN+UW/Q8adlOwb5Tx06zHsY/7yg4OYg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% else if medium_type == "audio" %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"
         integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA=="
@@ -85,8 +88,8 @@
     <meta property="og:type" content="video.movie" />
     <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ medium_id }}/video/video.m3u8" />
     <meta property="og:video:secure_url"
-        content="https://{{ common_headers.host }}/source/{{ medium_id }}/video/video.m3u8" />
-    <meta property="og:video:type" content="application/vnd.apple.mpegurl" />
+        content="https://{{ common_headers.host }}/source/{{ medium_id }}/video/video.mpd" />
+    <meta property="og:video:type" content="application/dash+xml" />
     <meta property="og:video:width" content="1280" />
     <meta property="og:video:height" content="720" />
     {% else if medium_type == "audio" %}
@@ -113,10 +116,10 @@
                     {% if medium_type == "video" %}
                     <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
                         autoplay>
-                        <source src="/source/{{ medium_id }}/video/video.m3u8" type="application/vnd.apple.mpegurl" />
                     </video>
                     <script>
                         var player = videojs('videoplayer');
+                        player.src({src:'/source/{{ medium_id }}/video/video.mpd',type:'application/dash+xml'});
                         player.responsive(true);
                         player.fluid(true);
                     </script>
