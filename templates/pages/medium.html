@@ -83,10 +83,10 @@
 
     {% if medium_type == "video" %}
     <meta property="og:type" content="video.movie" />
-    <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ medium_id }}/video.webm" />
+    <meta property="og:video" content="https://{{ common_headers.host }}/source/{{ medium_id }}/video/video.m3u8" />
     <meta property="og:video:secure_url"
-        content="https://{{ common_headers.host }}/source/{{ medium_id }}/video.webm" />
-    <meta property="og:video:type" content="video/webm" />
+        content="https://{{ common_headers.host }}/source/{{ medium_id }}/video/video.m3u8" />
+    <meta property="og:video:type" content="application/vnd.apple.mpegurl" />
     <meta property="og:video:width" content="1280" />
     <meta property="og:video:height" content="720" />
     {% else if medium_type == "audio" %}
@@ -113,7 +113,7 @@
                     {% if medium_type == "video" %}
                     <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
                         autoplay>
-                        <source src="/source/{{ medium_id }}/video.webm" type="video/webm" />
+                        <source src="/source/{{ medium_id }}/video/video.m3u8" type="application/vnd.apple.mpegurl" />
                     </video>
                     <script>
                         var player = videojs('videoplayer');
