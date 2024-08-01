@@ -11,9 +11,9 @@ lto = true
 mimalloc = { version = "*", features = ["secure"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 axum = "0.7"
-memory-serve = "0.5"
+memory-serve = "0.6"
 serde = { version = "1.0", features = ["derive"] }
-sqlx = { version = "0.7", features = [ "postgres", "runtime-tokio-rustls" ] }
+sqlx = { version = "0.8", features = [ "postgres", "runtime-tokio-rustls" ] }
 askama = "0.12"
 serde_json = "*"
 minify-html-onepass = "0.15"

@@ -3,10 +3,10 @@
 
 <head>
     {% if medium_type == "video" %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.0/video.min.js"
-        integrity="sha512-I03kmI5p6nU2pjtj+fpMgEeT0koXjwx/j0JMQL1OSx7QVHs9AYU0bHcez6smB3UXSGxuferTgOCW4cgWgT+jCA=="
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.3/video.min.js"
+        integrity="sha512-gqDlEVSJBx2sY4FCoF8fElKc1JpQqbKnZSBmBEW/qQ6rRSyfIEAkevSH22LnGZ5vsNrhv79fM4S+AMmmCEMQKA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.0/video-js.min.css"
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.3/video-js.min.css"
         integrity="sha512-xQ+IvAl0/u0XWFWC0uoJLfQLKE+J3KZ/kPWpD/8ZoTw/pafvsQW0hudKW4lgZwk02eymBBpdwC0QfqrHUOhOhw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/5.1.1/videojs-dash.min.js"
@@ -119,7 +119,7 @@
                     </video>
                     <script>
                         var player = videojs('videoplayer');
-                        player.src({src:'/source/{{ medium_id }}/video/video.mpd',type:'application/dash+xml'});
+                        player.src({ src: '/source/{{ medium_id }}/video/video.mpd', type: 'application/dash+xml' });
                         player.responsive(true);
                         player.fluid(true);
                     </script>
