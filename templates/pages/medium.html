@@ -116,6 +116,10 @@
                     {% if medium_type == "video" %}
                     <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
                         autoplay>
+                        {% if medium_subtitles_exist %}
+                        <track kind="captions" src="/source/{{ medium_id }}/subtitles.vtt" srclang="en"
+                            label="Subtitles" default>
+                        {% endif %}
                     </video>
                     <script>
                         var player = videojs('videoplayer');

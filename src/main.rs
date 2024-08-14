@@ -198,6 +198,7 @@ struct MediumTemplate {
     medium_upload: String,
     medium_views: i64,
     medium_type: String,
+    medium_subtitles_exist: bool,
     config: Config,
     common_headers: CommonHeaders,
 }
@@ -216,6 +217,14 @@ async fn medium(
     .await
     .expect("Nemohu provést dotaz");
 
+    let medium_subtitles_exist: bool;
+    if std::path::Path::new(&format!("source/{}/subtitles.vtt",mediumid)).exists() {
+        medium_subtitles_exist = true;
+    }
+    else {
+        medium_subtitles_exist = false;
+    }
+
     let sidebar = generate_sidebar(&config, "medium".to_owned());
     let template = MediumTemplate {
         sidebar,
@@ -228,6 +237,7 @@ async fn medium(
         medium_upload: prettyunixtime(medium.upload).await,
         medium_views: medium.views,
         medium_type: medium.r#type,
+        medium_subtitles_exist,
         config,
         common_headers,
     };
