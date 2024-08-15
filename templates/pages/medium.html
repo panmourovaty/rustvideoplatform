@@ -62,6 +62,9 @@
                                 label="{{ caption_name }}" lang="{{caption_name}}" />
                             {% endfor %}
                             {% endif %}
+                            {% if medium_chapters_exist %}
+                            <track src="/source/{{ medium_id }}/chapters.vtt" kind="chapters" default />
+                            {% endif %}
                             <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
                         </media-provider>
                         <media-video-layout></media-video-layout>

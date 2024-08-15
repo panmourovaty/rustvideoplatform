@@ -13,6 +13,7 @@ struct MediumTemplate {
     medium_type: String,
     medium_captions_exist: bool,
     medium_captions_list: Vec<String>,
+    medium_chapters_exist: bool,
     config: Config,
     common_headers: CommonHeaders,
 }
@@ -53,6 +54,14 @@ async fn medium(
         medium_captions_exist = false;
     }
 
+    let medium_chapters_exist: bool;
+    if std::path::Path::new(&format!("source/{}/chapters.vtt",mediumid)).exists() {
+        medium_chapters_exist = true;
+    }
+    else {
+        medium_chapters_exist = false;
+    }
+
     let sidebar = generate_sidebar(&config, "medium".to_owned());
     let template = MediumTemplate {
         sidebar,
@@ -67,6 +76,7 @@ async fn medium(
         medium_type: medium.r#type,
         medium_captions_exist,
         medium_captions_list,
+        medium_chapters_exist,
         config,
         common_headers,
     };
