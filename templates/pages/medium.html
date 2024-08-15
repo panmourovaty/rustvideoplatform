@@ -7,64 +7,9 @@
     <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
     <script src="https://cdn.vidstack.io/player" type="module"></script>
     {% else if medium_type == "audio" %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"
-        integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script>
-        var sound = new Howl({
-            src: ['/source/{{ medium_id }}/audio.ogg'],
-            html5: true,
-            onload: function () {
-                document.getElementById('playPauseBtn').disabled = false;
-                document.getElementById('totalTime').textContent = formatTime(sound.duration());
-            },
-            onplay: function () {
-                requestAnimationFrame(updateProgress);
-            }
-        });
-
-        function togglePlayPause() {
-            if (sound.playing()) {
-                sound.pause();
-                document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
-            } else {
-                sound.play();
-                document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
-            }
-        }
-
-        function stopSound() {
-            sound.stop();
-            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('currentTime').textContent = formatTime(0);
-        }
-
-        function updateProgress() {
-            var seek = sound.seek() || 0;
-            document.getElementById('progressBar').style.width = ((seek / sound.duration()) * 100) + '%';
-            document.getElementById('currentTime').textContent = formatTime(seek);
-            if (sound.playing()) {
-                requestAnimationFrame(updateProgress);
-            }
-        }
-
-        function seek(event) {
-            var progressBar = document.getElementById('progressBarContainer');
-            var x = event.clientX - progressBar.getBoundingClientRect().left;
-            var width = progressBar.clientWidth;
-            var duration = sound.duration();
-            var clickPosition = (x / width) * duration;
-            sound.seek(clickPosition);
-            requestAnimationFrame(updateProgress);
-        }
-
-        function formatTime(seconds) {
-            var minutes = Math.floor(seconds / 60) || 0;
-            var seconds = Math.floor(seconds % 60) || 0;
-            return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-        }
-    </script>
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+    <script src="https://cdn.vidstack.io/player" type="module"></script>
     {% endif %}
 
     {% include "component-dependencies.html" %}
@@ -108,8 +53,8 @@
             <div class="card py-3 px-3 text-white">
                 <div class="d-flex justify-content-center">
                     {% if medium_type == "video" %}
-                    <media-player src="/source/{{ medium_id }}/video/video.mpd" aspectRatio="16/9" load="idle"
-                        posterLoad="eager">
+                    <media-player viewType="video" src="/source/{{ medium_id }}/video/video.mpd" aspectRatio="16/9"
+                        load="idle" posterLoad="eager">
                         <media-provider>
                             {% if medium_subtitles_exist %}
                             <track src="/source/{{ medium_id }}/subtitles.vtt" kind="subtitles" label="English"
@@ -117,28 +62,16 @@
                             {% endif %}
                             <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
                         </media-provider>
+                        <media-video-layout></media-video-layout>
                     </media-player>
                     {% else if medium_type == "audio" %}
-                    <table class="mb-3">
-                        <tr>
-                            <td colspan="3" class="text-center">
-                                <img src="/source/{{ medium_id }}/thumbnail.avif" style="max-height:65vh;">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><button class="btn btn-primary mx-3" id="playPauseBtn" onclick="togglePlayPause()"><i
-                                        class="fa-solid fa-play"></i></button></td>
-                            <td>
-                                <div id="progressBarContainer" onclick="seek(event)">
-                                    <div id="progressBar"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="mx-3"><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                    <media-player src='/source/{{ medium_id }}/audio.ogg' type="audio/ogg" aspectRatio="4/3"
+                        load="idle">
+                        <media-provider>
+                            <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
+                        </media-provider>
+                        <media-video-layout></media-video-layout>
+                    </media-player>
                     {% else if medium_type == "picture" %}
                     <img src="/source/{{ medium_id }}/picture.avif" style="width:100%;">
                     {% endif %}
