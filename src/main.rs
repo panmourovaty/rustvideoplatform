@@ -31,6 +31,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::io::BufRead;
 
 #[derive(Deserialize, Clone)]
 struct Config {
@@ -95,6 +96,17 @@ fn minifi_html(html: String) -> Vec<u8> {
     };
 
     minify_html_onepass::copy(html.as_bytes(), &cfg).unwrap()
+}
+
+fn read_lines_to_vec(filepath: &str) -> Vec<String> {
+    let file = std::fs::File::open(filepath).unwrap();
+    let reader = std::io::BufReader::new(file);
+    let lines: Vec<String> = reader
+        .lines()
+        .filter_map(|line| line.ok())
+        .collect();
+    
+    lines
 }
 
 #[derive(Template)]
@@ -198,7 +210,8 @@ struct MediumTemplate {
     medium_upload: String,
     medium_views: i64,
     medium_type: String,
-    medium_subtitles_exist: bool,
+    medium_captions_exist: bool,
+    medium_captions_list: Vec<String>,
     config: Config,
     common_headers: CommonHeaders,
 }
@@ -217,12 +230,16 @@ async fn medium(
     .await
     .expect("Nemohu provést dotaz");
 
-    let medium_subtitles_exist: bool;
-    if std::path::Path::new(&format!("source/{}/subtitles.vtt",mediumid)).exists() {
-        medium_subtitles_exist = true;
+    let medium_captions_exist: bool;
+    let mut medium_captions_list: Vec<String> = Vec::new();
+    if std::path::Path::new(&format!("source/{}/captions/list.txt",mediumid)).exists() {
+        medium_captions_exist = true;
+        for caption_name in read_lines_to_vec(&format!("source/{}/captions/list.txt", mediumid)) {
+            medium_captions_list.push(caption_name);
+        }
     }
     else {
-        medium_subtitles_exist = false;
+        medium_captions_exist = false;
     }
 
     let sidebar = generate_sidebar(&config, "medium".to_owned());
@@ -237,7 +254,8 @@ async fn medium(
         medium_upload: prettyunixtime(medium.upload).await,
         medium_views: medium.views,
         medium_type: medium.r#type,
-        medium_subtitles_exist,
+        medium_captions_exist,
+        medium_captions_list,
         config,
         common_headers,
     };

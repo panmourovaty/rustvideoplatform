@@ -56,9 +56,11 @@
                     <media-player viewType="video" src="/source/{{ medium_id }}/video/video.mpd" aspectRatio="16/9"
                         load="idle" posterLoad="eager">
                         <media-provider>
-                            {% if medium_subtitles_exist %}
-                            <track src="/source/{{ medium_id }}/subtitles.vtt" kind="subtitles" label="English"
-                                lang="en-US" default />
+                            {% if medium_captions_exist %}
+                            {% for caption_name in medium_captions_list %}
+                            <track src="/source/{{ medium_id }}/captions/{{ caption_name }}.vtt" kind="subtitles"
+                                label="{{ caption_name }}" lang="{{caption_name}}" />
+                            {% endfor %}
                             {% endif %}
                             <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
                         </media-provider>
