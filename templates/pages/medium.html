@@ -3,15 +3,9 @@
 
 <head>
     {% if medium_type == "video" %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.3/video.min.js"
-        integrity="sha512-gqDlEVSJBx2sY4FCoF8fElKc1JpQqbKnZSBmBEW/qQ6rRSyfIEAkevSH22LnGZ5vsNrhv79fM4S+AMmmCEMQKA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.17.3/video-js.min.css"
-        integrity="sha512-xQ+IvAl0/u0XWFWC0uoJLfQLKE+J3KZ/kPWpD/8ZoTw/pafvsQW0hudKW4lgZwk02eymBBpdwC0QfqrHUOhOhw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/5.1.1/videojs-dash.min.js"
-        integrity="sha512-jmpCwJ7o9/MxR36dZX+SQc4Ta2PDvMwM5MHmW0oDcy/UzkuppIj+F9FiN+UW/Q8adlOwb5Tx06zHsY/7yg4OYg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+    <script src="https://cdn.vidstack.io/player" type="module"></script>
     {% else if medium_type == "audio" %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"
         integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA=="
@@ -114,19 +108,14 @@
             <div class="card py-3 px-3 text-white">
                 <div class="d-flex justify-content-center">
                     {% if medium_type == "video" %}
-                    <video id="videoplayer" class="video-js vjs-theme-custom" controls preload="auto" data-setup="{}"
-                        autoplay>
+                    <media-player src="/source/{{ medium_id }}/video/video.mpd">
+                        <media-provider></media-provider>
                         {% if medium_subtitles_exist %}
-                        <track kind="captions" src="/source/{{ medium_id }}/subtitles.vtt" srclang="en"
-                            label="Subtitles" default>
+                        <Track src="/source/{{ medium_id }}/subtitles.vtt" kind="subtitles" label="English" lang="en-US"
+                            default />
                         {% endif %}
-                    </video>
-                    <script>
-                        var player = videojs('videoplayer');
-                        player.src({ src: '/source/{{ medium_id }}/video/video.mpd', type: 'application/dash+xml' });
-                        player.responsive(true);
-                        player.fluid(true);
-                    </script>
+                        <media-video-layout thumbnails="/source/{{ medium_id }}/thumbnail.avif"></media-video-layout>
+                    </media-player>
                     {% else if medium_type == "audio" %}
                     <table class="mb-3">
                         <tr>
