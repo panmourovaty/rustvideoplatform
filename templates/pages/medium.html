@@ -108,13 +108,15 @@
             <div class="card py-3 px-3 text-white">
                 <div class="d-flex justify-content-center">
                     {% if medium_type == "video" %}
-                    <media-player src="/source/{{ medium_id }}/video/video.mpd">
-                        <media-provider></media-provider>
-                        {% if medium_subtitles_exist %}
-                        <Track src="/source/{{ medium_id }}/subtitles.vtt" kind="subtitles" label="English" lang="en-US"
-                            default />
-                        {% endif %}
-                        <media-video-layout thumbnails="/source/{{ medium_id }}/thumbnail.avif"></media-video-layout>
+                    <media-player src="/source/{{ medium_id }}/video/video.mpd" aspectRatio="16/9" load="idle"
+                        posterLoad="eager">
+                        <media-provider>
+                            {% if medium_subtitles_exist %}
+                            <track src="/source/{{ medium_id }}/subtitles.vtt" kind="subtitles" label="English"
+                                lang="en-US" default />
+                            {% endif %}
+                            <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
+                        </media-provider>
                     </media-player>
                     {% else if medium_type == "audio" %}
                     <table class="mb-3">
