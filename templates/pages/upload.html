@@ -23,29 +23,28 @@
                 <div class="d-flex justify-content-center">
                     <div></div>
                     <div>
-                        <form id='form' hx-encoding='multipart/form-data' hx-post='/hx/upload' class="m-3" onsubmit="submitbutton.disabled = true; return true;">
-                            <table>
-                                <tr>
-                                    <td colspan="2">
-                                        <input class="btn btn-primary m-3" type='file' name='file'>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <button class="btn btn-primary m-3" id="submitbutton">
-                                            Upload
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <progress id='progress' value='0' max='100' class="m-3"></progress>
-                                    </td>
-                                </tr>
-                            </table>
+                        <form id='form' hx-encoding='multipart/form-data' hx-post='/hx/upload' class="m-3"
+                            onsubmit="beginupload()">
+                            <div class="d-flex flex-column align-items-center">
+                                <input class="btn btn-primary m-3" type='file' name='file' style="width:40vw;">
+                                <br>
+                                <button class="btn btn-primary text-center m-3" id="submitbutton"
+                                    style="width:150px;">Upload</button>
+                                <progress id='progress' value='0' max='100' class="m-3"
+                                    style="display:none;width:38vw;"></progress>
+                            </div>
                         </form>
                     </div>
                     <div></div>
                 </div>
                 <script>
+                    function beginupload() {
+                        submitbutton.disabled = true;
+                        document.getElementById("submitbutton").style.display = "none";
+                        document.getElementById("progress").style.display = "inline";
+                        return true;
+                    }
+
                     htmx.on('#form', 'htmx:xhr:progress', function (evt) {
                         htmx.find('#progress').setAttribute('value', evt.detail.loaded / evt.detail.total * 100)
                     });
