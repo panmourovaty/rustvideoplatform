@@ -23,7 +23,7 @@
                 <div class="d-flex justify-content-center">
                     <div></div>
                     <div>
-                        <form id='form' hx-encoding='multipart/form-data' hx-post='/hx/upload' class="m-3">
+                        <form id='form' hx-encoding='multipart/form-data' hx-post='/hx/upload' class="m-3" onsubmit="submitbutton.disabled = true; return true;">
                             <table>
                                 <tr>
                                     <td colspan="2">
@@ -32,7 +32,7 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                        <button class="btn btn-primary m-3">
+                                        <button class="btn btn-primary m-3" id="submitbutton">
                                             Upload
                                         </button>
                                     </td>

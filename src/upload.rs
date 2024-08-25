@@ -40,13 +40,8 @@ async fn hx_upload(
     let upload_dir = std::path::Path::new("upload");
     let start_time = tokio::time::Instant::now();
 
-    // Process each file in the multipart form
     let mut response_html = String::new();
     response_html.push_str("<h2>File uploaded successfully!</h2>");
-    response_html.push_str("<table border=\"1\" cellpadding=\"10\">");
-    response_html.push_str(
-        "<tr><th>File Name</th><th>File Size</th><th>File Type</th><th>Upload Duration</th></tr>",
-    );
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
@@ -68,14 +63,26 @@ async fn hx_upload(
         let formatted_duration = format_duration(duration);
         let formatted_file_size = format_file_size(file_size);
 
-        // Add the file details to the response
+        // Add the file details to the response in a vertical table format
+        response_html.push_str("<table cellpadding=\"10\">");
         response_html.push_str(&format!(
-            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
-            file_name, formatted_file_size, file_type, formatted_duration
+            "<tr><th>File Name</th><td>{}</td></tr>",
+            file_name
         ));
+        response_html.push_str(&format!(
+            "<tr><th>File Size</th><td>{}</td></tr>",
+            formatted_file_size
+        ));
+        response_html.push_str(&format!(
+            "<tr><th>File Type</th><td>{}</td></tr>",
+            file_type
+        ));
+        response_html.push_str(&format!(
+            "<tr><th>Upload Duration</th><td>{}</td></tr>",
+            formatted_duration
+        ));
+        response_html.push_str("</table><br>");
     }
-
-    response_html.push_str("</table>");
 
     Html(response_html)
 }
