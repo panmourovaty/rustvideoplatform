@@ -19,7 +19,7 @@
             <div class="card py-3 px-3 text-white" style="min-height: 80vh;">
                 <h3 class="my-2 mx-3">Upload</h3>
                 <hr>
-                <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" hx-post="/upload"
+                <form id="uploadForm" action="/hx/upload" method="post" enctype="multipart/form-data" hx-post="/hx/upload"
                     hx-trigger="submit" hx-progress="#progress-bar" hx-target="#response" hx-swap="innerHTML">
                     <input type="file" name="file" />
                     <input type="submit" value="Upload" />
@@ -52,7 +52,7 @@
                             }
                         };
 
-                        xhr.open('POST', '/upload', true);
+                        xhr.open('POST', '/hx/upload', true);
                         const formData = new FormData(document.getElementById('uploadForm'));
                         xhr.send(formData);
 
