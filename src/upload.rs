@@ -38,10 +38,9 @@ async fn hx_upload(
     }
 
     let upload_dir = std::path::Path::new("upload");
-    let start_time = tokio::time::Instant::now();
 
     let mut response_html = String::new();
-    response_html.push_str("<h2>File uploaded successfully!</h2>");
+    response_html.push_str("<h3 class=\"text-center text-success\">File uploaded successfully!</h3>");
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
@@ -54,16 +53,11 @@ async fn hx_upload(
 
         let file_path = upload_dir.join(&file_name);
 
-        // Save the file to the "upload" directory
         let mut file = tokio::fs::File::create(file_path).await.unwrap();
         file.write_all(&data).await.unwrap();
 
-        // Calculate the upload duration
-        let duration = start_time.elapsed().as_secs_f64();
-        let formatted_duration = format_duration(duration);
         let formatted_file_size = format_file_size(file_size);
 
-        // Add the file details to the response in a vertical table format
         response_html.push_str("<table cellpadding=\"10\">");
         response_html.push_str(&format!(
             "<tr><th>File Name</th><td>{}</td></tr>",
@@ -76,10 +70,6 @@ async fn hx_upload(
         response_html.push_str(&format!(
             "<tr><th>File Type</th><td>{}</td></tr>",
             file_type
-        ));
-        response_html.push_str(&format!(
-            "<tr><th>Upload Duration</th><td>{}</td></tr>",
-            formatted_duration
         ));
         response_html.push_str("</table><br>");
     }

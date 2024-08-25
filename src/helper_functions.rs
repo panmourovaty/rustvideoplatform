@@ -129,21 +129,6 @@ async fn is_logged(user: Option<User>) -> bool {
     isloggedin
 }
 
-fn format_duration(duration_secs: f64) -> String {
-    let seconds = duration_secs as u64;
-    let hours = seconds / 3600;
-    let minutes = (seconds % 3600) / 60;
-    let seconds = seconds % 60;
-
-    if hours > 0 {
-        format!("{}h {}m {}s", hours, minutes, seconds)
-    } else if minutes > 0 {
-        format!("{}m {}s", minutes, seconds)
-    } else {
-        format!("{}s", seconds)
-    }
-}
-
 fn format_file_size(size_bytes: usize) -> String {
     let size = size_bytes as f64;
     if size >= 1_000_000_000.0 {
