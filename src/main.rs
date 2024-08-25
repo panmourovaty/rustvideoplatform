@@ -12,7 +12,7 @@ use ahash::AHashMap;
 use argon2::password_hash::{rand_core::OsRng, PasswordHash};
 use askama::Template;
 use axum::{
-    extract::{Form, Path, Multipart},
+    extract::{Form, Path, Multipart, DefaultBodyLimit},
     http::header::HeaderMap,
     http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
     response::Html,
@@ -84,6 +84,7 @@ async fn main() {
         .layer(Extension(pool))
         .layer(Extension(config))
         .layer(Extension(session_store))
+        .layer(DefaultBodyLimit::disable())
         .merge(memory_router);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
