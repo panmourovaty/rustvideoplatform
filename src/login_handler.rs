@@ -14,7 +14,7 @@ struct LoginForm {
     password: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct User {
     login: String,
     name: String,

@@ -33,14 +33,17 @@ async fn hx_upload(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Html<String> {
-    if !is_logged(get_user_login(headers.clone(), &pool, session_store).await).await {
+    let user_info = get_user_login(headers.clone(), &pool, session_store).await;
+    if !is_logged(user_info.clone()).await {
         return Html("<script>window.location.replace(\"/login\");</script>".to_owned());
     }
 
     let upload_dir = std::path::Path::new("upload");
+    let medium_id = generate_medium_id();
 
     let mut response_html = String::new();
-    response_html.push_str("<h3 class=\"text-center text-success\">File uploaded successfully!</h3>");
+    response_html
+        .push_str("<h3 class=\"text-center text-success\">File uploaded successfully!</h3>");
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
@@ -51,7 +54,7 @@ async fn hx_upload(
         let data = field.bytes().await.unwrap();
         let file_size = data.len();
 
-        let file_path = upload_dir.join(&file_name);
+        let file_path = upload_dir.join(&medium_id);
 
         let mut file = tokio::fs::File::create(file_path).await.unwrap();
         file.write_all(&data).await.unwrap();
@@ -64,6 +67,10 @@ async fn hx_upload(
             file_name
         ));
         response_html.push_str(&format!(
+            "<tr><th>Medium ID</th><td><a href=\"edit/{}\">{}</a></td></tr>",
+            medium_id, medium_id
+        ));
+        response_html.push_str(&format!(
             "<tr><th>File Size</th><td>{}</td></tr>",
             formatted_file_size
         ));
@@ -72,7 +79,13 @@ async fn hx_upload(
             file_type
         ));
         response_html.push_str("</table><br>");
+        sqlx::query!(
+            "INSERT INTO media (id, name, description, owner, public, type) VALUES ($1,$2,$3,$4,$5,$6)",
+            medium_id, file_name, file_name, user_info.clone().unwrap().login,false,detect_medium_type_mime(file_type)
+        )
+        .execute(&pool)
+        .await
+        .expect("Database error");
     }
-
     Html(response_html)
 }

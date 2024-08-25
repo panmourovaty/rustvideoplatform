@@ -141,3 +141,33 @@ fn format_file_size(size_bytes: usize) -> String {
         format!("{} bytes", size_bytes)
     }
 }
+
+fn generate_medium_id() -> String {
+    let charset = b"abcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::thread_rng();
+    let random_string: String = (0..10)
+        .map(|_| {
+            let idx = rng.gen_range(0..charset.len());
+            charset[idx] as char
+        })
+        .collect();
+    random_string
+}
+
+fn detect_medium_type_mime(mime: String) -> String {
+    let result;
+    let mime_type = mime.to_ascii_lowercase();
+    if mime_type.contains("video") {
+        result = "video";
+    }
+    else if mime_type.contains("audio") {
+        result = "audio"
+    }
+    else if mime_type.contains("image") {
+        result = "picture"
+    }
+    else {
+        result = "other"
+    }
+    result.to_owned()
+}
