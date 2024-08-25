@@ -21,7 +21,7 @@ async fn hx_comments(
     )
     .fetch_all(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
 
     let template = HXCommentsTemplate { comments };
     Html(minifi_html(template.render().unwrap()))

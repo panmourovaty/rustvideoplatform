@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% include "component-dependencies.html" %}
+
+    <title>Studio</title>
+
+    <meta property="og:title" content="{{ config.instancename }} Studio" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://{{ common_headers.host }}/studio" />
+</head>
+
+<body>
+    {{ sidebar }}
+    {% include "component-navbar.html" %}
+    <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <div class="card py-3 px-3 text-white" style="min-height: 80vh;">
+                <h3 class="my-2 mx-3">Studio</h3>
+                <a href="/upload" class="btn btn-primary mx-3"><i class="fa-solid fa-upload"></i>&nbsp;Upload</a>
+                <hr>
+                <div hx-get="/hx/studio" hx-trigger="load" class="row mb-3">
+                    <div class="text-center my-4 col">
+                        <i class="fa-solid fa-spinner fa-spin-pulse fa-8x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

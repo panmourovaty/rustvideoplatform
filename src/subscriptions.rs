@@ -12,7 +12,7 @@ async fn hx_subscribe(
     )
     .execute(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     Html(format!("<a hx-get=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",user.login))
 }
 async fn hx_unsubscribe(
@@ -29,7 +29,7 @@ async fn hx_unsubscribe(
     )
     .execute(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     Html(format!("<a hx-get=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",user.login))
 }
 async fn hx_subscribebutton(

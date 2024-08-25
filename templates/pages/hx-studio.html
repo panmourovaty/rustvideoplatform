@@ -1,0 +1,30 @@
+{% for medium in media %}
+<div class="col-xl-2 col-lg-4 col-6 my-3 d-flex justify-content-center">
+    <a href="/m/{{ medium.id }}" class="text-decoration-none">
+        <table>
+            <tr>
+                <td>
+                    <img src="/source/{{ medium.id }}/thumbnail.avif" width="176" height="99" class="mx-2 rounded">
+                </td>
+                <td>
+
+                </td>
+            </tr>
+            <tr>
+                <td class="text-center">
+                    <b class="text-white font-weight-bold">{{ medium.name }}</b>
+                    <p class="text-secondary">{{ medium.description }}<br>{{ medium.views }} views
+                        {% if medium.type == "video" %}
+                        <i class="fa-solid fa-video fa-sm ms-1"></i>
+                        {% else if medium.type == "audio" %}
+                        <i class="fa-solid fa-music fa-sm ms-1"></i>
+                        {% else if medium.type == "picture" %}
+                        <i class="fa-solid fa-image fa-sm ms-1"></i>
+                        {% endif %}
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </a>
+</div>
+{% endfor %}

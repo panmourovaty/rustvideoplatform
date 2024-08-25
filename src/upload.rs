@@ -67,7 +67,7 @@ async fn hx_upload(
             file_name
         ));
         response_html.push_str(&format!(
-            "<tr><th>Medium ID</th><td><a href=\"edit/{}\">{}</a></td></tr>",
+            "<tr><th>Medium ID</th><td><a href=\"/studio/{}\">{}</a></td></tr>",
             medium_id, medium_id
         ));
         response_html.push_str(&format!(

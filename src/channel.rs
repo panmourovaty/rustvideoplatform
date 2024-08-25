@@ -74,7 +74,7 @@ async fn hx_usermedia(
     )
     .fetch_all(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     let template = HXUserMediaTemplate { usermedia };
     Html(minifi_html(template.render().unwrap()))
 }

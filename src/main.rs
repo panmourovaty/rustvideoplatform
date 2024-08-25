@@ -77,6 +77,8 @@ async fn main() {
         .route("/hx/search/:pageid", post(hx_search))
         .route("/channel/:userid", get(channel))
         .route("/hx/usermedia/:userid", get(hx_usermedia))
+        .route("/studio", get(studio))
+        .route("/hx/studio", get(hx_studio))
         .route("/upload", get(upload))
         .route("/hx/upload", post(hx_upload))
         .nest("/source", axum_static::static_router("source"))
@@ -105,4 +107,5 @@ include!("trending.rs");
 include!("home.rs");
 include!("search.rs");
 include!("channel.rs");
+include!("studio.rs");
 include!("upload.rs");

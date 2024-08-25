@@ -8,6 +8,6 @@ async fn hx_new_view(
     )
     .fetch_one(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     Html(update_views.views.to_string())
 }

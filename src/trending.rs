@@ -30,7 +30,7 @@ async fn hx_trending(Extension(pool): Extension<PgPool>) -> axum::response::Html
     )
     .fetch_all(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     let template = HXTrendingTemplate { reccomendations };
     Html(minifi_html(template.render().unwrap()))
 }

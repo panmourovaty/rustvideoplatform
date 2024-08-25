@@ -8,7 +8,7 @@ async fn hx_like(
     )
     .fetch_one(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     Html(update_likes.likes.to_string())
 }
 
@@ -22,6 +22,6 @@ async fn hx_dislike(
     )
     .fetch_one(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
     Html(update_dislikes.dislikes.to_string())
 }

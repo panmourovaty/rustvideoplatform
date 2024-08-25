@@ -40,7 +40,7 @@ async fn medium(
     )
     .fetch_one(&pool)
     .await
-    .expect("Nemohu provést dotaz");
+    .expect("Database error");
 
     let medium_captions_exist: bool;
     let mut medium_captions_list: Vec<String> = Vec::new();

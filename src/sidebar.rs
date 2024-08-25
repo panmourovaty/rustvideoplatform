@@ -16,7 +16,6 @@ fn generate_sidebar(config: &Config, active_item: String) -> String {
 #[template(path = "pages/hx-sidebar.html", escape = "none")]
 struct HXSidebarTemplate {
     active_item: String,
-    login: String,
 }
 async fn hx_sidebar(
     Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
@@ -28,7 +27,6 @@ async fn hx_sidebar(
     if user.is_some() {
         let template = HXSidebarTemplate {
             active_item,
-            login: user.unwrap().login,
         };
         Html(minifi_html(template.render().unwrap()))
     } else {
