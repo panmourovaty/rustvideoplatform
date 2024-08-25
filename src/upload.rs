@@ -44,13 +44,18 @@ async fn hx_upload(
     let mut response_html = String::new();
     response_html.push_str("<h2>File uploaded successfully!</h2>");
     response_html.push_str("<table border=\"1\" cellpadding=\"10\">");
-    response_html.push_str("<tr><th>File Name</th><th>File Size (MB)</th><th>File Type</th><th>Upload Duration (Seconds)</th></tr>");
+    response_html.push_str(
+        "<tr><th>File Name</th><th>File Size</th><th>File Type</th><th>Upload Duration</th></tr>",
+    );
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
-        let file_type = field.content_type().map(|ct| ct.to_string()).unwrap_or_else(|| "unknown".to_string());
+        let file_type = field
+            .content_type()
+            .map(|ct| ct.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
         let data = field.bytes().await.unwrap();
-        let file_size_mb = data.len() as f64 / (1024.0 * 1024.0);
+        let file_size = data.len();
 
         let file_path = upload_dir.join(&file_name);
 
@@ -60,11 +65,13 @@ async fn hx_upload(
 
         // Calculate the upload duration
         let duration = start_time.elapsed().as_secs_f64();
+        let formatted_duration = format_duration(duration);
+        let formatted_file_size = format_file_size(file_size);
 
         // Add the file details to the response
         response_html.push_str(&format!(
-            "<tr><td>{}</td><td>{:.2}</td><td>{}</td><td>{:.2}</td></tr>",
-            file_name, file_size_mb, file_type, duration
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+            file_name, formatted_file_size, file_type, formatted_duration
         ));
     }
 
