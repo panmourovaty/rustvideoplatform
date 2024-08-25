@@ -32,35 +32,18 @@ async fn hx_upload(
     Extension(session_store): Extension<Arc<Mutex<AHashMap<String, String>>>>,
     headers: HeaderMap,
     mut multipart: Multipart,
-) -> Result<Html<String>, StatusCode> {
+) -> Html<String> {
     if !is_logged(get_user_login(headers.clone(), &pool, session_store).await).await {
-        return Ok(Html(
-            "<script>window.location.replace(\"/login\");</script>".to_owned(),
-        ));
+        return Html("<script>window.location.replace(\"/login\");</script>".to_owned());
     }
-
-    let mut response_message = String::new();
 
     while let Some(field) = multipart.next_field().await.unwrap() {
-        let file_name = field.file_name().unwrap_or("file").to_string();
-        let content_type = field.content_type().unwrap().to_string();
+        let file_name = field.file_name().unwrap().to_string();
+        let data = field.bytes().await.unwrap();
 
-        let file_id = Uuid::new_v4().to_string();
-        let file_path = format!("uploads/{}-{}", file_id, file_name);
-
-        let mut file = File::create(&file_path).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        let data = field
-            .bytes()
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        file.write_all(&data)
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        response_message = format!(
-            "<h1>File uploaded successfully!</h1><p>File name: {}</p><p>Content type: {}</p><p>Saved as: {}</p>",
-            file_name, content_type, file_path
-        );
+        let mut file = tokio::fs::File::create(file_name).await.unwrap();
+        file.write_all(&data).await.unwrap();
     }
 
-    Ok(Html(response_message))
+    Html("<h2>File uploaded successfully!</h2>".to_owned())
 }

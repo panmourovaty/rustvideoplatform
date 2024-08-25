@@ -29,10 +29,9 @@ use serde::Serialize;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::{sync::Mutex, io::AsyncWriteExt};
 use std::io::BufRead;
-use std::{fs::File, io::Write};
-use uuid::Uuid;
+
 
 #[derive(Deserialize, Clone)]
 struct Config {

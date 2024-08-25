@@ -22,4 +22,3 @@ chrono = "0.4"
 ahash = "*"
 argon2 = "0.5"
 rand = "0.8"
-uuid = { version = "*", features = [ "v4", "fast-rng" ] }
