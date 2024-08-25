@@ -20,39 +20,15 @@
                 <h3 class="my-2 mx-3">Upload</h3>
                 <hr>
                 <form id='form' hx-encoding='multipart/form-data' hx-post='/hx/upload'>
-                    <input type='file' name='file'>
-                    <button>
+                    <input class="btn btn-primary" type='file' name='file'>
+                    <button class="btn btn-primary">
                         Upload
                     </button>
                     <progress id='progress' value='0' max='100'></progress>
-                    <div id="speed">Upload speed: 0 Mbps</div>
                 </form>
                 <script>
-                    let startTime;
-
-                    htmx.on('#form', 'htmx:xhr:progress', function (evt) {
-                        const progressElement = htmx.find('#progress');
-                        const speedElement = htmx.find('#speed');
-
-                        // Update progress bar
-                        const progress = evt.detail.loaded / evt.detail.total * 100;
-                        progressElement.setAttribute('value', progress);
-
-                        // Calculate and display upload speed
-                        const currentTime = new Date().getTime();
-                        if (!startTime) {
-                            startTime = currentTime;
-                        }
-
-                        const elapsedTime = (currentTime - startTime) / 1000; // Time in seconds
-                        const loadedMB = evt.detail.loaded / (1024 * 1024); // Loaded bytes to MB
-                        const uploadSpeedMbps = (loadedMB / elapsedTime) * 8; // Convert MBps to Mbps
-
-                        speedElement.innerText = `Upload speed: ${uploadSpeedMbps.toFixed(2)} Mbps`;
-                    });
-
-                    htmx.on('#form', 'htmx:xhr:loadend', function (evt) {
-                        startTime = null; // Reset start time after upload completes
+                    htmx.on('#form', 'htmx:xhr:progress', function(evt) {
+                      htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)
                     });
                 </script>
             </div>
