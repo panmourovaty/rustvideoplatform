@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,name,description,views,type FROM media WHERE public=true ORDER BY upload DESC;",
+  "query": "SELECT id,name,description,views,type FROM media ORDER BY upload DESC;",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "017bb4eaf8f9500c0094d655b004d91b4cfb2cd18de401d04310e71749949a88"
+  "hash": "8c12ac7c60680cada9310a8d73a0ed2a0b6c85db9ae0da0a83ac66b1684a873d"
 }

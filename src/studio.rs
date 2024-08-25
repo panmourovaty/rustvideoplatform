@@ -43,7 +43,7 @@ struct HXStudioTemplate {
 async fn hx_studio(Extension(pool): Extension<PgPool>) -> axum::response::Html<Vec<u8>> {
     let media =
         sqlx::query_as!(MediumStudio,
-        "SELECT id,name,description,views,type FROM media WHERE public=true ORDER BY upload DESC;"
+        "SELECT id,name,description,views,type FROM media ORDER BY upload DESC;"
     )
         .fetch_all(&pool)
         .await
