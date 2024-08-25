@@ -19,20 +19,24 @@
             <div class="card py-3 px-3 text-white" style="min-height: 80vh;">
                 <h3 class="my-2 mx-3">Upload</h3>
                 <hr>
-                <form hx-post="/hx/upload" hx-target="#progress-bar" enctype="multipart/form-data">
+                <form hx-post="/hx/upload" hx-target="#upload-result" hx-include="input[type='file']"
+                    hx-indicator="#upload-progress" enctype="multipart/form-data">
                     <input type="file" name="file" required>
                     <button type="submit">Upload</button>
                 </form>
-                <div id="progress-bar" style="width: 100%; background-color: lightgray;">
-                    <div id="progress" style="width: 0%; background-color: green; height: 30px;"></div>
+                <div id="upload-progress" style="width: 100%; background-color: lightgray;">
+                    <div id="progress-bar" style="width: 0%; background-color: green; height: 30px;"></div>
                 </div>
                 <div id="speed"></div>
+                <div id="upload-result"></div>
                 <script>
                     document.querySelector('form').addEventListener('htmx:xhr:progress', function (evt) {
-                        let percent = evt.detail.loaded / evt.detail.total * 100;
-                        document.getElementById('progress').style.width = percent + '%';
-                        document.getElementById('speed').innerText =
-                            (evt.detail.loaded / 1024 / 1024 / (evt.detail.timeStamp / 1000)).toFixed(2) + ' Mbps';
+                        if (evt.lengthComputable) {
+                            let percent = (evt.loaded / evt.total) * 100;
+                            document.getElementById('progress-bar').style.width = percent + '%';
+                            let speed = (evt.loaded / 1024 / 1024) / (evt.timeStamp / 1000); // Mbps
+                            document.getElementById('speed').innerText = speed.toFixed(2) + ' Mbps';
+                        }
                     });
                 </script>
             </div>

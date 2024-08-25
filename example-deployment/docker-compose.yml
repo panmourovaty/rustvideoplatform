@@ -9,6 +9,7 @@ services:
          memory: 2G
    volumes:
      - ./source:/source
+     - ./upload:/upload
      - ./config.json:/config.json
    depends_on:
      - postgres

@@ -39,9 +39,10 @@ async fn hx_upload(
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
+        let file_path = std::path::Path::new("upload").join(file_name);
         let data = field.bytes().await.unwrap();
 
-        let mut file = tokio::fs::File::create(file_name).await.unwrap();
+        let mut file = tokio::fs::File::create(file_path).await.unwrap();
         file.write_all(&data).await.unwrap();
     }
 
