@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% include "component-dependencies.html" %}
+
+    <title>Upload</title>
+
+    <meta property="og:title" content="{{ config.instancename }} Upload" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://{{ common_headers.host }}/upload" />
+</head>
+
+<body>
+    {{ sidebar }}
+    {% include "component-navbar.html" %}
+    <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <div class="card py-3 px-3 text-white" style="min-height: 80vh;">
+                <h3 class="my-2 mx-3">Upload</h3>
+                <hr>
+                <form id="uploadForm" action="/hx/upload" method="post" enctype="multipart/form-data" hx-post="/upload"
+                    hx-trigger="change" hx-progress="#progress-bar" hx-on="htmx:beforeRequest: startUpload()"
+                    hx-on="htmx:afterOnLoad: stopUpload()" hx-target="#response">
+                    <input type="file" name="file" />
+                    <input type="submit" value="Upload" />
+                </form>
+                <div id="progress-wrapper" style="width: 100%; background-color: #ccc;">
+                    <div id="progress-bar" style="width: 0%; height: 20px; background-color: green;"></div>
+                </div>
+                <p id="upload-speed"></p>
+                <div id="response"></div>
+
+                <script>
+                    let startTime, fileSize;
+
+                    function startUpload() {
+                        const fileInput = document.querySelector('input[name="file"]');
+                        fileSize = fileInput.files[0].size;
+                        startTime = Date.now();
+                    }
+
+                    function stopUpload() {
+                        const endTime = Date.now();
+                        const duration = (endTime - startTime) / 1000; // in seconds
+                        const speed = (fileSize / (1024 * 1024)) / duration; // in MBps
+                        document.getElementById('upload-speed').textContent = `Upload speed: ${speed.toFixed(2)} MBps`;
+                    }
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

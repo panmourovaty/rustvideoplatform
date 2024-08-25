@@ -12,8 +12,7 @@ use ahash::AHashMap;
 use argon2::password_hash::{rand_core::OsRng, PasswordHash};
 use askama::Template;
 use axum::{
-    extract::Form,
-    extract::Path,
+    extract::{Form, Path, Multipart},
     http::header::HeaderMap,
     http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
     response::Html,
@@ -32,6 +31,8 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::io::BufRead;
+use std::{fs::File, io::Write};
+use uuid::Uuid;
 
 #[derive(Deserialize, Clone)]
 struct Config {
@@ -77,6 +78,8 @@ async fn main() {
         .route("/hx/search/:pageid", post(hx_search))
         .route("/channel/:userid", get(channel))
         .route("/hx/usermedia/:userid", get(hx_usermedia))
+        .route("/upload", get(upload))
+        .route("/hx/upload", post(hx_upload))
         .nest("/source", axum_static::static_router("source"))
         .layer(Extension(pool))
         .layer(Extension(config))
@@ -102,3 +105,4 @@ include!("trending.rs");
 include!("home.rs");
 include!("search.rs");
 include!("channel.rs");
+include!("upload.rs");

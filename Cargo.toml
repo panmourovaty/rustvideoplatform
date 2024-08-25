@@ -10,7 +10,7 @@ lto = true
 [dependencies]
 mimalloc = { version = "*", features = ["secure"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-axum = "0.7"
+axum = { version = "0.7", features = ["multipart"] }
 memory-serve = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "0.8", features = [ "postgres", "runtime-tokio-rustls" ] }
@@ -22,3 +22,4 @@ chrono = "0.4"
 ahash = "*"
 argon2 = "0.5"
 rand = "0.8"
+uuid = { version = "*", features = [ "v4", "fast-rng" ] }

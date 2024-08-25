@@ -117,3 +117,14 @@ async fn get_user_login(
         name,
     })
 }
+
+async fn is_logged(user: Option<User>) -> bool {
+    let isloggedin: bool;
+    if user.is_some() && user.unwrap().login != "".to_owned() {
+        isloggedin = true;
+    }
+    else {
+        isloggedin = false;
+    }
+    isloggedin
+}
