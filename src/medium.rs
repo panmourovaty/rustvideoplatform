@@ -45,29 +45,26 @@ async fn medium(
 
     let medium_captions_exist: bool;
     let mut medium_captions_list: Vec<String> = Vec::new();
-    if std::path::Path::new(&format!("source/{}/captions/list.txt",mediumid)).exists() {
+    if std::path::Path::new(&format!("source/{}/captions/list.txt", mediumid)).exists() {
         medium_captions_exist = true;
         for caption_name in read_lines_to_vec(&format!("source/{}/captions/list.txt", mediumid)) {
             medium_captions_list.push(caption_name);
         }
-    }
-    else {
+    } else {
         medium_captions_exist = false;
     }
 
     let medium_chapters_exist: bool;
-    if std::path::Path::new(&format!("source/{}/chapters.vtt",mediumid)).exists() {
+    if std::path::Path::new(&format!("source/{}/chapters.vtt", mediumid)).exists() {
         medium_chapters_exist = true;
-    }
-    else {
+    } else {
         medium_chapters_exist = false;
     }
 
     let medium_previews_exist: bool;
-    if std::path::Path::new(&format!("source/{}/previews/previews.json",mediumid)).exists() {
+    if std::path::Path::new(&format!("source/{}/previews/previews.json", mediumid)).exists() {
         medium_previews_exist = true;
-    }
-    else {
+    } else {
         medium_previews_exist = false;
     }
 
@@ -91,4 +88,32 @@ async fn medium(
         common_headers,
     };
     Html(minifi_html(template.render().unwrap()))
+}
+
+async fn medium_previews_redirect(
+    Path(mediumid): Path<String>,
+    Path(file): Path<String>,
+) -> impl IntoResponse {
+    let source_file_path = format!("source/{}/previews/{}", mediumid, file);
+
+    match File::open(&source_file_path).await {
+        Ok(mut file) => {
+            let mut contents = vec![];
+            if let Err(e) = file.read_to_end(&mut contents).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Error reading file: {}", e),
+                )
+                    .into_response();
+            }
+            let mime_type = "image/avif";
+            Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", mime_type)
+                .body(Body::from(contents))
+                .unwrap()
+                .into_response()
+        }
+        Err(_) => (StatusCode::NOT_FOUND, "File not found".to_string()).into_response(),
+    }
 }

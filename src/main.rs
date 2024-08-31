@@ -15,8 +15,8 @@ use axum::{
     extract::{Form, Path, Multipart, DefaultBodyLimit},
     http::header::HeaderMap,
     http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
-    response::Html,
-    response::IntoResponse,
+    response::{Html, IntoResponse, Response},
+    body::Body,
     routing::get,
     routing::post,
     Extension, Router,
@@ -31,6 +31,8 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::{sync::Mutex, io::AsyncWriteExt};
 use std::io::BufRead;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 
 #[derive(Deserialize, Clone)]
@@ -60,6 +62,7 @@ async fn main() {
         .route("/trending", get(trending))
         .route("/hx/trending", get(hx_trending))
         .route("/m/:mediumid", get(medium))
+        .route("/m/:mediumid/previews/:file", get(medium_previews_redirect))
         .route("/hx/comments/:mediumid", get(hx_comments))
         .route("/hx/reccomended/:mediumid", get(hx_recommended))
         .route("/hx/new_view/:mediumid", get(hx_new_view))
