@@ -91,8 +91,7 @@ async fn medium(
 }
 
 async fn medium_previews_redirect(
-    Path(mediumid): Path<String>,
-    Path(file): Path<String>,
+    Path((mediumid, file)): Path<(String, String)>
 ) -> impl IntoResponse {
     let source_file_path = format!("source/{}/previews/{}", mediumid, file);
 
