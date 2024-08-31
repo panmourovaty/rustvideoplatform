@@ -50,7 +50,7 @@
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2" style="max-width: 99%;">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
-            <div class="card py-3 px-3 text-white">
+            <div class="card py-3 px-3 text-white h-100">
                 <div class="d-flex justify-content-center">
                     {% if medium_type == "video" %}
                     <media-player viewType="video" src="/source/{{ medium_id }}/video/video.mpd" aspectRatio="16/9"
@@ -64,6 +64,9 @@
                             {% endif %}
                             {% if medium_chapters_exist %}
                             <track src="/source/{{ medium_id }}/chapters.vtt" kind="chapters" default />
+                            {% endif %}
+                            {% if medium_previews_exist %}
+                            <media-thumbnail src="/source/{{ medium_id }}/previews/previews.json"></media-thumbnail>
                             {% endif %}
                             <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
                         </media-provider>
