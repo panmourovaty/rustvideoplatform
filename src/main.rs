@@ -15,10 +15,10 @@ use axum::{
     extract::{Form, Path, Multipart, DefaultBodyLimit},
     http::header::HeaderMap,
     http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
-    response::{Html, IntoResponse, Response},
-    body::Body,
+    response::{Html, IntoResponse},
     routing::get,
     routing::post,
+    Json,
     Extension, Router,
 };
 use chrono::{DateTime, Datelike, Local, Timelike};
@@ -31,9 +31,6 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::{sync::Mutex, io::AsyncWriteExt};
 use std::io::BufRead;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
-
 
 #[derive(Deserialize, Clone)]
 struct Config {
@@ -62,7 +59,7 @@ async fn main() {
         .route("/trending", get(trending))
         .route("/hx/trending", get(hx_trending))
         .route("/m/:mediumid", get(medium))
-        .route("/m/:mediumid/previews/:file", get(medium_previews_redirect))
+        .route("/m/:mediumid/previews.json", get(medium_previews_prepare))
         .route("/hx/comments/:mediumid", get(hx_comments))
         .route("/hx/reccomended/:mediumid", get(hx_recommended))
         .route("/hx/new_view/:mediumid", get(hx_new_view))

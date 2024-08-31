@@ -67,7 +67,7 @@
                             {% endif %}
                             <poster className="vds-poster" src="/source/{{ medium_id }}/thumbnail.avif" />
                         </media-provider>
-                        <media-video-layout {% if medium_previews_exist %}thumbnails="/source/{{ medium_id }}/previews/previews.json"{% endif %}></media-video-layout>
+                        <media-video-layout {% if medium_previews_exist %}thumbnails="/m/{{ medium_id }}/previews.json"{% endif %}></media-video-layout>
                     </media-player>
                     {% else if medium_type == "audio" %}
                     <media-player src='/source/{{ medium_id }}/audio.ogg' type="audio/ogg" aspectRatio="4/3"

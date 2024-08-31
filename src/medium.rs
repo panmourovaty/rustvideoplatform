@@ -90,29 +90,26 @@ async fn medium(
     Html(minifi_html(template.render().unwrap()))
 }
 
-async fn medium_previews_redirect(
-    Path((mediumid, file)): Path<(String, String)>
-) -> impl IntoResponse {
-    let source_file_path = format!("source/{}/previews/{}", mediumid, file);
-
-    match File::open(&source_file_path).await {
-        Ok(mut file) => {
-            let mut contents = vec![];
-            if let Err(e) = file.read_to_end(&mut contents).await {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Error reading file: {}", e),
-                )
-                    .into_response();
-            }
-            let mime_type = "image/avif";
-            Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", mime_type)
-                .body(Body::from(contents))
-                .unwrap()
-                .into_response()
-        }
-        Err(_) => (StatusCode::NOT_FOUND, "File not found".to_string()).into_response(),
+#[derive(Serialize, Deserialize)]
+struct Preview {
+    startTime: u128,
+    endTime: u128,
+    text: String,
+}
+async fn medium_previews_prepare(Path(mediumid): Path<String>) -> Json<Vec<Preview>> {
+    let source_file_path = format!("source/{}/previews/previews.json", mediumid);
+    let parsed_preview_list: Vec<Preview> =
+        serde_json::from_str(&fs::read_to_string(source_file_path).unwrap()).unwrap();
+    let mut new_preview_list: Vec<Preview> = Vec::new();
+    for preview in parsed_preview_list {
+        let fixed_url = format!("/source/{}/{}", mediumid, preview.text);
+        let new_preview: Preview = Preview {
+            startTime: preview.startTime,
+            endTime: preview.endTime,
+            text: fixed_url,
+        };
+        new_preview_list.push(new_preview);
     }
+
+    Json(new_preview_list)
 }
