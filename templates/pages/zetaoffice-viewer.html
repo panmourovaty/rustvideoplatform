@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { overflow: hidden; background: #1a1a1a; }
+      .spinner {
+        border: 16px solid #1F2937;
+        border-top: 16px solid #059669;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      #loadingInfo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 10;
+      }
+      #loadingInfo h2 {
+        color: #fff;
+        font-family: sans-serif;
+        margin-top: 1rem;
+      }
+      #loadingError {
+        color: #dc3545;
+        font-family: sans-serif;
+        margin-top: 1rem;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingInfo">
+      <div class="spinner"></div>
+      <h2>Loading document...</h2>
+      <p id="loadingError">Failed to load document.</p>
+    </div>
+    <canvas
+      id="qtcanvas" contenteditable="true"
+      oncontextmenu="event.preventDefault()"
+      style="border: 0; padding: 0; width: 100%; height: 100vh; visibility: hidden;">
+    </canvas>
+
+    <script>
+      'use strict';
+
+      var soffice_base_url = 'https://cdn.zetaoffice.net/zetaoffice_latest/';
+      var documentUrl = '/source/{{ medium_id }}/{{ document_filename }}';
+      var documentFilename = '{{ document_filename }}';
+      var canvas = document.getElementById('qtcanvas');
+      var loadingInfo = document.getElementById('loadingInfo');
+      var loadingError = document.getElementById('loadingError');
+
+      var Module = {
+        canvas: canvas,
+        uno_scripts: [
+          'https://cdn.jsdelivr.net/npm/zetajs/source/zeta.js',
+          location.origin + '/office_thread.js'
+        ],
+        locateFile: function(path, prefix) {
+          return (prefix || soffice_base_url) + path;
+        },
+        mainScriptUrlOrBlob: new Blob(
+          ["importScripts('" + soffice_base_url + "soffice.js');"],
+          {type: 'text/javascript'}
+        ),
+      };
+
+      var lastDevicePixelRatio = window.devicePixelRatio;
+
+      canvas.addEventListener('wheel', function(event) {
+        event.preventDefault();
+      }, {passive: false});
+
+      window.onresize = function() {
+        setTimeout(function() {
+          if (lastDevicePixelRatio) {
+            if (lastDevicePixelRatio != window.devicePixelRatio) {
+              lastDevicePixelRatio = false;
+              canvas.style.width = parseInt(canvas.style.width) + 1 + 'px';
+              window.dispatchEvent(new Event('resize'));
+            }
+          } else {
+            lastDevicePixelRatio = window.devicePixelRatio;
+            canvas.style.width = parseInt(canvas.style.width) - 1 + 'px';
+            window.dispatchEvent(new Event('resize'));
+          }
+        }, 100);
+      };
+
+      var soffice_js = document.createElement('script');
+      soffice_js.src = soffice_base_url + 'soffice.js';
+      soffice_js.crossOrigin = 'anonymous';
+      soffice_js.onload = function() {
+        var workerReady = false;
+        var fileBuffer = null;
+
+        function tryLoad(port) {
+          if (workerReady && fileBuffer) {
+            Module.FS.mkdirTree('/tmp/office');
+            Module.FS.writeFile('/tmp/office/' + documentFilename, new Uint8Array(fileBuffer));
+            port.postMessage({cmd: 'upload', filename: documentFilename});
+          }
+        }
+
+        fetch(documentUrl)
+          .then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.arrayBuffer();
+          })
+          .then(function(buffer) {
+            fileBuffer = buffer;
+          })
+          .catch(function(err) {
+            console.error('Failed to fetch document:', err);
+            loadingError.style.display = 'block';
+          });
+
+        Module.uno_main.then(function(port) {
+          port.onmessage = function(e) {
+            switch (e.data.cmd) {
+            case 'thr_running':
+              workerReady = true;
+              tryLoad(port);
+              break;
+            case 'ui_ready':
+              window.dispatchEvent(new Event('resize'));
+              setTimeout(function() {
+                loadingInfo.style.display = 'none';
+                canvas.style.visibility = null;
+              }, 1000);
+              break;
+            }
+          };
+          if (fileBuffer) tryLoad(port);
+        });
+      };
+      soffice_js.onerror = function() {
+        loadingError.style.display = 'block';
+      };
+      document.body.appendChild(soffice_js);
+    </script>
+  </body>
+</html>

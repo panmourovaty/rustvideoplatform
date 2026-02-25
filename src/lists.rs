@@ -158,6 +158,13 @@ async fn medium_in_list(
         medium_previews_exist = false;
     }
 
+    let medium_document_filename = match medium.r#type.as_str() {
+        "document_writer" => "document.odt".to_owned(),
+        "document_spreadsheet" => "document.ods".to_owned(),
+        "document_presentation" => "document.odp".to_owned(),
+        _ => String::new(),
+    };
+
     let sidebar = generate_sidebar(&config, "medium".to_owned());
     let template = MediumTemplate {
         sidebar,
@@ -173,6 +180,7 @@ async fn medium_in_list(
         medium_captions_list,
         medium_chapters_exist,
         medium_previews_exist,
+        medium_document_filename,
         config,
         common_headers,
         is_logged_in,

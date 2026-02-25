@@ -14,11 +14,19 @@ struct MediumTemplate {
     medium_captions_list: Vec<String>,
     medium_chapters_exist: bool,
     medium_previews_exist: bool,
+    medium_document_filename: String,
     config: Config,
     common_headers: CommonHeaders,
     is_logged_in: bool,
     list_id: String,
     list_name: String,
+}
+
+#[derive(Template)]
+#[template(path = "pages/zetaoffice-viewer.html", escape = "none")]
+struct ZetaOfficeViewerTemplate {
+    medium_id: String,
+    document_filename: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -72,6 +80,13 @@ async fn medium(
         medium_previews_exist = false;
     }
 
+    let medium_document_filename = match medium.r#type.as_str() {
+        "document_writer" => "document.odt".to_owned(),
+        "document_spreadsheet" => "document.ods".to_owned(),
+        "document_presentation" => "document.odp".to_owned(),
+        _ => String::new(),
+    };
+
     let sidebar = generate_sidebar(&config, "medium".to_owned());
     let template = MediumTemplate {
         sidebar,
@@ -87,6 +102,7 @@ async fn medium(
         medium_captions_list,
         medium_chapters_exist,
         medium_previews_exist,
+        medium_document_filename,
         config,
         common_headers,
         is_logged_in,
@@ -181,4 +197,36 @@ struct HXMediumListTemplate {
     current_medium_id: String,
     media: Vec<Medium>,
     config: Config,
+}
+
+async fn zetaoffice_viewer(
+    Extension(pool): Extension<PgPool>,
+    Path(mediumid): Path<String>,
+) -> Response<Body> {
+    let row = sqlx::query_as::<_, (String, String)>(
+        "SELECT id,type FROM media WHERE id=$1;"
+    )
+    .bind(mediumid.to_ascii_lowercase())
+    .fetch_one(&pool)
+    .await
+    .expect("Database error");
+
+    let document_filename = match row.1.as_str() {
+        "document_writer" => "document.odt",
+        "document_spreadsheet" => "document.ods",
+        "document_presentation" => "document.odp",
+        _ => "",
+    };
+
+    let template = ZetaOfficeViewerTemplate {
+        medium_id: row.0,
+        document_filename: document_filename.to_owned(),
+    };
+
+    Response::builder()
+        .header("Content-Type", "text/html")
+        .header("Cross-Origin-Opener-Policy", "same-origin")
+        .header("Cross-Origin-Embedder-Policy", "require-corp")
+        .body(Body::from(minifi_html(template.render().unwrap())))
+        .unwrap()
 }

@@ -81,6 +81,8 @@
         <meta property="og:image:type" content="image/avif" />
         {% else if medium_type == "document_pdf" %}
         <meta property="og:type" content="article" />
+        {% else if medium_type == "document_writer" || medium_type == "document_spreadsheet" || medium_type == "document_presentation" %}
+        <meta property="og:type" content="article" />
         {% endif %}
     </head>
 
@@ -192,6 +194,21 @@
                                 <i class="fa-solid fa-expand" id="pdfFullscreenIcon"></i>
                             </button>
                         </div>
+                        {% else if medium_type == "document_writer" || medium_type == "document_spreadsheet" || medium_type == "document_presentation" %}
+                        <div class="document-viewer-wrapper" id="documentViewerWrapper">
+                            <iframe
+                                src="/zetaoffice-viewer/{{ medium_id }}"
+                                class="medium-document"
+                                allowfullscreen
+                            ></iframe>
+                            <button
+                                class="document-fullscreen-btn"
+                                onclick="toggleDocumentFullscreen()"
+                                title="Toggle fullscreen"
+                            >
+                                <i class="fa-solid fa-expand" id="documentFullscreenIcon"></i>
+                            </button>
+                        </div>
                         {% endif %}
                     </div>
                     <div>
@@ -210,6 +227,12 @@
                                     <i class="fa-solid fa-image fa-sm ms-4"></i>
                                     {% else if medium_type == "document_pdf" %}
                                     <i class="fa-solid fa-file-pdf fa-sm ms-4"></i>
+                                    {% else if medium_type == "document_writer" %}
+                                    <i class="fa-solid fa-file-word fa-sm ms-4"></i>
+                                    {% else if medium_type == "document_spreadsheet" %}
+                                    <i class="fa-solid fa-file-excel fa-sm ms-4"></i>
+                                    {% else if medium_type == "document_presentation" %}
+                                    <i class="fa-solid fa-file-powerpoint fa-sm ms-4"></i>
                                     {% endif %}
                                 </h1>
                             </li>
@@ -292,6 +315,13 @@
                                     href="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
                                     class="text-white text-decoration-none"
                                     download="{{ medium_id }}.pdf"
+                                    ><i class="fa-solid fa-download fa-xl"></i
+                                ></a>
+                                {% else if medium_type == "document_writer" || medium_type == "document_spreadsheet" || medium_type == "document_presentation" %}
+                                <a
+                                    href="{{ config.source_server_url }}/source/{{ medium_id }}/{{ medium_document_filename }}"
+                                    class="text-white text-decoration-none"
+                                    download="{{ medium_id }}.{{ medium_document_filename }}"
                                     ><i class="fa-solid fa-download fa-xl"></i
                                 ></a>
                                 {% endif %}

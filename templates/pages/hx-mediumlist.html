@@ -31,6 +31,14 @@
                         <i class="fa-solid fa-music"></i>
                         {% else if item.type == "picture" %}
                         <i class="fa-solid fa-image"></i>
+                        {% else if item.type == "document_pdf" %}
+                        <i class="fa-solid fa-file-pdf"></i>
+                        {% else if item.type == "document_writer" %}
+                        <i class="fa-solid fa-file-word"></i>
+                        {% else if item.type == "document_spreadsheet" %}
+                        <i class="fa-solid fa-file-excel"></i>
+                        {% else if item.type == "document_presentation" %}
+                        <i class="fa-solid fa-file-powerpoint"></i>
                         {% endif %}
                     </div>
                     {% if item.type == "video" %}

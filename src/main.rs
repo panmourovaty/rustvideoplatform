@@ -110,6 +110,7 @@ async fn main() {
             "/m/{mediumid}/description.json",
             get(medium_description_prepare),
         )
+        .route("/zetaoffice-viewer/{mediumid}", get(zetaoffice_viewer))
         .route("/hx/comments/{mediumid}", get(hx_comments))
         .route("/hx/comments/{mediumid}/add", post(hx_add_comment))
         .route("/hx/comment/{commentid}/delta.json", get(comment_delta))

@@ -66,7 +66,23 @@ function closeListModal(event) {
 
 function togglePdfFullscreen() {
     var wrapper = document.getElementById('pdfViewerWrapper');
-    var icon = document.getElementById('pdfFullscreenIcon');
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen();
+        } else if (wrapper.webkitRequestFullscreen) {
+            wrapper.webkitRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+}
+
+function toggleDocumentFullscreen() {
+    var wrapper = document.getElementById('documentViewerWrapper');
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (wrapper.requestFullscreen) {
             wrapper.requestFullscreen();
@@ -83,25 +99,33 @@ function togglePdfFullscreen() {
 }
 
 document.addEventListener('fullscreenchange', function () {
-    var icon = document.getElementById('pdfFullscreenIcon');
-    if (!icon) return;
-    if (document.fullscreenElement) {
-        icon.classList.remove('fa-expand');
-        icon.classList.add('fa-compress');
-    } else {
-        icon.classList.remove('fa-compress');
-        icon.classList.add('fa-expand');
-    }
+    var pdfIcon = document.getElementById('pdfFullscreenIcon');
+    var docIcon = document.getElementById('documentFullscreenIcon');
+    var isFullscreen = !!document.fullscreenElement;
+    [pdfIcon, docIcon].forEach(function(icon) {
+        if (!icon) return;
+        if (isFullscreen) {
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        } else {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+    });
 });
 
 document.addEventListener('webkitfullscreenchange', function () {
-    var icon = document.getElementById('pdfFullscreenIcon');
-    if (!icon) return;
-    if (document.webkitFullscreenElement) {
-        icon.classList.remove('fa-expand');
-        icon.classList.add('fa-compress');
-    } else {
-        icon.classList.remove('fa-compress');
-        icon.classList.add('fa-expand');
-    }
+    var pdfIcon = document.getElementById('pdfFullscreenIcon');
+    var docIcon = document.getElementById('documentFullscreenIcon');
+    var isFullscreen = !!document.webkitFullscreenElement;
+    [pdfIcon, docIcon].forEach(function(icon) {
+        if (!icon) return;
+        if (isFullscreen) {
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        } else {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+    });
 });
