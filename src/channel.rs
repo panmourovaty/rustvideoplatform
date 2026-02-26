@@ -69,12 +69,13 @@ async fn hx_usermedia(
 ) -> axum::response::Html<Vec<u8>> {
     let user = get_user_login(headers, &pool, redis.clone()).await;
     let user_login = user.map(|u| u.login).unwrap_or_default();
+    let group_ids = get_user_group_ids(&pool, &user_login, redis.clone()).await;
 
     let media: Vec<Medium> = sqlx::query(
-        "SELECT id,name,owner,views,type FROM media WHERE owner=$1 AND (visibility = 'public' OR (visibility = 'restricted' AND restricted_to_group IN (SELECT group_id FROM user_group_members WHERE user_login = $2))) ORDER BY upload DESC;"
+        "SELECT id,name,owner,views,type FROM media WHERE owner=$1 AND (visibility = 'public' OR (visibility = 'restricted' AND restricted_to_group = ANY($2))) ORDER BY upload DESC;"
     )
     .bind(&userid)
-    .bind(&user_login)
+    .bind(&group_ids)
     .map(|row: sqlx::postgres::PgRow| {
         use sqlx::Row;
         Medium {

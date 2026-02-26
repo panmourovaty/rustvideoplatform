@@ -593,12 +593,13 @@ async fn hx_user_lists(
 ) -> axum::response::Html<Vec<u8>> {
     let user = get_user_login(headers, &pool, redis.clone()).await;
     let user_login = user.map(|u| u.login).unwrap_or_default();
+    let group_ids = get_user_group_ids(&pool, &user_login, redis.clone()).await;
 
     let lists: Vec<ListWithCount> = sqlx::query(
-        "SELECT l.id, l.name, l.owner, l.visibility, l.restricted_to_group, (SELECT COUNT(*) FROM list_items li WHERE li.list_id = l.id) AS item_count FROM lists l WHERE l.owner = $1 AND (l.visibility = 'public' OR (l.visibility = 'restricted' AND l.restricted_to_group IN (SELECT group_id FROM user_group_members WHERE user_login = $2))) ORDER BY l.created DESC;"
+        "SELECT l.id, l.name, l.owner, l.visibility, l.restricted_to_group, (SELECT COUNT(*) FROM list_items li WHERE li.list_id = l.id) AS item_count FROM lists l WHERE l.owner = $1 AND (l.visibility = 'public' OR (l.visibility = 'restricted' AND l.restricted_to_group = ANY($2))) ORDER BY l.created DESC;"
     )
     .bind(&userid)
-    .bind(&user_login)
+    .bind(&group_ids)
     .map(|row: sqlx::postgres::PgRow| {
         use sqlx::Row;
         ListWithCount {

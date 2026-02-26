@@ -289,31 +289,39 @@ async fn move_dir(src: &str, dest: &str) -> io::Result<()> {
     Ok(())
 }
 
-async fn is_group_member(pool: &PgPool, group_id: &str, user_login: &str, mut redis: RedisConn) -> bool {
-    let redis_key = format!("group:{}:members", group_id);
-
-    // Check if membership set is cached in Redis
-    let key_exists: bool = redis.exists(&redis_key).await.unwrap_or(false);
-
-    if key_exists {
-        return redis.sismember(&redis_key, user_login).await.unwrap_or(false);
+async fn get_user_group_ids(pool: &PgPool, user_login: &str, mut redis: RedisConn) -> Vec<String> {
+    if user_login.is_empty() {
+        return vec![];
     }
 
-    // Cache miss - load all members from DB and cache in Redis
-    let members: Vec<String> = sqlx::query_scalar("SELECT user_login FROM user_group_members WHERE group_id = $1")
-        .bind(group_id)
+    let redis_key = format!("user:{}:groups", user_login);
+
+    // Try cache first
+    let cached: Result<Vec<String>, _> = redis.smembers(&redis_key).await;
+    if let Ok(groups) = cached {
+        if !groups.is_empty() {
+            return groups;
+        }
+    }
+
+    // Cache miss - load from DB
+    let groups: Vec<String> = sqlx::query_scalar("SELECT group_id FROM user_group_members WHERE user_login = $1")
+        .bind(user_login)
         .fetch_all(pool)
         .await
         .unwrap_or_default();
 
-    let is_member = members.contains(&user_login.to_owned());
-
-    if !members.is_empty() {
-        let _: Result<(), _> = redis.sadd(&redis_key, &members).await;
+    if !groups.is_empty() {
+        let _: Result<(), _> = redis.sadd(&redis_key, &groups).await;
         let _: Result<(), _> = redis.expire(&redis_key, 3600).await;
     }
 
-    is_member
+    groups
+}
+
+async fn is_group_member(pool: &PgPool, group_id: &str, user_login: &str, redis: RedisConn) -> bool {
+    let groups = get_user_group_ids(pool, user_login, redis).await;
+    groups.contains(&group_id.to_owned())
 }
 
 async fn can_access_restricted(pool: &PgPool, visibility: &str, restricted_to_group: Option<&str>, owner: &str, user: &Option<User>, redis: RedisConn) -> bool {

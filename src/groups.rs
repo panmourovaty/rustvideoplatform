@@ -184,6 +184,13 @@ async fn hx_delete_group(
         .await
         .expect("Database error");
 
+    // Fetch all members before deleting so we can invalidate their caches
+    let member_logins: Vec<String> = sqlx::query_scalar("SELECT user_login FROM user_group_members WHERE group_id = $1")
+        .bind(&groupid)
+        .fetch_all(&pool)
+        .await
+        .unwrap_or_default();
+
     // Delete members and group
     sqlx::query("DELETE FROM user_group_members WHERE group_id = $1;")
         .bind(&groupid)
@@ -197,8 +204,10 @@ async fn hx_delete_group(
         .await
         .expect("Database error");
 
-    // Invalidate Redis group membership cache
-    let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;
+    // Invalidate Redis user group cache for all affected members
+    for login in &member_logins {
+        let _: Result<(), _> = redis.clone().del(format!("user:{}:groups", login)).await;
+    }
 
     // Return updated groups list
     let groups: Vec<UserGroupWithCount> = sqlx::query(
@@ -333,8 +342,8 @@ async fn hx_add_group_member(
             .execute(&pool)
             .await;
 
-        // Invalidate Redis group membership cache
-        let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;
+        // Invalidate Redis user group cache for the added member
+        let _: Result<(), _> = redis.clone().del(format!("user:{}:groups", form.user_login)).await;
     }
 
     // Return updated members list
@@ -400,8 +409,8 @@ async fn hx_remove_group_member(
         .await
         .expect("Database error");
 
-    // Invalidate Redis group membership cache
-    let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;
+    // Invalidate Redis user group cache for the removed member
+    let _: Result<(), _> = redis.clone().del(format!("user:{}:groups", login)).await;
 
     // Return updated members list
     let members: Vec<GroupMember> = sqlx::query("SELECT user_login FROM user_group_members WHERE group_id = $1 ORDER BY user_login;")

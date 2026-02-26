@@ -37,15 +37,18 @@ async fn hx_subscriptions(
         }
     };
 
+    let group_ids = get_user_group_ids(&pool, &user.login, redis.clone()).await;
+
     let media: Vec<Medium> = sqlx::query(
         "SELECT m.id, m.name, m.owner, m.views, m.type
          FROM media m
          INNER JOIN subscriptions s ON m.owner = s.target
-         WHERE s.subscriber = $1 AND (m.visibility = 'public' OR (m.visibility = 'restricted' AND m.restricted_to_group IN (SELECT group_id FROM user_group_members WHERE user_login = $1)))
+         WHERE s.subscriber = $1 AND (m.visibility = 'public' OR (m.visibility = 'restricted' AND m.restricted_to_group = ANY($2)))
          ORDER BY m.upload DESC
          LIMIT 100;"
     )
     .bind(&user.login)
+    .bind(&group_ids)
     .map(|row: sqlx::postgres::PgRow| {
         use sqlx::Row;
         Medium {

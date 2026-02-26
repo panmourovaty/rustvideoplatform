@@ -13,13 +13,15 @@ services:
      - ./config.json:/config.json
    depends_on:
      - postgres
-     - redis
- redis:
-    image: redis:7-alpine
+     - dragonfly
+ dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
-      - ./redis-data:/data
+      - ./dragonfly-data:/data
+    ulimits:
+      memlock: -1
  postgres:
     image: postgres:18-alpine
     ports:

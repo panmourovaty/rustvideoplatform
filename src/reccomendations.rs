@@ -7,11 +7,12 @@ async fn hx_recommended(
 ) -> Result<Html<Vec<u8>>, axum::response::Response> {
     let user = get_user_login(headers, &pool, redis.clone()).await;
     let user_login = user.map(|u| u.login).unwrap_or_default();
+    let group_ids = get_user_group_ids(&pool, &user_login, redis.clone()).await;
 
     let media: Vec<Medium> = sqlx::query(
-        "SELECT id, name, owner, views, type FROM media WHERE visibility = 'public' OR (visibility = 'restricted' AND restricted_to_group IN (SELECT group_id FROM user_group_members WHERE user_login = $1)) LIMIT 20;"
+        "SELECT id, name, owner, views, type FROM media WHERE visibility = 'public' OR (visibility = 'restricted' AND restricted_to_group = ANY($1)) LIMIT 20;"
     )
-    .bind(&user_login)
+    .bind(&group_ids)
     .map(|row: sqlx::postgres::PgRow| {
         use sqlx::Row;
         Medium {
