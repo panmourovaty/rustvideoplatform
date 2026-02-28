@@ -330,7 +330,6 @@ async fn studio_edit_save(
         "public" | "hidden" | "restricted" => form.medium_visibility.clone(),
         _ => "hidden".to_owned(),
     };
-    let ispublic = visibility == "public";
     let restricted_to_group = if visibility == "restricted" {
         form.medium_restricted_group.clone().filter(|g| !g.is_empty())
     } else {
@@ -340,11 +339,10 @@ async fn studio_edit_save(
         serde_json::from_str(&form.medium_description).unwrap_or(serde_json::Value::Null);
 
     let update_result = sqlx::query(
-        "UPDATE media SET name=$1, description=$2, public=$3, visibility=$4, restricted_to_group=$5 WHERE id=$6;"
+        "UPDATE media SET name=$1, description=$2, visibility=$3, restricted_to_group=$4 WHERE id=$5;"
     )
     .bind(&form.medium_name)
     .bind(&description)
-    .bind(ispublic)
     .bind(&visibility)
     .bind(&restricted_to_group)
     .bind(&mediumid)

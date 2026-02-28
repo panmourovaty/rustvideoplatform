@@ -5,12 +5,8 @@ struct MeiliMedia {
     owner: String,
     views: i64,
     likes: i64,
-    #[serde(default)]
-    dislikes: i64,
     r#type: String,
     upload: i64,
-    #[serde(default)]
-    public: bool,
     #[serde(default)]
     visibility: String,
     #[serde(default)]

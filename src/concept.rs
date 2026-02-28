@@ -149,7 +149,6 @@ async fn publish(
             "public" | "hidden" | "restricted" => form.medium_visibility.clone(),
             _ => "hidden".to_owned(),
         };
-        let ispublic = visibility == "public";
         let restricted_to_group = if visibility == "restricted" {
             form.medium_restricted_group.clone().filter(|g| !g.is_empty())
         } else {
@@ -158,13 +157,12 @@ async fn publish(
         let description: serde_json::Value =
             serde_json::from_str(&form.medium_description).unwrap();
         let _ = sqlx::query(
-            "INSERT INTO media (id,name,description,owner,public,visibility,restricted_to_group,type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);"
+            "INSERT INTO media (id,name,description,owner,visibility,restricted_to_group,type) VALUES ($1,$2,$3,$4,$5,$6,$7);"
         )
         .bind(form.medium_id.to_ascii_lowercase())
         .bind(&form.medium_name)
         .bind(&description)
         .bind(&user_info.login)
-        .bind(ispublic)
         .bind(&visibility)
         .bind(&restricted_to_group)
         .bind(&concept.r#type)

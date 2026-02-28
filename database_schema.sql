@@ -4,10 +4,7 @@ CREATE TABLE public.media (
 	description jsonb,
 	upload int8 DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
 	"owner" varchar NOT NULL,
-	likes int8 DEFAULT 0 NOT NULL,
-	dislikes int8 DEFAULT 0 NOT NULL,
 	"views" int8 DEFAULT 0 NOT NULL,
-	public bool DEFAULT false NOT NULL,
 	visibility varchar DEFAULT 'hidden' NOT NULL,
 	restricted_to_group varchar,
 	"type" varchar NOT NULL,
@@ -45,7 +42,6 @@ CREATE TABLE public.lists (
 	id varchar NOT NULL,
 	"name" varchar NOT NULL,
 	"owner" varchar(40) NOT NULL,
-	public bool DEFAULT false NOT NULL,
 	visibility varchar DEFAULT 'hidden' NOT NULL,
 	restricted_to_group varchar,
 	created int8 DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
@@ -77,8 +73,10 @@ CREATE TABLE public.media_likes (
 	CONSTRAINT media_likes_pk PRIMARY KEY (media_id, user_login)
 );
 
--- Migration for existing data:
+-- Migration from previous schema:
 -- UPDATE public.media SET visibility = CASE WHEN public THEN 'public' ELSE 'hidden' END;
 -- UPDATE public.lists SET visibility = CASE WHEN public THEN 'public' ELSE 'hidden' END;
 -- ALTER TABLE public.media DROP COLUMN likes;
 -- ALTER TABLE public.media DROP COLUMN dislikes;
+-- ALTER TABLE public.media DROP COLUMN public;
+-- ALTER TABLE public.lists DROP COLUMN public;

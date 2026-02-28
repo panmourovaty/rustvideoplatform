@@ -170,7 +170,7 @@ async fn medium_in_list(
 
     // Also check media access
     let medium_row = sqlx::query(
-        "SELECT id,name,description,upload,owner,likes,dislikes,views,type,visibility,restricted_to_group FROM media WHERE id=$1;"
+        "SELECT id,name,description,upload,owner,views,type,visibility,restricted_to_group FROM media WHERE id=$1;"
     )
     .bind(mediumid.to_ascii_lowercase())
     .fetch_one(&pool)
@@ -391,7 +391,6 @@ async fn hx_create_list(
         Some("restricted") => "restricted",
         _ => "hidden",
     };
-    let is_public = visibility == "public";
     let restricted_to_group = if visibility == "restricted" {
         form.restricted_group.clone().filter(|g| !g.is_empty())
     } else {
@@ -399,12 +398,11 @@ async fn hx_create_list(
     };
 
     sqlx::query(
-        "INSERT INTO lists (id, name, owner, public, visibility, restricted_to_group) VALUES ($1, $2, $3, $4, $5, $6);"
+        "INSERT INTO lists (id, name, owner, visibility, restricted_to_group) VALUES ($1, $2, $3, $4, $5);"
     )
     .bind(&list_id)
     .bind(&form.name)
     .bind(&user_info.login)
-    .bind(is_public)
     .bind(visibility)
     .bind(&restricted_to_group)
     .execute(&pool)
