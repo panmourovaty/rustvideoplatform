@@ -1,5 +1,5 @@
 <div class="col-12 mb-3">
-    <form hx-post="/hx/creategroup" hx-target="#groups-list" hx-swap="outerHTML" hx-select="#groups-list">
+    <form hx-post="/hx/creategroup" hx-target="#groups-list" hx-swap="outerHTML" hx-select="#groups-list" hx-on::after-request="this.reset()">
         <div class="input-group" style="max-width:500px;">
             <input type="text" name="name" class="form-control" placeholder="New group name..." required>
             <button type="submit" class="btn btn-primary">
