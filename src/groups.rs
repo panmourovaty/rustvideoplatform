@@ -71,7 +71,7 @@ async fn hx_studio_groups(
     let user_info = user_info.unwrap();
 
     let groups: Vec<UserGroupWithCount> = sqlx::query(
-        "SELECT g.id, g.name, g.owner, (SELECT COUNT(*) FROM user_group_members gm WHERE gm.group_id = g.id) AS member_count FROM user_groups g WHERE g.owner = $1 ORDER BY g.created DESC;"
+        "SELECT g.id, g.name, g.owner, COUNT(gm.group_id) AS member_count FROM user_groups g LEFT JOIN user_group_members gm ON g.id = gm.group_id WHERE g.owner = $1 GROUP BY g.id, g.name, g.owner ORDER BY g.created DESC;"
     )
     .bind(&user_info.login)
     .map(|row: sqlx::postgres::PgRow| {
@@ -115,7 +115,7 @@ async fn hx_create_group(
 
     // Return updated groups list
     let groups: Vec<UserGroupWithCount> = sqlx::query(
-        "SELECT g.id, g.name, g.owner, (SELECT COUNT(*) FROM user_group_members gm WHERE gm.group_id = g.id) AS member_count FROM user_groups g WHERE g.owner = $1 ORDER BY g.created DESC;"
+        "SELECT g.id, g.name, g.owner, COUNT(gm.group_id) AS member_count FROM user_groups g LEFT JOIN user_group_members gm ON g.id = gm.group_id WHERE g.owner = $1 GROUP BY g.id, g.name, g.owner ORDER BY g.created DESC;"
     )
     .bind(&user_info.login)
     .map(|row: sqlx::postgres::PgRow| {
@@ -195,7 +195,7 @@ async fn hx_delete_group(
 
     // Return updated groups list
     let groups: Vec<UserGroupWithCount> = sqlx::query(
-        "SELECT g.id, g.name, g.owner, (SELECT COUNT(*) FROM user_group_members gm WHERE gm.group_id = g.id) AS member_count FROM user_groups g WHERE g.owner = $1 ORDER BY g.created DESC;"
+        "SELECT g.id, g.name, g.owner, COUNT(gm.group_id) AS member_count FROM user_groups g LEFT JOIN user_group_members gm ON g.id = gm.group_id WHERE g.owner = $1 GROUP BY g.id, g.name, g.owner ORDER BY g.created DESC;"
     )
     .bind(&user_info.login)
     .map(|row: sqlx::postgres::PgRow| {
