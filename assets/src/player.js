@@ -1,12 +1,7 @@
-// Import vidstack CSS — esbuild extracts these into player.css alongside player.js
-import 'vidstack/player/styles/default/theme.css';
-import 'vidstack/player/styles/default/layouts/video.css';
-
 // Register core player custom elements (<media-player>, <media-provider>, <media-poster>, etc.)
 import 'vidstack/player';
 // Register default layout elements (<media-video-layout>, <media-audio-layout>, and all
-// controls). This is a separate package from the core player and MUST be imported explicitly;
-// without it the controls overlay is completely absent.
+// controls). Must be imported separately from the core player.
 import 'vidstack/player/layouts/default';
 
 import { LibASSTextRenderer } from 'vidstack';

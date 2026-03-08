@@ -69,8 +69,23 @@ fn main() {
         run_cmd("npm", &["install", "--ignore-scripts"], "npm install");
     }
 
-    // Step 1: Bundle vidstack player with esbuild (IIFE format).
-    // esbuild automatically extracts CSS imports into player.css alongside player.js.
+    // Step 1: Copy vidstack CSS verbatim from node_modules — no esbuild transformation.
+    // esbuild's CSS bundling can silently strip or mangle rules it does not understand
+    // (complex :has(), @layer, mask-image data-URLs, etc.), breaking the player theme.
+    // A direct file concatenation guarantees the CSS is exactly what vidstack ships.
+    println!("cargo:warning=Copying vidstack CSS from node_modules...");
+    {
+        let theme = fs::read_to_string(
+            "node_modules/vidstack/player/styles/default/theme.css",
+        ).expect("Failed to read node_modules/vidstack/player/styles/default/theme.css");
+        let video = fs::read_to_string(
+            "node_modules/vidstack/player/styles/default/layouts/video.css",
+        ).expect("Failed to read node_modules/vidstack/player/styles/default/layouts/video.css");
+        fs::write("assets/processed/player.css", format!("{}\n{}", theme, video))
+            .expect("Failed to write assets/processed/player.css");
+    }
+
+    // Step 2: Bundle vidstack player JS with esbuild (ESM format, no CSS imports).
     println!("cargo:warning=Bundling vidstack player with esbuild...");
     run_cmd(
         "npx",
@@ -90,7 +105,7 @@ fn main() {
         "esbuild player bundle",
     );
 
-    // Step 2: Bundle jassub as a lazy-loaded ESM module.
+    // Step 3: Bundle jassub as a lazy-loaded ESM module.
     // Served at /jassub/jassub.js and loaded on demand via dynamic import().
     println!("cargo:warning=Bundling jassub with esbuild...");
     fs::create_dir_all("assets/processed/jassub")
@@ -110,14 +125,14 @@ fn main() {
         "esbuild jassub bundle",
     );
 
-    // Step 3: Copy jassub worker scripts and WASM from node_modules so they are
+    // Step 4: Copy jassub worker scripts and WASM from node_modules so they are
     // served at /jassub/jassub-worker.js and /jassub/jassub-worker-legacy.js.
     // The worker loads its WASM file relative to its own URL, so all dist files
     // must live together in the same directory.
     println!("cargo:warning=Copying jassub worker files...");
     copy_dir_files("node_modules/jassub/dist", "assets/processed/jassub");
 
-    // Step 4: PurgeCSS — remove unused CSS by scanning templates
+    // Step 5: PurgeCSS — remove unused CSS by scanning templates
     println!("cargo:warning=Running PurgeCSS...");
     run_cmd(
         "npx",
@@ -129,7 +144,7 @@ fn main() {
         "PurgeCSS",
     );
 
-    // Step 5: Minify CSS with csso
+    // Step 6: Minify CSS with csso
     println!("cargo:warning=Minifying CSS...");
     run_cmd(
         "npx",
@@ -141,7 +156,7 @@ fn main() {
         "csso CSS minification",
     );
 
-    // Step 6: Minify JS with terser
+    // Step 7: Minify JS with terser
     println!("cargo:warning=Minifying JS...");
     run_cmd(
         "npx",
