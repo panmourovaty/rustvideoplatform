@@ -12,6 +12,25 @@ fn run_cmd(program: &str, args: &[&str], description: &str) {
     }
 }
 
+/// Copy every regular file from `from_dir` into `to_dir` (non-recursive).
+fn copy_dir_files(from_dir: &str, to_dir: &str) {
+    let from = Path::new(from_dir);
+    let to = Path::new(to_dir);
+    fs::create_dir_all(to).unwrap_or_else(|e| panic!("Failed to create {to_dir}: {e}"));
+    let entries =
+        fs::read_dir(from).unwrap_or_else(|e| panic!("Failed to read dir {from_dir}: {e}"));
+    for entry in entries {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            let filename = path.file_name().unwrap();
+            let dest = to.join(filename);
+            fs::copy(&path, &dest)
+                .unwrap_or_else(|e| panic!("Failed to copy {}: {e}", path.display()));
+        }
+    }
+}
+
 fn main() {
     // --- Git commit hash ---
     let output = Command::new("git")
@@ -36,6 +55,8 @@ fn main() {
     // --- CSS/JS asset pipeline ---
     println!("cargo:rerun-if-changed=assets/static/style.css");
     println!("cargo:rerun-if-changed=assets/static/script.js");
+    println!("cargo:rerun-if-changed=assets/src/player.js");
+    println!("cargo:rerun-if-changed=assets/src/jassub-loader.js");
     println!("cargo:rerun-if-changed=templates/");
     println!("cargo:rerun-if-changed=purgecss.config.cjs");
 
@@ -48,7 +69,52 @@ fn main() {
         run_cmd("npm", &["install", "--ignore-scripts"], "npm install");
     }
 
-    // Step 1: PurgeCSS — remove unused CSS by scanning templates
+    // Step 1: Bundle vidstack player with esbuild (IIFE format).
+    // esbuild automatically extracts CSS imports into player.css alongside player.js.
+    println!("cargo:warning=Bundling vidstack player with esbuild...");
+    run_cmd(
+        "npx",
+        &[
+            "esbuild",
+            "assets/src/player.js",
+            "--bundle",
+            "--format=iife",
+            "--platform=browser",
+            "--target=es2020",
+            "--minify",
+            "--outfile=assets/processed/player.js",
+        ],
+        "esbuild player bundle",
+    );
+
+    // Step 2: Bundle jassub as a lazy-loaded ESM module.
+    // Served at /jassub/jassub.js and loaded on demand via dynamic import().
+    println!("cargo:warning=Bundling jassub with esbuild...");
+    fs::create_dir_all("assets/processed/jassub")
+        .expect("Failed to create assets/processed/jassub directory");
+    run_cmd(
+        "npx",
+        &[
+            "esbuild",
+            "assets/src/jassub-loader.js",
+            "--bundle",
+            "--format=esm",
+            "--platform=browser",
+            "--target=es2020",
+            "--minify",
+            "--outfile=assets/processed/jassub/jassub.js",
+        ],
+        "esbuild jassub bundle",
+    );
+
+    // Step 3: Copy jassub worker scripts and WASM from node_modules so they are
+    // served at /jassub/jassub-worker.js and /jassub/jassub-worker-legacy.js.
+    // The worker loads its WASM file relative to its own URL, so all dist files
+    // must live together in the same directory.
+    println!("cargo:warning=Copying jassub worker files...");
+    copy_dir_files("node_modules/jassub/dist", "assets/processed/jassub");
+
+    // Step 4: PurgeCSS — remove unused CSS by scanning templates
     println!("cargo:warning=Running PurgeCSS...");
     run_cmd(
         "npx",
@@ -60,7 +126,7 @@ fn main() {
         "PurgeCSS",
     );
 
-    // Step 2: Minify CSS with csso
+    // Step 5: Minify CSS with csso
     println!("cargo:warning=Minifying CSS...");
     run_cmd(
         "npx",
@@ -72,7 +138,7 @@ fn main() {
         "csso CSS minification",
     );
 
-    // Step 3: Minify JS with terser
+    // Step 6: Minify JS with terser
     println!("cargo:warning=Minifying JS...");
     run_cmd(
         "npx",
@@ -121,6 +187,18 @@ fn main() {
             orig as f64 / 1024.0,
             processed as f64 / 1024.0,
             reduction
+        );
+    }
+    if let Ok(player_js) = fs::metadata("assets/processed/player.js") {
+        println!(
+            "cargo:warning=player.js: {:.1} KB (bundled vidstack)",
+            player_js.len() as f64 / 1024.0
+        );
+    }
+    if let Ok(player_css) = fs::metadata("assets/processed/player.css") {
+        println!(
+            "cargo:warning=player.css: {:.1} KB (bundled vidstack CSS)",
+            player_css.len() as f64 / 1024.0
         );
     }
 }

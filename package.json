@@ -4,6 +4,11 @@
   "devDependencies": {
     "purgecss": "^6.0.0",
     "csso-cli": "^4.0.0",
-    "terser": "^5.0.0"
+    "terser": "^5.0.0",
+    "esbuild": "^0.25.0"
+  },
+  "dependencies": {
+    "vidstack": "^1.12.0",
+    "jassub": "^1.7.0"
   }
 }

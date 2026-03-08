@@ -65,19 +65,8 @@
 
         {% include "component-dependencies.html" %} {% if medium_type == "video"
         || medium_type == "audio" %}
-        <link
-            rel="stylesheet"
-            href="https://cdn.vidstack.io/player/theme.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://cdn.vidstack.io/player/video.css"
-        />
-        <script
-            src="https://cdn.vidstack.io/player"
-            type="module"
-            defer
-        ></script>
+        <link rel="stylesheet" href="/player.css" />
+        <script src="/player.js" defer></script>
         {% endif %} {% if medium_type == "audio" %}
         <style>
             media-player[data-started] media-poster {
@@ -187,28 +176,20 @@
                                 var player = document.querySelector("media-player");
                                 if (!player) return;
 
-                                // importScripts-based blob URL bypasses cross-origin Worker restriction
-                                // while preserving the CDN script's own base URL for WASM/font resolution.
-                                var workerBlobUrl = URL.createObjectURL(
-                                    new Blob(
-                                        ['importScripts("https://cdn.jsdelivr.net/npm/jassub/dist/jassub-worker.js")'],
-                                        { type: 'text/javascript' }
+                                var options = {
+                                    workerUrl: '/jassub/jassub-worker.js',
+                                    legacyWorkerUrl: '/jassub/jassub-worker-legacy.js',
+                                };
+                                {% if medium_custom_font %}
+                                options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
+                                options.fallbackFont = "default";
+                                {% endif %}
+                                player.textRenderers.add(
+                                    new window._LibASSTextRenderer(
+                                        function () { return import('/jassub/jassub.js'); },
+                                        options
                                     )
                                 );
-
-                                import('https://cdn.vidstack.io/player').then(function (vidstack) {
-                                    var options = { workerUrl: workerBlobUrl };
-                                    {% if medium_custom_font %}
-                                    options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
-                                    options.fallbackFont = "default";
-                                    {% endif %}
-                                    player.textRenderers.add(
-                                        new vidstack.LibASSTextRenderer(
-                                            function () { return import('https://cdn.jsdelivr.net/npm/jassub'); },
-                                            options
-                                        )
-                                    );
-                                });
                             });
                         </script>
                         {% endif %}

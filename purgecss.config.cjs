@@ -28,8 +28,8 @@ module.exports = {
       /^htmx-/,
     ],
     greedy: [],
-    // Vidstack player CSS variables (player loaded from CDN, so vars aren't
-    // seen in scanned content but are consumed by vidstack's own stylesheets)
+    // Vidstack player CSS variables (player.css is produced by esbuild and not
+    // processed by PurgeCSS, but keep these for any inline overrides in templates)
     variables: [/^--video-/, /^--media-/],
   },
   // Preserve CSS variables and keyframes
