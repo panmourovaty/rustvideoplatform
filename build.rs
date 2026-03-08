@@ -56,7 +56,6 @@ fn main() {
     println!("cargo:rerun-if-changed=assets/static/style.css");
     println!("cargo:rerun-if-changed=assets/static/script.js");
     println!("cargo:rerun-if-changed=assets/src/player.js");
-    println!("cargo:rerun-if-changed=assets/src/jassub-loader.js");
     println!("cargo:rerun-if-changed=templates/");
     println!("cargo:rerun-if-changed=purgecss.config.cjs");
 
@@ -85,8 +84,13 @@ fn main() {
             .expect("Failed to write assets/processed/player.css");
     }
 
-    // Step 2: Bundle vidstack player JS with esbuild (ESM format, no CSS imports).
+    // Step 2: Bundle vidstack + jassub together with esbuild (ESM format, no CSS imports).
+    // jassub is bundled inline following the vidstack documentation: the factory
+    // `() => import('jassub')` resolves synchronously from the bundle, while the
+    // worker scripts and WASM are still fetched at runtime via workerUrl/legacyWorkerUrl.
     println!("cargo:warning=Bundling vidstack player with esbuild...");
+    fs::create_dir_all("assets/processed/jassub")
+        .expect("Failed to create assets/processed/jassub directory");
     run_cmd(
         "npx",
         &[
@@ -97,35 +101,12 @@ fn main() {
             "--platform=browser",
             "--target=es2020",
             "--minify",
-            // /jassub/jassub.js is a runtime URL served from assets/processed/jassub/;
-            // mark it external so esbuild does not try to resolve it as a file path.
-            "--external:/jassub/jassub.js",
             "--outfile=assets/processed/player.js",
         ],
         "esbuild player bundle",
     );
 
-    // Step 3: Bundle jassub as a lazy-loaded ESM module.
-    // Served at /jassub/jassub.js and loaded on demand via dynamic import().
-    println!("cargo:warning=Bundling jassub with esbuild...");
-    fs::create_dir_all("assets/processed/jassub")
-        .expect("Failed to create assets/processed/jassub directory");
-    run_cmd(
-        "npx",
-        &[
-            "esbuild",
-            "assets/src/jassub-loader.js",
-            "--bundle",
-            "--format=esm",
-            "--platform=browser",
-            "--target=es2020",
-            "--minify",
-            "--outfile=assets/processed/jassub/jassub.js",
-        ],
-        "esbuild jassub bundle",
-    );
-
-    // Step 4: Copy jassub worker scripts and WASM from node_modules so they are
+    // Step 3: Copy jassub worker scripts and WASM from node_modules so they are
     // served at /jassub/jassub-worker.js and /jassub/jassub-worker-legacy.js.
     // The worker loads its WASM file relative to its own URL, so all dist files
     // must live together in the same directory.

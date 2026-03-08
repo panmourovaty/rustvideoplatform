@@ -20,7 +20,10 @@ document.querySelectorAll('media-player[data-libass-worker]').forEach(function (
         options.availableFonts = { 'default': fontUrl };
         options.fallbackFont = 'default';
     }
+    // Use () => import('jassub') exactly as the vidstack documentation specifies.
+    // esbuild resolves the 'jassub' npm package and bundles it inline so the
+    // factory returns a pre-resolved Promise — no separate /jassub/jassub.js URL needed.
     player.textRenderers.add(
-        new LibASSTextRenderer(function () { return import('/jassub/jassub.js'); }, options)
+        new LibASSTextRenderer(function () { return import('jassub'); }, options)
     );
 });
