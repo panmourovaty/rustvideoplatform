@@ -82,6 +82,9 @@ fn main() {
             "--platform=browser",
             "--target=es2020",
             "--minify",
+            // /jassub/jassub.js is a runtime URL served from assets/processed/jassub/;
+            // mark it external so esbuild does not try to resolve it as a file path.
+            "--external:/jassub/jassub.js",
             "--outfile=assets/processed/player.js",
         ],
         "esbuild player bundle",
