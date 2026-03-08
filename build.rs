@@ -78,7 +78,7 @@ fn main() {
             "esbuild",
             "assets/src/player.js",
             "--bundle",
-            "--format=iife",
+            "--format=esm",
             "--platform=browser",
             "--target=es2020",
             "--minify",

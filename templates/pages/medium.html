@@ -66,7 +66,7 @@
         {% include "component-dependencies.html" %} {% if medium_type == "video"
         || medium_type == "audio" %}
         <link rel="stylesheet" href="/player.css" />
-        <script src="/player.js" defer></script>
+        <script src="/player.js" type="module"></script>
         {% endif %} {% if medium_type == "audio" %}
         <style>
             media-player[data-started] media-poster {
@@ -113,6 +113,13 @@
                             keep-alive
                             crossorigin
                             playsinline
+                            {% if medium_has_ass_captions %}
+                            data-libass-worker="/jassub/jassub-worker.js"
+                            data-libass-worker-legacy="/jassub/jassub-worker-legacy.js"
+                            {% if medium_custom_font %}
+                            data-libass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
+                            {% endif %}
+                            {% endif %}
                         >
                             <media-provider>
                                 {% if is_cmaf %}
@@ -170,29 +177,6 @@
                                 %}
                             ></media-video-layout>
                         </media-player>
-                        {% if medium_has_ass_captions %}
-                        <script>
-                            document.addEventListener("DOMContentLoaded", function () {
-                                var player = document.querySelector("media-player");
-                                if (!player) return;
-
-                                var options = {
-                                    workerUrl: '/jassub/jassub-worker.js',
-                                    legacyWorkerUrl: '/jassub/jassub-worker-legacy.js',
-                                };
-                                {% if medium_custom_font %}
-                                options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
-                                options.fallbackFont = "default";
-                                {% endif %}
-                                player.textRenderers.add(
-                                    new window._LibASSTextRenderer(
-                                        function () { return import('/jassub/jassub.js'); },
-                                        options
-                                    )
-                                );
-                            });
-                        </script>
-                        {% endif %}
                         {% else if medium_type == "audio" %}
                         <media-player
                             src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
