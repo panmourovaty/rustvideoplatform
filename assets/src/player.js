@@ -32,11 +32,6 @@ document.querySelectorAll('media-player[data-libass-worker]').forEach(function (
         // "failed to find any fallback with glyph 0x0" while the canvas stays
         // blank until the next frame.
         fonts: ['/jassub/default.woff2'],
-        // Provide a minimal empty ASS document so JASSUB does not try to fetch
-        // subUrl="" on first init (which fetches the worker script itself as
-        // junk subtitle content).  The real track is loaded via setTrackByUrl
-        // when the user selects a subtitle.
-        subContent: '[Script Info]\nScriptType: v4.00+\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n',
     };
     var fontUrl = player.dataset.libassFontUrl;
     if (fontUrl) {
