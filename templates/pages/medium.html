@@ -115,7 +115,7 @@
                             playsinline
                             {% if medium_has_ass_captions %}
                             data-libass-worker="/jassub/jassub-worker.js"
-                            data-libass-worker-legacy="/jassub/jassub-worker-legacy.js"
+                            data-libass-wasm="/jassub/jassub-worker.wasm"
                             {% if medium_custom_font %}
                             data-libass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
                             {% endif %}

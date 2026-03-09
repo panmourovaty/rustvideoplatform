@@ -1,28 +1,26 @@
 // Register core player custom elements (<media-player>, <media-provider>, <media-poster>, etc.)
 import 'vidstack/player';
-// Register default layout elements (<media-video-layout>, <media-audio-layout>, and all
-// controls). Must be imported separately from the core player.
+// Register all UI custom elements used by the default layout: buttons, sliders,
+// menus, captions, tooltips, etc.  Without this import the layout template renders
+// inert HTML tags and controls are invisible / non-functional.
+import 'vidstack/player/ui';
+// Register the default layout element (<media-video-layout>, <media-audio-layout>).
 import 'vidstack/player/layouts/default';
 
 import { LibASSTextRenderer } from 'vidstack';
 
-// Set up the LibASS text renderer for any player elements that carry the data-libass-*
-// attributes injected by the template.  This runs synchronously after customElements.define()
-// so the renderer is registered before the player queues its async track-list processing —
-// which is the only reliable way to ensure ASS tracks appear in the subtitle menu.
+// Set up the LibASS text renderer for any player elements that carry the
+// data-libass-worker attribute injected by the template.
 document.querySelectorAll('media-player[data-libass-worker]').forEach(function (player) {
     var options = {
         workerUrl: player.dataset.libassWorker,
-        legacyWorkerUrl: player.dataset.libassWorkerLegacy,
+        wasmUrl: player.dataset.libassWasm,
     };
     var fontUrl = player.dataset.libassFontUrl;
     if (fontUrl) {
         options.availableFonts = { 'default': fontUrl };
         options.fallbackFont = 'default';
     }
-    // Use () => import('jassub') exactly as the vidstack documentation specifies.
-    // esbuild resolves the 'jassub' npm package and bundles it inline so the
-    // factory returns a pre-resolved Promise — no separate /jassub/jassub.js URL needed.
     player.textRenderers.add(
         new LibASSTextRenderer(function () { return import('jassub'); }, options)
     );
