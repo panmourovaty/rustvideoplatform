@@ -26,11 +26,13 @@ module.exports = {
       /^ts-/,
       // HTMX (dynamically added)
       /^htmx-/,
+      // video.js player classes (dynamically added by player loaded from CDN)
+      /^vjs-/,
+      /^video-js/,
     ],
     greedy: [],
-    // Vidstack player CSS variables (player loaded from CDN, so vars aren't
-    // seen in scanned content but are consumed by vidstack's own stylesheets)
-    variables: [/^--video-/, /^--media-/],
+    // video.js CSS variables (player loaded from CDN)
+    variables: [/^--vjs-/],
   },
   // Preserve CSS variables and keyframes
   variables: true,

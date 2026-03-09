@@ -65,26 +65,30 @@
 
         {% include "component-dependencies.html" %} {% if medium_type == "video"
         || medium_type == "audio" %}
+        <!-- video.js v10 -->
         <link
             rel="stylesheet"
-            href="https://cdn.vidstack.io/player/theme.css"
+            href="https://vjs.zencdn.net/10.0.0/video-js.css"
         />
+        <!-- VTT thumbnail previews plugin -->
         <link
             rel="stylesheet"
-            href="https://cdn.vidstack.io/player/video.css"
+            href="https://cdn.jsdelivr.net/npm/videojs-vtt-thumbnails/dist/videojs-vtt-thumbnails.css"
         />
-        <script
-            src="https://cdn.vidstack.io/player"
-            type="module"
-            defer
-        ></script>
+        <script src="https://vjs.zencdn.net/10.0.0/video.js"></script>
+        <!-- MPEG-DASH support: dash.js + videojs-contrib-dash -->
+        <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-dash/dist/videojs-contrib-dash.min.js"></script>
+        <!-- VTT thumbnail previews plugin -->
+        <script src="https://cdn.jsdelivr.net/npm/videojs-vtt-thumbnails/dist/videojs-vtt-thumbnails.min.js"></script>
         {% endif %} {% if medium_type == "audio" %}
         <style>
-            media-player[data-started] media-poster {
-                opacity: 1;
-                visibility: visible;
+            /* Keep poster/cover art visible during audio playback */
+            #vjsplayer .vjs-poster {
+                display: block !important;
+                opacity: 1 !important;
             }
-            media-poster img {
+            #vjsplayer .vjs-poster img {
                 object-fit: cover;
             }
         </style>
@@ -95,9 +99,9 @@
                 src: url("{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2")
                     format("woff2");
             }
-            :root {
-                --media-user-font-family:
-                    "SubtitleFont", var(--bs-font-sans-serif) !important;
+            /* Apply custom font to video.js subtitle cues */
+            .vjs-text-track-display ::cue {
+                font-family: "SubtitleFont", var(--bs-font-sans-serif);
             }
         </style>
         {% endif %}
@@ -113,19 +117,18 @@
                         style="view-transition-name: medium-player"
                     >
                         {% if medium_type == "video" %}
-                        <media-player
-                            view-type="video"
-                            aspect-ratio="16/9"
-                            load="eager"
-                            posterLoad="eager"
-                            stream-type="on-demand"
-                            preload="auto"
-                            autoplay
-                            keep-alive
-                            crossorigin
-                            playsinline
-                        >
-                            <media-provider>
+                        <div style="width: 100%; aspect-ratio: 16/9;">
+                            <video
+                                id="vjsplayer"
+                                class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid"
+                                controls
+                                preload="auto"
+                                autoplay
+                                playsinline
+                                crossorigin="anonymous"
+                                poster="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
+                                style="width: 100%; height: 100%;"
+                            >
                                 {% if is_cmaf %}
                                 <source
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
@@ -140,53 +143,63 @@
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
                                     type="application/dash+xml"
                                 />
-                                {% endif %} {% if medium_captions_exist %} {%
-                                for caption in medium_captions_list %} {% if
-                                !caption.is_ass %}
+                                {% endif %}
+                                {% if medium_captions_exist %}
+                                {% for caption in medium_captions_list %}
+                                {% if !caption.is_ass %}
                                 <track
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
                                     kind="subtitles"
                                     label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
+                                    srclang="{{ caption.label }}"
                                 />
                                 {% else %}
                                 <track
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
                                     kind="subtitles"
                                     label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
+                                    srclang="{{ caption.label }}"
                                     data-type="ass"
                                 />
-                                {% endif %} {% endfor %} {% endif %} {% if
-                                medium_chapters_exist %}
+                                {% endif %}
+                                {% endfor %}
+                                {% endif %}
+                                {% if medium_chapters_exist %}
                                 <track
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
                                     kind="chapters"
                                     default
                                 />
                                 {% endif %}
-                                <media-poster
-                                    class="vds-poster"
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                    alt="Cover Image"
-                                ></media-poster>
-                            </media-provider>
-                            <media-video-layout
-                                {%
-                                if
-                                medium_previews_exist
-                                %}thumbnails="/m/{{ medium_id }}/previews.vtt"
-                                {%
-                                endif
-                                %}
-                            ></media-video-layout>
-                        </media-player>
-                        {% if medium_has_ass_captions %}
+                            </video>
+                        </div>
                         <script>
                             document.addEventListener("DOMContentLoaded", function () {
-                                var player = document.querySelector("media-player");
-                                if (!player) return;
+                                var player = videojs('vjsplayer', {
+                                    fluid: true,
+                                    aspectRatio: '16:9',
+                                    autoplay: true,
+                                    preload: 'auto',
+                                    playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+                                    controlBar: {
+                                        pictureInPictureToggle: false,
+                                        chaptersButton: true,
+                                    },
+                                    html5: {
+                                        vhs: {
+                                            enableLowInitialPlaylist: true,
+                                            smoothQualityChange: true,
+                                        },
+                                    },
+                                });
 
+                                {% if medium_previews_exist %}
+                                player.ready(function () {
+                                    player.vttThumbnails({ src: '/m/{{ medium_id }}/previews.vtt' });
+                                });
+                                {% endif %}
+
+                                {% if medium_has_ass_captions %}
                                 // importScripts-based blob URL bypasses cross-origin Worker restriction
                                 // while preserving the CDN script's own base URL for WASM/font resolution.
                                 var workerBlobUrl = URL.createObjectURL(
@@ -196,61 +209,119 @@
                                     )
                                 );
 
-                                import('https://cdn.vidstack.io/player').then(function (vidstack) {
-                                    var options = { workerUrl: workerBlobUrl };
-                                    {% if medium_custom_font %}
-                                    options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
-                                    options.fallbackFont = "default";
-                                    {% endif %}
-                                    player.textRenderers.add(
-                                        new vidstack.LibASSTextRenderer(
-                                            function () { return import('https://cdn.jsdelivr.net/npm/jassub'); },
-                                            options
-                                        )
-                                    );
+                                var jassubInstance = null;
+
+                                player.ready(function () {
+                                    var videoEl = player.el().querySelector('video');
+                                    var tracks = player.textTracks();
+                                    var assTrackEls = document.querySelectorAll('#vjsplayer track[data-type="ass"]');
+
+                                    function getAssTrackUrl(label) {
+                                        for (var i = 0; i < assTrackEls.length; i++) {
+                                            if (assTrackEls[i].label === label) {
+                                                return assTrackEls[i].getAttribute('src');
+                                            }
+                                        }
+                                        return null;
+                                    }
+
+                                    tracks.addEventListener('change', function () {
+                                        var activeAssUrl = null;
+
+                                        for (var i = 0; i < tracks.length; i++) {
+                                            var track = tracks[i];
+                                            if (track.mode === 'showing' && track.kind === 'subtitles') {
+                                                var assUrl = getAssTrackUrl(track.label);
+                                                if (assUrl) {
+                                                    // Suppress native rendering; jassub renders to canvas instead
+                                                    track.mode = 'hidden';
+                                                    activeAssUrl = assUrl;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if (activeAssUrl) {
+                                            if (jassubInstance) {
+                                                jassubInstance.setTrackByUrl(activeAssUrl);
+                                            } else {
+                                                import('https://cdn.jsdelivr.net/npm/jassub').then(function (module) {
+                                                    var JASsub = module.default || module.JASSUB;
+                                                    var opts = {
+                                                        video: videoEl,
+                                                        subUrl: activeAssUrl,
+                                                        workerUrl: workerBlobUrl,
+                                                    };
+                                                    {% if medium_custom_font %}
+                                                    opts.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
+                                                    opts.fallbackFont = "default";
+                                                    {% endif %}
+                                                    jassubInstance = new JASsub(opts);
+                                                });
+                                            }
+                                        } else {
+                                            if (jassubInstance) {
+                                                jassubInstance.freeTrack();
+                                            }
+                                        }
+                                    });
                                 });
+                                {% endif %}
                             });
                         </script>
-                        {% endif %}
                         {% else if medium_type == "audio" %}
-                        <media-player
-                            src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-                            view-type="video"
-                            aspect-ratio="16/9"
-                            load="eager"
-                            posterLoad="eager"
-                            stream-type="on-demand"
-                            preload="auto"
-                            autoplay
-                            keep-alive
-                            crossorigin
-                            playsinline
-                        >
-                            <media-provider>
-                                {% if medium_captions_exist %} {% for caption in
-                                medium_captions_list %} {% if !caption.is_ass %}
+                        <div style="width: 100%; aspect-ratio: 16/9;">
+                            <video
+                                id="vjsplayer"
+                                class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid"
+                                controls
+                                preload="auto"
+                                autoplay
+                                playsinline
+                                crossorigin="anonymous"
+                                poster="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
+                                style="width: 100%; height: 100%;"
+                            >
+                                <source
+                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
+                                    type="audio/ogg"
+                                />
+                                {% if medium_captions_exist %}
+                                {% for caption in medium_captions_list %}
+                                {% if !caption.is_ass %}
                                 <track
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
                                     kind="subtitles"
                                     label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
+                                    srclang="{{ caption.label }}"
                                 />
-                                {% endif %} {% endfor %} {% endif %} {% if
-                                medium_chapters_exist %}
+                                {% endif %}
+                                {% endfor %}
+                                {% endif %}
+                                {% if medium_chapters_exist %}
                                 <track
                                     src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
                                     kind="chapters"
                                     default
                                 />
                                 {% endif %}
-                                <media-poster
-                                    class="vds-poster"
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                    alt="Cover Image"
-                                ></media-poster>
-                            </media-provider>
-                            <media-video-layout></media-video-layout>
-                        </media-player>
+                            </video>
+                        </div>
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function () {
+                                videojs('vjsplayer', {
+                                    fluid: true,
+                                    aspectRatio: '16:9',
+                                    autoplay: true,
+                                    preload: 'auto',
+                                    playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+                                    controlBar: {
+                                        pictureInPictureToggle: false,
+                                        chaptersButton: true,
+                                    },
+                                });
+                            });
+                        </script>
                         {% else if medium_type == "picture" %}
                         <img
                             src="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
