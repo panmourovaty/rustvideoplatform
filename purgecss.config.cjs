@@ -26,13 +26,12 @@ module.exports = {
       /^ts-/,
       // HTMX (dynamically added)
       /^htmx-/,
-      // video.js player classes (dynamically added by player loaded from CDN)
-      /^vjs-/,
-      /^video-js/,
+      // @videojs/html web component class names (injected by skin modules from CDN)
+      /^media-/,
     ],
     greedy: [],
-    // video.js CSS variables (player loaded from CDN)
-    variables: [/^--vjs-/],
+    // @videojs/html CSS custom properties (injected by skin modules from CDN)
+    variables: [/^--media-/],
   },
   // Preserve CSS variables and keyframes
   variables: true,
