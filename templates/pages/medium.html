@@ -65,14 +65,11 @@
 
         {% include "component-dependencies.html" %}
         {% if medium_type == "video" || medium_type == "audio" %}
-        <!-- @videojs/html v10.0.0-alpha.9 — ESM web components loaded via esm.sh.
-             CSS is injected automatically by the modules (no separate <link> needed).
+        <!-- @videojs/html v10.0.0-beta.5 — bundled CDN build via jsDelivr.
              video-player / video-skin cover both video and audio (audio uses a <video>
              element with the audio source so the poster/cover art displays correctly). -->
-        <script type="module">
-            import 'https://esm.sh/@videojs/html@10.0.0-alpha.9/video/player';
-            import 'https://esm.sh/@videojs/html@10.0.0-alpha.9/video/skin';
-        </script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video.css" />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video.js"></script>
         {% if medium_type == "video" && !is_cmaf %}
         <!-- dash.js for MPEG-DASH streaming (non-CMAF content has no HLS source).
              Loaded with defer so it executes before the module script but without
