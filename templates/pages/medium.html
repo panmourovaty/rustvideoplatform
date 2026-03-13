@@ -65,11 +65,11 @@
 
         {% include "component-dependencies.html" %}
         {% if medium_type == "video" || medium_type == "audio" %}
-        <!-- @videojs/html v10.0.0-beta.5 — bundled CDN build via jsDelivr.
-             video-player / video-skin cover both video and audio (audio uses a <video>
-             element with the audio source so the poster/cover art displays correctly). -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video.css" />
-        <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video.js"></script>
+        <!-- @videojs/html v10.0.0-beta.5 — minimal CDN build via jsDelivr.
+             Registers <video-player> + <video-minimal-skin> web components.
+             video-player / video-minimal-skin cover both video and audio. -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video-minimal.css" />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.5/cdn/video-minimal.js"></script>
         {% if medium_type == "video" && !is_cmaf %}
         <!-- dash.js for MPEG-DASH streaming (non-CMAF content has no HLS source).
              Loaded with defer so it executes before the module script but without
@@ -111,7 +111,7 @@
                              The native <video slot="media"> is used so that standard <track>
                              elements for subtitles and chapters work without any extra API. -->
                         <video-player style="display: block; width: 100%;">
-                            <video-skin
+                            <video-minimal-skin
                                 style="display: block; width: 100%; aspect-ratio: 16/9;"
                             >
                                 <video
@@ -153,7 +153,7 @@
                                     />
                                     {% endif %}
                                 </video>
-                            </video-skin>
+                            </video-minimal-skin>
                         </video-player>
                         {% if !is_cmaf %}
                         <script>
@@ -255,7 +255,7 @@
                              before playback starts. The OGG audio source is set directly on
                              the <video> element; the skin provides full playback controls. -->
                         <video-player style="display: block; width: 100%;">
-                            <video-skin
+                            <video-minimal-skin
                                 style="display: block; width: 100%; aspect-ratio: 16/9;"
                             >
                                 <video
@@ -286,7 +286,7 @@
                                     />
                                     {% endif %}
                                 </video>
-                            </video-skin>
+                            </video-minimal-skin>
                         </video-player>
                         {% else if medium_type == "picture" %}
                         <img
@@ -313,6 +313,51 @@
                         </div>
                         {% endif %}
                     </div>
+                    {% if medium_captions_exist && (medium_type == "video" || medium_type == "audio") %}
+                    <!-- Subtitle language selector.
+                         The skin's built-in captions button is a simple toggle and cannot
+                         select between languages, so we manage tracks manually here.
+                         All tracks start disabled; clicking a language enables only that one. -->
+                    <div class="d-flex align-items-center gap-2 mt-2 flex-wrap" id="subtitle-selector">
+                        <span class="text-secondary small"><i class="fa-solid fa-closed-captioning"></i></span>
+                        <button class="btn btn-sm btn-outline-secondary active" onclick="selectSubtitle(null, this)">Off</button>
+                        {% for caption in medium_captions_list %}
+                        <button class="btn btn-sm btn-outline-secondary" onclick="selectSubtitle('{{ caption.label }}', this)">{{ caption.label }}</button>
+                        {% endfor %}
+                    </div>
+                    <script>
+                        function selectSubtitle(label, btn) {
+                            document.querySelectorAll('#subtitle-selector button').forEach(function(b) {
+                                b.classList.remove('active');
+                            });
+                            btn.classList.add('active');
+                            var videoEl = document.querySelector('video[slot="media"]');
+                            if (!videoEl) return;
+                            for (var i = 0; i < videoEl.textTracks.length; i++) {
+                                var t = videoEl.textTracks[i];
+                                if (t.kind === 'subtitles' || t.kind === 'captions') {
+                                    t.mode = (label && t.label === label) ? 'showing' : 'disabled';
+                                }
+                            }
+                        }
+
+                        // Disable all subtitle/caption tracks on load so nothing plays
+                        // until the user explicitly picks a language.
+                        customElements.whenDefined('video-player').then(function() {
+                            var videoEl = document.querySelector('video[slot="media"]');
+                            if (!videoEl) return;
+                            // Defer one tick to let the player register any tracks it adds.
+                            setTimeout(function() {
+                                for (var i = 0; i < videoEl.textTracks.length; i++) {
+                                    var t = videoEl.textTracks[i];
+                                    if (t.kind === 'subtitles' || t.kind === 'captions') {
+                                        t.mode = 'disabled';
+                                    }
+                                }
+                            }, 0);
+                        });
+                    </script>
+                    {% endif %}
                     <!-- Info grid: title + channel/subscribe on left; engagement bar right-aligned on desktop -->
                     <div class="medium-info-grid mt-2">
                         <!-- Title (grid col 1, row 1) -->
