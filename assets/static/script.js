@@ -138,45 +138,60 @@ function fitMediumTitle() {
 window.addEventListener('resize', fitMediumTitle);
 
 // Preload lazy-loaded HTMX content (hx-trigger="load") found inside mouseover-preloaded pages.
-// The htmx-ext-preload extension caches the main page HTML on mouseover, but doesn't
+// The htmx-ext-preload extension prefetches the main page HTML on mouseover, but doesn't
 // process nested hx-get elements that rely on "load" triggers. This script parses the
-// preloaded HTML and prefetches those lazy-load URLs so they're browser-cached too.
+// preloaded HTML, prefetches those lazy-load URLs into a JS cache, and intercepts htmx
+// requests to serve the cached responses directly (avoiding duplicate network requests).
 (function() {
-    const preloaded = new Set();
+    var fetched = new Set();
+    var cache = new Map();
 
     function prefetchLazyContent(url) {
-        if (preloaded.has(url)) return;
-        preloaded.add(url);
+        if (fetched.has(url)) return;
+        fetched.add(url);
 
-        fetch(url, { credentials: 'include' }).then(function(res) {
+        fetch(url, { credentials: 'include', headers: { 'HX-Request': 'true' } }).then(function(res) {
             if (!res.ok) return;
             return res.text();
         }).then(function(html) {
             if (!html) return;
+            cache.set(url, html);
             var doc = new DOMParser().parseFromString(html, 'text/html');
-            // Find all elements with hx-get whose trigger includes "load"
             var lazyEls = doc.querySelectorAll('[hx-get][hx-trigger]');
             lazyEls.forEach(function(el) {
                 var trigger = el.getAttribute('hx-trigger');
-                // Match triggers that fire on load (not just "revealed" or user events)
                 if (!/\bload\b/.test(trigger)) return;
                 var lazyUrl = el.getAttribute('hx-get');
-                if (!lazyUrl || preloaded.has(lazyUrl)) return;
-                preloaded.add(lazyUrl);
-                // Prefetch with low priority - just warm the browser cache
-                fetch(lazyUrl, { credentials: 'include', priority: 'low' }).catch(function() {});
+                if (!lazyUrl || fetched.has(lazyUrl)) return;
+                fetched.add(lazyUrl);
+                fetch(lazyUrl, { credentials: 'include', priority: 'low', headers: { 'HX-Request': 'true' } }).then(function(res) {
+                    if (!res.ok) return;
+                    return res.text();
+                }).then(function(lazyHtml) {
+                    if (lazyHtml) cache.set(lazyUrl, lazyHtml);
+                }).catch(function() {});
             });
         }).catch(function() {});
     }
+
+    // Intercept htmx requests and serve from JS cache if available
+    document.addEventListener('htmx:configRequest', function(evt) {
+        var path = evt.detail.path;
+        if (!cache.has(path)) return;
+        var html = cache.get(path);
+        cache.delete(path);
+        evt.preventDefault();
+        var target = evt.detail.target || evt.detail.elt;
+        target.innerHTML = html;
+        htmx.process(target);
+    });
 
     document.addEventListener('mouseenter', function(e) {
         if (!e.target.closest) return;
         var el = e.target.closest('[preload="mouseover"]');
         if (!el) return;
-        // Determine the URL the preload extension would fetch
         var url = el.getAttribute('href') || el.getAttribute('hx-get');
         if (!url || url.startsWith('javascript:') || url === '#') return;
-        // Small delay to let the preload extension fire first
         setTimeout(function() { prefetchLazyContent(url); }, 50);
     }, true);
 })();
