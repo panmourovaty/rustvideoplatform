@@ -15,12 +15,12 @@ html.sidebar-will-collapse .sidebarbackground { transform: translateX(-100%); }
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/fontawesome.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/solid.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/fontawesome.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/solid.min.css" rel="stylesheet" media="print" onload="this.media='all'">
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@600&family=Nunito:wght@600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="{{ config.source_server_url }}/source/favicon.svg" />
 <link rel="stylesheet" href="/user-style.css" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/htmx-ext-preload/dist/preload.min.js"></script>
-<script src="/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/htmx.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx-ext-preload/dist/preload.min.js" defer></script>
+<script src="/script.js" defer></script>
