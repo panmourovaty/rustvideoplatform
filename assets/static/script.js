@@ -170,6 +170,7 @@ window.addEventListener('resize', fitMediumTitle);
     }
 
     document.addEventListener('mouseenter', function(e) {
+        if (!e.target.closest) return;
         var el = e.target.closest('[preload="mouseover"]');
         if (!el) return;
         // Determine the URL the preload extension would fetch
