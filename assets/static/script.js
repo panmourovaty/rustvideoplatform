@@ -137,3 +137,46 @@ function fitMediumTitle() {
 
 window.addEventListener('resize', fitMediumTitle);
 
+// Preload lazy-loaded HTMX content (hx-trigger="load") found inside mouseover-preloaded pages.
+// The htmx-ext-preload extension caches the main page HTML on mouseover, but doesn't
+// process nested hx-get elements that rely on "load" triggers. This script parses the
+// preloaded HTML and prefetches those lazy-load URLs so they're browser-cached too.
+(function() {
+    const preloaded = new Set();
+
+    function prefetchLazyContent(url) {
+        if (preloaded.has(url)) return;
+        preloaded.add(url);
+
+        fetch(url, { credentials: 'include' }).then(function(res) {
+            if (!res.ok) return;
+            return res.text();
+        }).then(function(html) {
+            if (!html) return;
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            // Find all elements with hx-get whose trigger includes "load"
+            var lazyEls = doc.querySelectorAll('[hx-get][hx-trigger]');
+            lazyEls.forEach(function(el) {
+                var trigger = el.getAttribute('hx-trigger');
+                // Match triggers that fire on load (not just "revealed" or user events)
+                if (!/\bload\b/.test(trigger)) return;
+                var lazyUrl = el.getAttribute('hx-get');
+                if (!lazyUrl || preloaded.has(lazyUrl)) return;
+                preloaded.add(lazyUrl);
+                // Prefetch with low priority - just warm the browser cache
+                fetch(lazyUrl, { credentials: 'include', priority: 'low' }).catch(function() {});
+            });
+        }).catch(function() {});
+    }
+
+    document.addEventListener('mouseenter', function(e) {
+        var el = e.target.closest('[preload="mouseover"]');
+        if (!el) return;
+        // Determine the URL the preload extension would fetch
+        var url = el.getAttribute('href') || el.getAttribute('hx-get');
+        if (!url || url.startsWith('javascript:') || url === '#') return;
+        // Small delay to let the preload extension fire first
+        setTimeout(function() { prefetchLazyContent(url); }, 50);
+    }, true);
+})();
+
