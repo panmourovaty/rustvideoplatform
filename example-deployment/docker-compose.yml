@@ -65,6 +65,7 @@ services:
      - MEILI_ENV=production
      - MEILI_LOG_LEVEL
      - MEILI_DB_PATH=/data.ms
+     # Required for Meilisearch >=1.34.1: allows REST embedder to reach Docker-internal services
      - MEILI_EXPERIMENTAL_ALLOWED_IP_NETWORKS=any
  whisper:
    image: ghcr.io/ggml-org/whisper.cpp:main-vulkan
@@ -89,6 +90,8 @@ services:
      - /dev/dri:/dev/dri
    stdin_open: true
    tty: true
+ # Option A: llama.cpp embedding server (OpenAI-compatible API on port 8084)
+ # Use with indexer config: source=rest, url=http://embedllama:8084/v1/embeddings
  embedllama:
    image: ghcr.io/ggml-org/llama.cpp:server-vulkan
    container_name: embedllama
@@ -101,3 +104,17 @@ services:
      - /dev/dri:/dev/dri
    stdin_open: true
    tty: true
+ # Option B: Ollama (uncomment below and comment out Option A)
+ # Use with indexer config: source=ollama, url=http://embedllama:11434, model=YOUR_MODEL
+ # embedllama:
+ #   image: ollama/ollama
+ #   container_name: embedllama
+ #   environment:
+ #     - OLLAMA_VULKAN=1
+ #   ports:
+ #     - "11434:11434"
+ #   volumes:
+ #     - ./ollama_data:/root/.ollama
+ #   devices:
+ #     - /dev/dri:/dev/dri
+ #   restart: unless-stopped
