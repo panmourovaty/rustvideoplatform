@@ -65,6 +65,7 @@ services:
      - MEILI_ENV=production
      - MEILI_LOG_LEVEL
      - MEILI_DB_PATH=/data.ms
+     - MEILI_EXPERIMENTAL_ALLOWED_IP_NETWORKS=any
  whisper:
    image: ghcr.io/ggml-org/whisper.cpp:main-vulkan
    container_name: whisper
