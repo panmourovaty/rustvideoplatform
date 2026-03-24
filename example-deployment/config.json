@@ -8,7 +8,13 @@
     "custom_session_domain": ".vids.cz",
     "meilisearch_url": "http://meilisearch:7700",
     "meilisearch_key": "SECRET_PASSWORD_HERE",
+    "meilisearch_embedder": {
+        "name": "default"
+    },
+    "site_url": "https://vids.cz",
     "source_server_url": "https://source.vids.cz",
+    "description": "An experimental open-source multimedia sharing platform.",
+    "locale": "en",
 
     "tls_cert": null,
     "tls_key": null,
