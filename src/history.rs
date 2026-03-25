@@ -86,7 +86,7 @@ async fn hx_history_inner(
 
     // Fetch media details for each history entry
     let mut media: Vec<Medium> = Vec::new();
-    for (media_id, _viewed_at) in page_rows.iter().take(per_page as usize) {
+    for (media_id, viewed_at) in page_rows.iter().take(per_page as usize) {
         let media_row = db.session.execute_unpaged(&db.get_media_basic, (media_id,))
             .await
             .ok()
@@ -103,6 +103,9 @@ async fn hx_history_inner(
                     _ => 0,
                 }).unwrap_or(0);
 
+            let visit_time = DateTime::from_timestamp_millis(*viewed_at)
+                .map(|dt| dt.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string());
+
             media.push(Medium {
                 id,
                 name,
@@ -112,6 +115,7 @@ async fn hx_history_inner(
                 sprite_filename: None,
                 sprite_x: 0,
                 sprite_y: 0,
+                visit_time,
             });
         }
     }

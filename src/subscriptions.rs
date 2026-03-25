@@ -136,6 +136,7 @@ async fn hx_subscriptions_inner(
             sprite_filename: None,
             sprite_x: 0,
             sprite_y: 0,
+            visit_time: None,
         });
         taken += 1;
     }
