@@ -103,8 +103,8 @@ async fn hx_history_inner(
                     _ => 0,
                 }).unwrap_or(0);
 
-            let visit_time = DateTime::from_timestamp_millis(*viewed_at)
-                .map(|dt| dt.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string());
+            let visit_time = DateTime::from_timestamp_secs(*viewed_at)
+                .map(|dt: DateTime<chrono::Utc>| dt.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string());
 
             media.push(Medium {
                 id,
