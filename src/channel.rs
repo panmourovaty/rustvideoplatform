@@ -13,6 +13,7 @@ struct ChannelTemplate {
     config: Config,
     common_headers: CommonHeaders,
     user: UserChannel,
+    schema_org_json: String,
 }
 async fn channel(
     Extension(db): Extension<ScyllaDb>,
@@ -58,11 +59,38 @@ async fn channel(
 
     let sidebar = generate_sidebar(&config, "channel".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let schema_org_json = {
+        let profile_url = format!("{}/u/{}", config.site_url, user.login);
+        let mut main_entity = serde_json::json!({
+            "@type": "Person",
+            "name": &user.name,
+            "identifier": &user.login,
+            "url": &profile_url,
+            "interactionStatistic": {
+                "@type": "InteractionCounter",
+                "interactionType": "https://schema.org/FollowAction",
+                "userInteractionCount": user.subscribed.unwrap_or(0)
+            }
+        });
+        if let Some(ref pic) = user.channel_picture {
+            main_entity["image"] = serde_json::Value::String(
+                format!("{}/source/{}/picture.avif", config.source_server_url, pic)
+            );
+        }
+        serde_json::to_string(&serde_json::json!({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "name": format!("{} - {}", user.name, config.instancename),
+            "url": &profile_url,
+            "mainEntity": main_entity
+        })).unwrap_or_default()
+    };
     let template = ChannelTemplate {
         sidebar,
         config,
         common_headers,
         user,
+        schema_org_json,
     };
     Html(minifi_html(template.render().unwrap()))
 }

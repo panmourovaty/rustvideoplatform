@@ -39,6 +39,7 @@ struct ListPageTemplate {
     list: List,
     is_owner: bool,
     common_headers: CommonHeaders,
+    schema_org_json: String,
 }
 
 #[derive(Template)]
@@ -111,6 +112,17 @@ async fn list_page(
     }
 
     let common_headers = extract_common_headers(&headers);
+    let schema_org_json = serde_json::to_string(&serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": &list.name,
+        "url": format!("{}/l/{}", config.site_url, list.id),
+        "author": {
+            "@type": "Person",
+            "identifier": &list.owner,
+            "url": format!("{}/u/{}", config.site_url, list.owner)
+        }
+    })).unwrap_or_default();
     let sidebar = generate_sidebar(&config, "list".to_owned());
     let template = ListPageTemplate {
         sidebar,
@@ -118,6 +130,7 @@ async fn list_page(
         list,
         is_owner,
         common_headers,
+        schema_org_json,
     };
     Html(minifi_html(template.render().unwrap()))
 }

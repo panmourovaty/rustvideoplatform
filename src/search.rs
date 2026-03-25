@@ -900,6 +900,7 @@ struct SearchTemplate {
     config: Config,
     common_headers: CommonHeaders,
     initial_query: String,
+    schema_org_json: String,
 }
 
 #[derive(Deserialize)]
@@ -913,6 +914,18 @@ async fn search(
     headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<SearchQuery>,
 ) -> axum::response::Html<Vec<u8>> {
+    let schema_org_json = serde_json::to_string(&serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "SearchResultsPage",
+        "name": format!("Search - {}", config.instancename),
+        "description": &config.description,
+        "url": format!("{}/search", config.site_url),
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": &config.instancename,
+            "url": &config.site_url
+        }
+    })).unwrap_or_default();
     let sidebar = generate_sidebar(&config, "search".to_owned());
     let common_headers = extract_common_headers(&headers);
     let initial_query = params.q.unwrap_or_default();
@@ -921,6 +934,7 @@ async fn search(
         config,
         common_headers,
         initial_query,
+        schema_org_json,
     };
     Html(minifi_html(template.render().unwrap()))
 }
