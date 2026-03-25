@@ -29,6 +29,7 @@ impl From<MeiliMedia> for Medium {
             sprite_filename: None,
             sprite_x: 0,
             sprite_y: 0,
+            visit_time: None,
         }
     }
 }

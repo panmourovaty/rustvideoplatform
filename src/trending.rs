@@ -87,6 +87,7 @@ async fn try_trending_from_cache(redis: &mut RedisConn, offset: i64) -> Option<V
             sprite_filename: if has_sprite { sprite_filename.clone() } else { None },
             sprite_x: info.get("sprite_x").and_then(|v| v.parse().ok()).unwrap_or(0),
             sprite_y: info.get("sprite_y").and_then(|v| v.parse().ok()).unwrap_or(0),
+            visit_time: None,
         });
     }
 

@@ -66,7 +66,12 @@
                     >{{ item.name }}</b
                 >
                 <p class="text-secondary m-0">
-                    {{ item.owner }}<br />{{ item.views }} views
+                    {{ item.owner }}<br />
+                    {% if let Some(vt) = item.visit_time %}
+                    <i class="fa-solid fa-clock me-1"></i>{{ vt }}
+                    {% else %}
+                    <i class="fa-solid fa-eye me-1"></i>{{ item.views }} views
+                    {% endif %}
                 </p>
             </td>
         </tr>

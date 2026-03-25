@@ -123,6 +123,7 @@ async fn hx_usermedia_inner(
                 sprite_filename: None,
                 sprite_x: 0,
                 sprite_y: 0,
+                visit_time: None,
             });
         }
     }

@@ -58,6 +58,7 @@ struct Medium {
     sprite_filename: Option<String>,
     sprite_x: i32,
     sprite_y: i32,
+    visit_time: Option<String>,
 }
 
 async fn medium(

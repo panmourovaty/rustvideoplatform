@@ -307,6 +307,7 @@ async fn hx_list_items_inner(
                 sprite_filename: None,
                 sprite_x: 0,
                 sprite_y: 0,
+                visit_time: None,
             });
         }
     }
@@ -353,6 +354,7 @@ async fn hx_list_sidebar(
                 sprite_filename: None,
                 sprite_x: 0,
                 sprite_y: 0,
+                visit_time: None,
             });
         }
     }
