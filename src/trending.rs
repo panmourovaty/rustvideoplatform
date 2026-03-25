@@ -4,17 +4,31 @@ struct TrendingTemplate {
     sidebar: String,
     config: Config,
     common_headers: CommonHeaders,
+    schema_org_json: String,
 }
 async fn trending(
     Extension(config): Extension<Config>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
+    let schema_org_json = serde_json::to_string(&serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": format!("Trending - {}", config.instancename),
+        "description": &config.description,
+        "url": format!("{}/trending", config.site_url),
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": &config.instancename,
+            "url": &config.site_url
+        }
+    })).unwrap_or_default();
     let sidebar = generate_sidebar(&config, "trending".to_owned());
     let common_headers = extract_common_headers(&headers);
     let template = TrendingTemplate {
         sidebar,
         config,
         common_headers,
+        schema_org_json,
     };
     Html(minifi_html(template.render().unwrap()))
 }

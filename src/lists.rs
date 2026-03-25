@@ -39,6 +39,7 @@ struct ListPageTemplate {
     list: List,
     is_owner: bool,
     common_headers: CommonHeaders,
+    schema_org_json: String,
 }
 
 #[derive(Template)]
@@ -111,6 +112,17 @@ async fn list_page(
     }
 
     let common_headers = extract_common_headers(&headers);
+    let schema_org_json = serde_json::to_string(&serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": &list.name,
+        "url": format!("{}/l/{}", config.site_url, list.id),
+        "author": {
+            "@type": "Person",
+            "identifier": &list.owner,
+            "url": format!("{}/u/{}", config.site_url, list.owner)
+        }
+    })).unwrap_or_default();
     let sidebar = generate_sidebar(&config, "list".to_owned());
     let template = ListPageTemplate {
         sidebar,
@@ -118,6 +130,7 @@ async fn list_page(
         list,
         is_owner,
         common_headers,
+        schema_org_json,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -227,6 +240,67 @@ async fn medium_in_list(
         is_cmaf = false;
     }
 
+    let upload_iso = chrono::DateTime::from_timestamp(m_upload, 0)
+        .map(|dt: chrono::DateTime<chrono::Utc>| dt.to_rfc3339())
+        .unwrap_or_default();
+    let schema_org_json = {
+        let v = match m_type.as_str() {
+            "video" => serde_json::json!({
+                "@context": "https://schema.org",
+                "@type": "VideoObject",
+                "name": m_name.clone(),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "uploadDate": upload_iso,
+                "contentUrl": format!("{}/m/{}/video-sm.mp4", config.site_url, medium_id),
+                "embedUrl": format!("{}/m/{}", config.site_url, medium_id),
+                "author": {
+                    "@type": "Person",
+                    "name": owner_name.clone(),
+                    "url": format!("{}/u/{}", config.site_url, m_owner)
+                }
+            }),
+            "audio" => serde_json::json!({
+                "@context": "https://schema.org",
+                "@type": "AudioObject",
+                "name": m_name.clone(),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "uploadDate": upload_iso,
+                "contentUrl": format!("{}/source/{}/audio.ogg", config.source_server_url, medium_id),
+                "author": {
+                    "@type": "Person",
+                    "name": owner_name.clone(),
+                    "url": format!("{}/u/{}", config.site_url, m_owner)
+                }
+            }),
+            "picture" => serde_json::json!({
+                "@context": "https://schema.org",
+                "@type": "ImageObject",
+                "name": m_name.clone(),
+                "contentUrl": format!("{}/source/{}/picture.avif", config.source_server_url, medium_id),
+                "uploadDate": upload_iso,
+                "author": {
+                    "@type": "Person",
+                    "name": owner_name.clone(),
+                    "url": format!("{}/u/{}", config.site_url, m_owner)
+                }
+            }),
+            "document_pdf" => serde_json::json!({
+                "@context": "https://schema.org",
+                "@type": "DigitalDocument",
+                "name": m_name.clone(),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "uploadDate": upload_iso,
+                "author": {
+                    "@type": "Person",
+                    "name": owner_name.clone(),
+                    "url": format!("{}/u/{}", config.site_url, m_owner)
+                }
+            }),
+            _ => serde_json::json!({}),
+        };
+        serde_json::to_string(&v).unwrap_or_default()
+    };
+
     let sidebar = generate_sidebar(&config, "medium".to_owned());
     let template = MediumTemplate {
         sidebar,
@@ -245,6 +319,7 @@ async fn medium_in_list(
         medium_chapters_exist,
         medium_previews_exist,
         is_cmaf,
+        schema_org_json,
         config,
         common_headers,
         is_logged_in,

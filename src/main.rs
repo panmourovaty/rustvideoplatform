@@ -247,6 +247,7 @@ async fn main() {
 
     let has_tls = tls_cert.is_some();
     let app = Router::new()
+        .route("/robots.txt", get(robots_txt))
         .route("/sitemap.xml", get(sitemap_xml))
         .route("/", get(home))
         .route("/login", get(login))
