@@ -70,6 +70,7 @@ fn main() {
     println!("cargo:rerun-if-changed=assets/static/script.js");
     println!("cargo:rerun-if-changed=templates/");
     println!("cargo:rerun-if-changed=purgecss.config.cjs");
+    println!("cargo:rerun-if-changed=locales/");
 
     let processed_dir = Path::new("assets/processed");
     fs::create_dir_all(processed_dir).expect("Failed to create assets/processed directory");

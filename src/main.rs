@@ -221,6 +221,14 @@ async fn main() {
     let redis_conn = redis_client.get_connection_manager().await.unwrap();
     println!("Redis connected: url={}", &config.redis_url);
 
+    // Build the localization service (parses embedded FTL files at startup)
+    let localization = LocalizationService::new();
+    println!(
+        "Localization: {} language(s) loaded: {}",
+        localization.available_langs.len(),
+        localization.available_langs.iter().map(|l| l.code.as_str()).collect::<Vec<_>>().join(", ")
+    );
+
     // Build WebAuthn instance (optional – only when rp_id and rp_origin are configured)
     let webauthn_instance: Option<webauthn_rs::Webauthn> =
         match (&config.webauthn_rp_id, &config.webauthn_rp_origin) {
@@ -387,6 +395,7 @@ async fn main() {
         .route("/settings/channel-picture", get(settings_channel_picture))
         .route("/settings/diagnostics", get(settings_diagnostics))
         .route("/settings/theme", get(settings_theme))
+        .route("/settings/language", get(settings_language))
         .route("/settings/2fa", get(settings_2fa))
         .route("/hx/settings/channel-name", get(hx_settings_channel_name))
         .route("/hx/settings/channel-name", post(hx_settings_channel_name_save))
@@ -399,6 +408,8 @@ async fn main() {
         .route("/hx/settings/diagnostics", get(hx_settings_diagnostics))
         .route("/hx/settings/theme", get(hx_settings_theme))
         .route("/hx/settings/theme", post(hx_settings_theme_save))
+        .route("/hx/settings/language", get(hx_settings_language))
+        .route("/hx/settings/language", post(hx_settings_language_save))
         .route("/hx/settings/2fa", get(hx_settings_2fa))
         .route("/hx/settings/2fa/totp/setup", post(hx_settings_2fa_totp_setup))
         .route(
@@ -426,6 +437,7 @@ async fn main() {
         .layer(Extension(db))
         .layer(Extension(config))
         .layer(Extension(redis_conn))
+        .layer(Extension(localization))
         .layer(Extension(Arc::new(meilisearch_client)))
         .layer(Extension(webauthn_ext))
         .layer(DefaultBodyLimit::disable())
@@ -611,6 +623,7 @@ include!("serve.rs");
 include!("mp4_compose.rs");
 include!("lists.rs");
 include!("groups.rs");
+include!("localization.rs");
 include!("settings.rs");
 include!("two_factor.rs");
 include!("sitemap.rs");
