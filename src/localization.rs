@@ -18,6 +18,7 @@ use unic_langid::LanguageIdentifier;
 // ---------------------------------------------------------------------------
 
 const LOCALE_EN: &str = include_str!("../locales/en/main.ftl");
+const LOCALE_CS: &str = include_str!("../locales/cs/main.ftl");
 const LOCALE_DE: &str = include_str!("../locales/de/main.ftl");
 const LOCALE_FR: &str = include_str!("../locales/fr/main.ftl");
 const LOCALE_ES: &str = include_str!("../locales/es/main.ftl");
@@ -26,6 +27,7 @@ const LOCALE_PL: &str = include_str!("../locales/pl/main.ftl");
 /// All embedded locales as (code, ftl_source) pairs.
 static EMBEDDED_LOCALES: &[(&str, &str)] = &[
     ("en", LOCALE_EN),
+    ("cs", LOCALE_CS),
     ("de", LOCALE_DE),
     ("fr", LOCALE_FR),
     ("es", LOCALE_ES),
@@ -36,6 +38,7 @@ static EMBEDDED_LOCALES: &[(&str, &str)] = &[
 pub fn lang_display_name(code: &str) -> &'static str {
     match code {
         "en" => "English",
+        "cs" => "Čeština",
         "de" => "Deutsch",
         "fr" => "Français",
         "es" => "Español",
