@@ -10,6 +10,7 @@ async fn concepts(
     Extension(db): Extension<ScyllaDb>,
     Extension(config): Extension<Config>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
@@ -18,13 +19,19 @@ async fn concepts(
         ));
     }
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = StudioTemplate {
         sidebar,
         config,
         common_headers,
         active_tab: "concepts".to_owned(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -33,13 +40,16 @@ async fn concepts(
 #[template(path = "pages/hx-concepts.html", escape = "none")]
 struct HXConceptsTemplate {
     concepts: Vec<MediumConcept>,
+    locale: RequestLocale,
 }
 async fn hx_concepts(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let userinfo = get_user_login(headers, &db, redis.clone()).await.unwrap();
+    let userinfo = get_user_login(headers.clone(), &db, redis.clone()).await.unwrap();
 
     let rows: Vec<(String, String, String, bool)> = db.session
         .execute_unpaged(&db.get_concepts_by_owner, (&userinfo.login,))
@@ -59,7 +69,9 @@ async fn hx_concepts(
         })
         .collect();
 
-    let template = HXConceptsTemplate { concepts };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&userinfo), &common_headers, &db, &localization, &config).await;
+    let template = HXConceptsTemplate { concepts, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -71,11 +83,14 @@ struct ConceptTemplate {
     concept: MediumConcept,
     common_headers: CommonHeaders,
     owner_groups: Vec<UserGroup>,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn concept(
     Extension(db): Extension<ScyllaDb>,
     Extension(config): Extension<Config>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     Path(conceptid): Path<String>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
@@ -150,14 +165,20 @@ async fn concept(
         .collect();
     owner_groups.extend(user_groups);
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = ConceptTemplate {
         sidebar,
         config,
         concept,
         common_headers,
         owner_groups,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

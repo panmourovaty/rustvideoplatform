@@ -1,10 +1,10 @@
 <div class="col-12 col-md-8 col-lg-6">
     <form hx-post="/hx/settings/channel-name" hx-target="#settings-result" hx-swap="innerHTML">
         <div class="mb-3">
-            <label for="channel_name" class="form-label">Change Channel Name</label>
+            <label for="channel_name" class="form-label">{{ locale.t("settings-channel-name-label") }}</label>
             <input type="text" class="form-control" id="channel_name" name="channel_name" value="{{ current_name }}" maxlength="100" required>
         </div>
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>Save</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>{{ locale.t("button-save") }}</button>
     </form>
     <div id="settings-result" class="mt-3"></div>
 </div>

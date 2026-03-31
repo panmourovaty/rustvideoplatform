@@ -1,21 +1,21 @@
 <div class="col-12">
-    <h5 class="mb-3"><i class="fa-solid fa-shield-halved me-2"></i>Two-Factor Authentication</h5>
+    <h5 class="mb-3"><i class="fa-solid fa-shield-halved me-2"></i>{{ locale.t("settings-2fa-heading") }}</h5>
 
     <!-- TOTP Section -->
     <div class="card bg-secondary mb-3 p-3 text-white">
-        <h6 class="mb-2"><i class="fa-solid fa-mobile-screen me-2"></i>Authenticator App (TOTP)</h6>
+        <h6 class="mb-2"><i class="fa-solid fa-mobile-screen me-2"></i>{{ locale.t("settings-2fa-totp-heading") }}</h6>
         {% if totp_enabled %}
-        <p class="text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>TOTP is <strong>enabled</strong>.</p>
+        <p class="text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>{{ locale.t("settings-2fa-totp-enabled") }}</p>
         <form hx-post="/hx/settings/2fa/totp/disable" hx-target="#twofa-result" hx-swap="innerHTML">
             <button type="submit" class="btn btn-sm btn-danger">
-                <i class="fa-solid fa-ban me-1"></i>Disable TOTP
+                <i class="fa-solid fa-ban me-1"></i>{{ locale.t("settings-2fa-totp-disable") }}
             </button>
         </form>
         {% else %}
-        <p class="mb-2">Use any TOTP authenticator app (Google Authenticator, Aegis, Bitwarden, etc.) to add a second factor to your login.</p>
+        <p class="mb-2">{{ locale.t("settings-2fa-totp-description") }}</p>
         <form hx-post="/hx/settings/2fa/totp/setup" hx-target="#totp-setup-area" hx-swap="innerHTML">
             <button type="submit" class="btn btn-sm btn-primary">
-                <i class="fa-solid fa-qrcode me-1"></i>Set Up TOTP
+                <i class="fa-solid fa-qrcode me-1"></i>{{ locale.t("settings-2fa-totp-setup") }}
             </button>
         </form>
         <div id="totp-setup-area" class="mt-3"></div>
@@ -25,11 +25,11 @@
     <!-- WebAuthn Section -->
     {% if webauthn_available %}
     <div class="card bg-secondary mb-4 p-3 text-white" id="webauthn-section">
-        <h6 class="mb-2"><i class="fa-solid fa-key me-2"></i>Security Keys / Passkeys (WebAuthn)</h6>
-        <p class="mb-2 text-muted">Register a hardware security key or passkey for <strong>passwordless login</strong>.</p>
+        <h6 class="mb-2"><i class="fa-solid fa-key me-2"></i>{{ locale.t("settings-2fa-webauthn-heading") }}</h6>
+        <p class="mb-2 text-muted">{{ locale.t("settings-2fa-webauthn-description") }}</p>
 
         {% if webauthn_creds.is_empty() %}
-        <p class="text-muted"><em>No security keys registered yet.</em></p>
+        <p class="text-muted"><em>{{ locale.t("settings-2fa-webauthn-empty") }}</em></p>
         {% else %}
         <ul class="list-group list-group-flush mb-3">
             {% for cred in webauthn_creds %}
@@ -46,9 +46,9 @@
         {% endif %}
 
         <div class="mb-2">
-            <input type="text" id="webauthn-cred-name" class="form-control mb-2" placeholder="Key name (optional, e.g. YubiKey 5)" maxlength="60">
+            <input type="text" id="webauthn-cred-name" class="form-control mb-2" placeholder="{{ locale.t("settings-2fa-webauthn-placeholder") }}" maxlength="60">
             <button class="btn btn-sm btn-primary" onclick="startWebAuthnRegistration()">
-                <i class="fa-solid fa-plus me-1"></i>Add Security Key
+                <i class="fa-solid fa-plus me-1"></i>{{ locale.t("settings-2fa-webauthn-add") }}
             </button>
         </div>
         <div id="webauthn-result" class="mt-2"></div>
@@ -127,8 +127,8 @@
     </script>
     {% else %}
     <div class="card bg-secondary mb-4 p-3">
-        <h6 class="mb-2"><i class="fa-solid fa-key me-2"></i>Security Keys / Passkeys (WebAuthn)</h6>
-        <p class="text-muted">WebAuthn is not configured on this server. Set <code>webauthn_rp_id</code> and <code>webauthn_rp_origin</code> in <code>config.json</code> to enable it.</p>
+        <h6 class="mb-2"><i class="fa-solid fa-key me-2"></i>{{ locale.t("settings-2fa-webauthn-heading") }}</h6>
+        <p class="text-muted">{{ locale.t("settings-2fa-webauthn-not-configured") }}</p>
     </div>
     {% endif %}
 

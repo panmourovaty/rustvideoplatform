@@ -3,13 +3,20 @@
 struct LoginTemplate {
     config: Config,
     common_headers: CommonHeaders,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn login(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let common_headers = extract_common_headers(&headers);
-    let template = LoginTemplate { config, common_headers };
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let template = LoginTemplate { config, common_headers, locale, resolved_lang };
     Html(minifi_html(template.render().unwrap()))
 }
 

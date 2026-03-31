@@ -124,6 +124,7 @@ struct HXSearchSuggestionsTemplate {
     media: Vec<Medium>,
     current_medium_id: String,
     config: Config,
+    locale: RequestLocale,
 }
 
 async fn hx_search_suggestions(
@@ -131,6 +132,7 @@ async fn hx_search_suggestions(
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(meili): Extension<Arc<MeilisearchClient>>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Form(form): Form<HXSearch>,
 ) -> axum::response::Html<String> {
@@ -138,6 +140,7 @@ async fn hx_search_suggestions(
         return Html("".to_owned());
     }
 
+    let common_headers = extract_common_headers(&headers);
     let user = get_user_login(headers, &db, redis).await;
     let visibility_filter = build_visibility_filter(&db, &user).await;
     let vis_filter_for_lists = format!("({})", visibility_filter);
@@ -240,12 +243,16 @@ async fn hx_search_suggestions(
         );
     }
 
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXSearchSuggestionsTemplate {
         users,
         lists,
         media,
         current_medium_id: String::new(),
         config,
+        locale,
     };
     Html(template.render().unwrap())
 }
@@ -279,6 +286,7 @@ struct HXSearchTemplate {
     is_first_page: bool,
     has_more: bool,
     config: Config,
+    locale: RequestLocale,
 }
 
 // --- List search ---
@@ -320,6 +328,7 @@ struct HXSearchListsTemplate {
     is_first_page: bool,
     has_more: bool,
     config: Config,
+    locale: RequestLocale,
 }
 
 // --- User search ---
@@ -353,6 +362,7 @@ struct HXSearchUsersTemplate {
     is_first_page: bool,
     has_more: bool,
     config: Config,
+    locale: RequestLocale,
 }
 
 #[derive(Debug, Clone)]
@@ -382,6 +392,7 @@ struct HXSearchAllTemplate {
     query_time_ms: usize,
     search_term: String,
     config: Config,
+    locale: RequestLocale,
 }
 
 async fn hx_search(
@@ -389,6 +400,7 @@ async fn hx_search(
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(meili): Extension<Arc<MeilisearchClient>>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(pageid): Path<usize>,
     Form(form): Form<HXSearchForm>,
@@ -397,20 +409,25 @@ async fn hx_search(
         return Html("".to_owned());
     }
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+
     let search_in = form.search_in.clone().unwrap_or_default();
     let user = get_user_login(headers.clone(), &db, redis.clone()).await;
 
     match search_in.as_str() {
         "lists" => {
-            return hx_search_lists_inner(config, db, meili, user, pageid, form.search).await;
+            return hx_search_lists_inner(config, db, meili, user, pageid, form.search, locale).await;
         }
         "users" => {
-            return hx_search_users_inner(config, meili, pageid, form.search).await;
+            return hx_search_users_inner(config, meili, pageid, form.search, locale).await;
         }
         "media" => {} // fall through to media-only Meilisearch
         _ => {
             // Default: search all types simultaneously
-            return hx_search_all_inner(config, db, meili, user, form.search).await;
+            return hx_search_all_inner(config, db, meili, user, form.search, locale).await;
         }
     }
 
@@ -535,7 +552,8 @@ async fn hx_search(
                 query_time_ms,
                 is_first_page: pageid == 0,
                 has_more,
-                config
+                config,
+                locale,
             };
             Html(template.render().unwrap())
         }
@@ -558,6 +576,7 @@ async fn hx_search_lists_inner(
     user: Option<User>,
     pageid: usize,
     search_term: String,
+    locale: RequestLocale,
 ) -> axum::response::Html<String> {
     let hits_per_page: usize = 41;
     let offset = pageid * 40;
@@ -636,6 +655,7 @@ async fn hx_search_lists_inner(
                 is_first_page: pageid == 0,
                 has_more,
                 config,
+                locale,
             };
             Html(template.render().unwrap())
         }
@@ -656,6 +676,7 @@ async fn hx_search_users_inner(
     meili: Arc<MeilisearchClient>,
     pageid: usize,
     search_term: String,
+    locale: RequestLocale,
 ) -> axum::response::Html<String> {
     let hits_per_page: usize = 41;
     let offset = pageid * 40;
@@ -728,6 +749,7 @@ async fn hx_search_users_inner(
                 is_first_page: pageid == 0,
                 has_more,
                 config,
+                locale,
             };
             Html(template.render().unwrap())
         }
@@ -749,6 +771,7 @@ async fn hx_search_all_inner(
     meili: Arc<MeilisearchClient>,
     user: Option<User>,
     search_term: String,
+    locale: RequestLocale,
 ) -> axum::response::Html<String> {
     let visibility_filter = build_visibility_filter(&db, &user).await;
     let vis_filter_parens = format!("({})", visibility_filter);
@@ -888,6 +911,7 @@ async fn hx_search_all_inner(
         query_time_ms,
         search_term,
         config,
+        locale,
     };
     Html(template.render().unwrap())
 }
@@ -902,6 +926,8 @@ struct SearchTemplate {
     common_headers: CommonHeaders,
     initial_query: String,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 #[derive(Deserialize)]
@@ -912,6 +938,7 @@ struct SearchQuery {
 
 async fn search(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<SearchQuery>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -927,8 +954,12 @@ async fn search(
             "url": &config.site_url
         }
     })).unwrap_or_default();
-    let sidebar = generate_sidebar(&config, "search".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "search".to_owned(), locale.clone());
     let initial_query = params.q.unwrap_or_default();
     let template = SearchTemplate {
         sidebar,
@@ -936,6 +967,8 @@ async fn search(
         common_headers,
         initial_query,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

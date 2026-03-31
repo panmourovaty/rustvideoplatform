@@ -49,9 +49,9 @@
 {% else %}
 <div class="col-12 text-center my-4">
     {% if items.is_empty() && page == 0 %}
-    <p class="text-secondary">This list is empty.</p>
+    <p class="text-secondary">{{ locale.t("list-empty") }}</p>
     {% else %}
-    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>You have reached the end.</p>
+    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>{{ locale.t("pagination-end") }}</p>
     {% endif %}
 </div>
 {% endif %}

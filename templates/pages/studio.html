@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
 
-    <title>Studio - {{ config.instancename }}</title>
+    <title>{{ locale.t("studio-page-title") }} - {{ config.instancename }}</title>
 
     <meta name="description" content="{{ config.description }}" />
     <meta property="og:title" content="{{ config.instancename }} Studio" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}/studio" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
 </head>
 
 <body hx-ext="preload">
-    {% set page_title = "Studio" %}
+    {% set page_title = locale.t("studio-page-title") %}
     {{ sidebar }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
@@ -33,7 +33,7 @@
                                 preload="mouseover"
                                 hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
                                 hx-on::before-request="if(window.isUploading){event.preventDefault();}">
-                            <i class="fa-solid fa-photo-film me-2"></i>Media
+                            <i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("studio-tab-media") }}
                         </button>
                     </li>
                     <li class="nav-item">
@@ -44,7 +44,7 @@
                                 hx-push-url="/upload"
                                 preload="mouseover"
                                 hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                            <i class="fa-solid fa-upload me-2"></i>Upload
+                            <i class="fa-solid fa-upload me-2"></i>{{ locale.t("studio-tab-upload") }}
                         </button>
                     </li>
                     <li class="nav-item">
@@ -56,7 +56,7 @@
                                 preload="mouseover"
                                 hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
                                 hx-on::before-request="if(window.isUploading){event.preventDefault();}">
-                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Concepts
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>{{ locale.t("studio-tab-concepts") }}
                         </button>
                     </li>
                     <li class="nav-item">
@@ -68,7 +68,7 @@
                                 preload="mouseover"
                                 hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
                                 hx-on::before-request="if(window.isUploading){event.preventDefault();}">
-                            <i class="fa-solid fa-list me-2"></i>Lists
+                            <i class="fa-solid fa-list me-2"></i>{{ locale.t("studio-tab-lists") }}
                         </button>
                     </li>
                     <li class="nav-item">
@@ -80,7 +80,7 @@
                                 preload="mouseover"
                                 hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
                                 hx-on::before-request="if(window.isUploading){event.preventDefault();}">
-                            <i class="fa-solid fa-users me-2"></i>Groups
+                            <i class="fa-solid fa-users me-2"></i>{{ locale.t("studio-tab-groups") }}
                         </button>
                     </li>
                 </ul>

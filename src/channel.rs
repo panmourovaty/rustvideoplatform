@@ -14,10 +14,13 @@ struct ChannelTemplate {
     common_headers: CommonHeaders,
     user: UserChannel,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn channel(
     Extension(db): Extension<ScyllaDb>,
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(userid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -57,8 +60,12 @@ async fn channel(
         subscribed: Some(subscriber_count),
     };
 
-    let sidebar = generate_sidebar(&config, "channel".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "channel".to_owned(), locale.clone());
     let schema_org_json = {
         let profile_url = format!("{}/u/{}", config.site_url, user.login);
         let mut main_entity = serde_json::json!({
@@ -91,6 +98,8 @@ async fn channel(
         common_headers,
         user,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -99,31 +108,34 @@ async fn hx_usermedia(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(userid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_usermedia_inner(config, db, redis, headers, userid, 0).await
+    hx_usermedia_inner(config, db, redis, localization, headers, userid, 0).await
 }
 
 async fn hx_usermedia_page(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((userid, page)): Path<(String, i64)>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_usermedia_inner(config, db, redis, headers, userid, page).await
+    hx_usermedia_inner(config, db, redis, localization, headers, userid, page).await
 }
 
 async fn hx_usermedia_inner(
     config: Config,
     db: ScyllaDb,
     redis: RedisConn,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     userid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
-    let user = get_user_login(headers, &db, redis.clone()).await;
+    let user = get_user_login(headers.clone(), &db, redis.clone()).await;
     let offset = (page * 40) as usize;
 
     // Fetch more than needed to handle app-level filtering and pagination.
@@ -167,12 +179,17 @@ async fn hx_usermedia_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/usermedia/{}/{}", userid, next_page);
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXMediumCardTemplate {
         media,
         config,
         page,
         has_more,
         next_url,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

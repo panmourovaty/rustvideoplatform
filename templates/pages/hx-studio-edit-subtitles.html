@@ -1,12 +1,12 @@
 <div class="col-12 mx-3">
-    <h5><i class="fa-solid fa-closed-captioning"></i>&nbsp;Subtitles</h5>
-    <p class="text-secondary">Upload subtitle files (.vtt, .srt, .ass, .ssa). SRT files are converted to WebVTT. ASS/SSA files are kept in their original format to preserve styling and rendered via LibASS. Each subtitle track needs a label (e.g. "English", "Spanish").</p>
+    <h5><i class="fa-solid fa-closed-captioning"></i>&nbsp;{{ locale.t("studio-subtitles-title") }}</h5>
+    <p class="text-secondary">{{ locale.t("studio-subtitles-instruction") }}</p>
     <div id="subtitles-editor">
         <div class="table-responsive">
             <table class="table table-hover text-white" id="subtitles-table">
                 <thead>
                     <tr>
-                        <th>Label</th>
+                        <th>{{ locale.t("studio-subtitles-label") }}</th>
                         <th style="width: 80px"></th>
                     </tr>
                 </thead>
@@ -14,21 +14,21 @@
                 </tbody>
             </table>
         </div>
-        <p class="text-secondary" id="no-subtitles-msg">No subtitles yet. Use the form below to add a subtitle track.</p>
+        <p class="text-secondary" id="no-subtitles-msg">{{ locale.t("studio-subtitles-empty") }}</p>
         <div class="border rounded p-3 mt-3">
-            <h6>Add Subtitle Track</h6>
+            <h6>{{ locale.t("studio-subtitles-add-heading") }}</h6>
             <div class="row g-2 align-items-end">
                 <div class="col-sm-4">
-                    <label for="subtitle-label-input" class="form-label">Label</label>
+                    <label for="subtitle-label-input" class="form-label">{{ locale.t("studio-subtitles-label") }}</label>
                     <input type="text" class="form-control form-control-sm" id="subtitle-label-input" />
                 </div>
                 <div class="col-sm-5">
-                    <label for="subtitle-file-input" class="form-label">Subtitle File (.vtt, .srt, .ass, .ssa)</label>
+                    <label for="subtitle-file-input" class="form-label">{{ locale.t("studio-subtitles-file-label") }}</label>
                     <input type="file" class="form-control form-control-sm" id="subtitle-file-input" accept=".vtt,.srt,.ass,.ssa" />
                 </div>
                 <div class="col-sm-3">
                     <button type="button" class="btn btn-primary btn-sm w-100" id="upload-subtitle-btn">
-                        <i class="fa-solid fa-upload"></i>&nbsp;Upload
+                        <i class="fa-solid fa-upload"></i>&nbsp;{{ locale.t("button-upload") }}
                     </button>
                 </div>
             </div>
@@ -36,23 +36,23 @@
         <div id="subtitles-status" class="mt-2"></div>
     </div>
     <div class="border rounded p-3 mt-3" id="translate-section">
-        <h6><i class="fa-solid fa-language"></i>&nbsp;Translate Subtitle</h6>
-        <p class="text-secondary mb-2">Request an AI translation of an existing subtitle track into another language. The translation will be queued and processed automatically.</p>
+        <h6><i class="fa-solid fa-language"></i>&nbsp;{{ locale.t("studio-subtitles-translate-heading") }}</h6>
+        <p class="text-secondary mb-2">{{ locale.t("studio-subtitles-translate-instruction") }}</p>
         <div id="translate-locked" style="display:none" class="py-2">
-            <span class="text-warning"><i class="fa-solid fa-hourglass-half fa-bounce"></i>&nbsp;Translation in progress&hellip;</span>
-            <p class="text-secondary mb-0 mt-1" style="font-size:0.875em">Another translation is already queued for this media. Please wait until it finishes before requesting a new one.</p>
+            <span class="text-warning"><i class="fa-solid fa-hourglass-half fa-bounce"></i>&nbsp;{{ locale.t("studio-subtitles-translation-in-progress") }}</span>
+            <p class="text-secondary mb-0 mt-1" style="font-size:0.875em">{{ locale.t("studio-subtitles-translation-queued") }}</p>
         </div>
         <div id="translate-inputs-row" class="row g-2 align-items-end">
             <div class="col-sm-4">
-                <label for="translate-source-select" class="form-label">Source Subtitle</label>
+                <label for="translate-source-select" class="form-label">{{ locale.t("studio-subtitles-source-label") }}</label>
                 <select class="form-select form-select-sm" id="translate-source-select">
-                    <option value="">-- Select source --</option>
+                    <option value="">{{ locale.t("studio-subtitles-source-placeholder") }}</option>
                 </select>
             </div>
             <div class="col-sm-4">
-                <label for="translate-target-select" class="form-label">Target Language</label>
+                <label for="translate-target-select" class="form-label">{{ locale.t("studio-subtitles-target-language") }}</label>
                 <select class="form-select form-select-sm" id="translate-target-select">
-                    <option value="">-- Select language --</option>
+                    <option value="">{{ locale.t("studio-subtitles-language-placeholder") }}</option>
                     <option value="en">English</option>
                     <option value="cs">Czech</option>
                     <option value="de">German</option>
@@ -90,7 +90,7 @@
             </div>
             <div class="col-sm-4">
                 <button type="button" class="btn btn-primary btn-sm w-100" id="translate-subtitle-btn">
-                    <i class="fa-solid fa-language"></i>&nbsp;Translate
+                    <i class="fa-solid fa-language"></i>&nbsp;{{ locale.t("button-translate") }}
                 </button>
             </div>
         </div>

@@ -39,3 +39,5 @@ webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"]
 uuid = { version = "1", features = ["v4", "v5", "serde"] }
 url = "2"
 base32 = "0.4"
+fluent-bundle = "0.16"
+unic-langid = "0.9"

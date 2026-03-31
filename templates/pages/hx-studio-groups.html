@@ -1,9 +1,9 @@
 <div class="col-12 mb-3">
     <form hx-post="/hx/creategroup" hx-target="#groups-list" hx-swap="innerHTML">
         <div class="input-group" style="max-width:500px;">
-            <input type="text" name="name" class="form-control" placeholder="New group name..." required>
+            <input type="text" name="name" class="form-control" placeholder="{{ locale.t("studio-new-group-placeholder") }}" required>
             <button type="submit" class="btn btn-primary">
-                <i class="fa-solid fa-plus"></i>&nbsp;Create Group
+                <i class="fa-solid fa-plus"></i>&nbsp;{{ locale.t("studio-create-group") }}
             </button>
         </div>
     </form>
@@ -18,9 +18,9 @@
                 <b class="text-white"><i class="fa-solid fa-people-roof me-2"></i>{{ group.name }}</b>
                 <p class="text-secondary mb-0">
                     {% if group.id == "__all_registered__" %}
-                    Automatically includes all logged-in users
+                    {{ locale.t("group-auto-all-registered") }}
                     {% else %}
-                    Automatically includes users subscribed to your channel
+                    {{ locale.t("group-auto-subscribers") }}
                     {% endif %}
                 </p>
                 {% else %}

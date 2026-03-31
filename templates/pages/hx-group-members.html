@@ -1,36 +1,36 @@
 <div class="card border p-3 mt-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="text-white m-0"><i class="fa-solid fa-users me-2"></i>{{ group.name }} - Members</h5>
+        <h5 class="text-white m-0"><i class="fa-solid fa-users me-2"></i>{{ group.name }} - {{ locale.t("group-members-title") }}</h5>
     </div>
     <hr class="mt-0">
     {% if group.id == "__all_registered__" || group.id == "__subscribers__" %}
     <div class="text-secondary">
         <i class="fa-solid fa-circle-info me-2"></i>
         {% if group.id == "__all_registered__" %}
-        This is an automatic group that includes all registered users. Any logged-in user will have access to media or lists restricted to this group. Membership is managed automatically and cannot be changed.
+        {{ locale.t("group-auto-all-registered-description") }}
         {% else %}
-        This is an automatic group that includes all users subscribed to your channel. Only users who have subscribed to you will have access to media or lists restricted to this group. Membership is managed automatically and cannot be changed.
+        {{ locale.t("group-auto-subscribers-description") }}
         {% endif %}
     </div>
     {% else %}
     {% if is_owner %}
     <form hx-post="/hx/group/{{ group.id }}/addmember" hx-target="#group-members-panel" class="mb-3">
         <div class="input-group" style="max-width:400px;">
-            <input type="text" name="user_login" class="form-control" placeholder="Username to add..." required>
+            <input type="text" name="user_login" class="form-control" placeholder="{{ locale.t("group-member-username-placeholder") }}" required>
             <button type="submit" class="btn btn-primary">
-                <i class="fa-solid fa-user-plus"></i>&nbsp;Add
+                <i class="fa-solid fa-user-plus"></i>&nbsp;{{ locale.t("button-add") }}
             </button>
         </div>
     </form>
     {% endif %}
     {% if members.is_empty() %}
-    <p class="text-secondary">No members yet. Add users by their username above.</p>
+    <p class="text-secondary">{{ locale.t("group-member-empty") }}</p>
     {% else %}
     <div class="table-responsive">
         <table class="table table-hover table-bordered text-white">
             <thead>
                 <tr>
-                    <th>Username</th>
+                    <th>{{ locale.t("group-member-username-header") }}</th>
                     {% if is_owner %}
                     <th style="width:80px;"></th>
                     {% endif %}

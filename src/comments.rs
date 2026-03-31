@@ -20,6 +20,7 @@ struct HXCommentsTemplate {
     medium_id: String,
     next_page: Option<i64>,
     config: Config,
+    locale: RequestLocale,
 }
 
 const COMMENTS_PER_PAGE: i64 = 20;
@@ -27,6 +28,8 @@ const COMMENTS_PER_PAGE: i64 = 20;
 async fn hx_comments(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
     Path(mediumid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<CommentsQuery>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -71,11 +74,16 @@ async fn hx_comments(
 
     let next_page = if has_more { Some(page + 1) } else { None };
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXCommentsTemplate {
         comments,
         medium_id: mediumid,
         next_page,
         config,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

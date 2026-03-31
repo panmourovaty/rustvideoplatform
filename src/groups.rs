@@ -32,6 +32,7 @@ async fn studio_groups(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
@@ -40,13 +41,19 @@ async fn studio_groups(
         ));
     }
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = StudioTemplate {
         sidebar,
         config,
         common_headers,
         active_tab: "groups".to_owned(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -55,12 +62,14 @@ async fn studio_groups(
 #[template(path = "pages/hx-studio-groups.html", escape = "none")]
 struct HXStudioGroupsTemplate {
     groups: Vec<UserGroupWithCount>,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
 #[template(path = "pages/hx-groups-list.html", escape = "none")]
 struct HXGroupsListTemplate {
     groups: Vec<UserGroupWithCount>,
+    locale: RequestLocale,
 }
 
 /// Helper: fetch groups for owner with member counts, prepending system groups.
@@ -107,8 +116,10 @@ async fn fetch_groups_with_counts(db: &ScyllaDb, owner: &str) -> Vec<UserGroupWi
 }
 
 async fn hx_studio_groups(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
@@ -121,13 +132,17 @@ async fn hx_studio_groups(
 
     let groups = fetch_groups_with_counts(&db, &user_info.login).await;
 
-    let template = HXStudioGroupsTemplate { groups };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioGroupsTemplate { groups, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_create_group(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Form(form): Form<CreateGroupForm>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -156,13 +171,17 @@ async fn hx_create_group(
     // Return updated groups list
     let groups = fetch_groups_with_counts(&db, &user_info.login).await;
 
-    let template = HXStudioGroupsTemplate { groups };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioGroupsTemplate { groups, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_delete_group(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(groupid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -260,7 +279,9 @@ async fn hx_delete_group(
     // Return updated groups list
     let groups = fetch_groups_with_counts(&db, &user_info.login).await;
 
-    let template = HXStudioGroupsTemplate { groups };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioGroupsTemplate { groups, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -270,11 +291,14 @@ struct HXGroupMembersTemplate {
     group: UserGroup,
     members: Vec<GroupMember>,
     is_owner: bool,
+    locale: RequestLocale,
 }
 
 async fn hx_group_members(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(groupid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -291,10 +315,13 @@ async fn hx_group_members(
         } else {
             UserGroup { id: groupid, name: "Subscribers Only".to_owned(), owner: user_info.login.clone() }
         };
+        let common_headers = extract_common_headers(&headers);
+        let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
         let template = HXGroupMembersTemplate {
             group,
             members: vec![],
             is_owner: false, // prevents showing add/remove controls
+            locale,
         };
         return Html(minifi_html(template.render().unwrap()));
     }
@@ -324,17 +351,22 @@ async fn hx_group_members(
         .collect();
     members.sort_by(|a, b| a.user_login.cmp(&b.user_login));
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXGroupMembersTemplate {
         group,
         members,
         is_owner,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_add_group_member(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(groupid): Path<String>,
     Form(form): Form<AddMemberForm>,
@@ -396,17 +428,22 @@ async fn hx_add_group_member(
         .collect();
     members.sort_by(|a, b| a.user_login.cmp(&b.user_login));
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXGroupMembersTemplate {
         group,
         members,
         is_owner: true,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_remove_group_member(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((groupid, login)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -459,10 +496,13 @@ async fn hx_remove_group_member(
         .collect();
     members.sort_by(|a, b| a.user_login.cmp(&b.user_login));
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXGroupMembersTemplate {
         group,
         members,
         is_owner: true,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

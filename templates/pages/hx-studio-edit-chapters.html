@@ -1,13 +1,13 @@
 <div class="col-12 mx-3">
-    <h5><i class="fa-solid fa-list-ol"></i>&nbsp;Chapters</h5>
-    <p class="text-secondary">Add chapters to help viewers navigate your media. Enter a start time and title for each chapter (HH:MM:SS format).</p>
+    <h5><i class="fa-solid fa-list-ol"></i>&nbsp;{{ locale.t("studio-chapters-title") }}</h5>
+    <p class="text-secondary">{{ locale.t("studio-chapters-instruction") }}</p>
     <div id="chapters-editor">
         <div class="table-responsive">
             <table class="table table-hover text-white" id="chapters-table">
                 <thead>
                     <tr>
-                        <th style="width: 180px">Start Time</th>
-                        <th>Title</th>
+                        <th style="width: 180px">{{ locale.t("studio-chapters-start-time") }}</th>
+                        <th>{{ locale.t("studio-chapters-title-header") }}</th>
                         <th style="width: 80px"></th>
                     </tr>
                 </thead>
@@ -15,13 +15,13 @@
                 </tbody>
             </table>
         </div>
-        <p class="text-secondary" id="no-chapters-msg">No chapters yet. Click "Add Chapter" to get started.</p>
+        <p class="text-secondary" id="no-chapters-msg">{{ locale.t("studio-chapters-empty") }}</p>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-secondary" id="add-chapter-btn">
-                <i class="fa-solid fa-plus"></i>&nbsp;Add Chapter
+                <i class="fa-solid fa-plus"></i>&nbsp;{{ locale.t("studio-chapters-add") }}
             </button>
             <button type="button" class="btn btn-primary" id="save-chapters-btn">
-                <i class="fa-solid fa-floppy-disk"></i>&nbsp;Save Chapters
+                <i class="fa-solid fa-floppy-disk"></i>&nbsp;{{ locale.t("studio-chapters-save") }}
             </button>
         </div>
         <div id="chapters-status" class="mt-2"></div>

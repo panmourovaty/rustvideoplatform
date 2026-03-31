@@ -17,15 +17,19 @@ USE videoplatform;
 
 -- Primary user lookup by login (partition key = login)
 CREATE TABLE IF NOT EXISTS users (
-    login         text PRIMARY KEY,
-    name          text,
-    password_hash text,
-    profile_picture text,
-    channel_picture text,
-    preferred_theme text,
-    totp_secret   text,
-    totp_enabled  boolean
+    login               text PRIMARY KEY,
+    name                text,
+    password_hash       text,
+    profile_picture     text,
+    channel_picture     text,
+    preferred_theme     text,
+    preferred_language  text,
+    totp_secret         text,
+    totp_enabled        boolean
 );
+
+-- Migration for existing deployments:
+-- ALTER TABLE users ADD preferred_language text;
 
 -- ══════════════════════════════════════════════════════════════════════
 -- MEDIA

@@ -1,17 +1,17 @@
 <div class="col-12 mx-3">
-    <h5 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;Danger Zone</h5>
-    <p class="text-secondary">Destructive actions that cannot be undone.</p>
+    <h5 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;{{ locale.t("studio-danger-title") }}</h5>
+    <p class="text-secondary">{{ locale.t("studio-danger-subtitle") }}</p>
     <div class="border border-danger rounded p-3 me-3">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <strong>Delete this media</strong>
-                <p class="text-secondary mb-0 mt-1">Permanently delete "{{ medium_name }}". All comments and list entries will also be removed.</p>
+                <strong>{{ locale.t("studio-danger-delete-label") }}</strong>
+                <p class="text-secondary mb-0 mt-1">{{ locale.t("studio-danger-delete-description") }} "{{ medium_name }}"</p>
             </div>
             <button
                 class="btn btn-outline-danger ms-3"
                 onclick="if(confirm('Are you sure you want to delete &quot;{{ medium_name }}&quot;? This action cannot be undone. All comments and list entries will also be removed.')) { window.location.href='/hx/studio/delete/{{ medium_id }}'; }"
             >
-                <i class="fa-solid fa-trash"></i>&nbsp;Delete Media
+                <i class="fa-solid fa-trash"></i>&nbsp;{{ locale.t("studio-danger-delete-button") }}
             </button>
         </div>
     </div>

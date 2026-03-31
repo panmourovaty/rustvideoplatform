@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
     <head>
         {% include "component-dependencies.html" %}
         {% include "component-dependencies-quill.html" %}
@@ -14,7 +14,7 @@
             property="og:url"
             content="{{ config.site_url }}/studio/edit/{{ medium.id }}"
         />
-        <meta property="og:locale" content="{{ config.locale }}" />
+        <meta property="og:locale" content="{{ resolved_lang }}" />
         <meta property="og:description" content="{{ config.description }}" />
         <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
         <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -26,13 +26,13 @@
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                 <div class="card py-3 px-3 text-white" style="min-height: 80vh">
                     <div class="row justify-content-between align-items-center">
-                        <h3 class="my-2 mx-3" style="width: auto">Edit Media</h3>
+                        <h3 class="my-2 mx-3" style="width: auto">{{ locale.t("studio-edit-heading") }}</h3>
                         <div style="width: auto">
                             <a href="/studio" class="btn btn-secondary mx-1" preload="mouseover">
-                                <i class="fa-solid fa-arrow-left"></i>&nbsp;Back to Studio
+                                <i class="fa-solid fa-arrow-left"></i>&nbsp;{{ locale.t("studio-edit-back") }}
                             </a>
                             <a href="/m/{{ medium.id }}" class="btn btn-primary mx-1" preload="mouseover">
-                                <i class="fa-solid fa-eye"></i>&nbsp;View
+                                <i class="fa-solid fa-eye"></i>&nbsp;{{ locale.t("studio-edit-view") }}
                             </a>
                         </div>
                     </div>
@@ -44,7 +44,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-align-left me-2"></i>Description
+                                <i class="fa-solid fa-align-left me-2"></i>{{ locale.t("studio-edit-tab-description") }}
                             </button>
                         </li>
                         {% if medium.medium_type == "video" || medium.medium_type == "audio" %}
@@ -55,7 +55,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-list-ol me-2"></i>Chapters
+                                <i class="fa-solid fa-list-ol me-2"></i>{{ locale.t("studio-edit-tab-chapters") }}
                             </button>
                         </li>
                         <li class="nav-item">
@@ -65,7 +65,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-closed-captioning me-2"></i>Subtitles
+                                <i class="fa-solid fa-closed-captioning me-2"></i>{{ locale.t("studio-edit-tab-subtitles") }}
                             </button>
                         </li>
                         {% endif %}
@@ -76,7 +76,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-image me-2"></i>Thumbnail
+                                <i class="fa-solid fa-image me-2"></i>{{ locale.t("studio-edit-tab-thumbnail") }}
                             </button>
                         </li>
                         <li class="nav-item">
@@ -86,7 +86,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-lock me-2"></i>Permissions
+                                <i class="fa-solid fa-lock me-2"></i>{{ locale.t("studio-edit-tab-permissions") }}
                             </button>
                         </li>
                         <li class="nav-item">
@@ -96,7 +96,7 @@
                                     hx-swap="innerHTML"
                                     preload="mouseover"
                                     hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
-                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ locale.t("studio-edit-tab-danger") }}
                             </button>
                         </li>
                     </ul>

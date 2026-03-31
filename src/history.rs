@@ -4,18 +4,27 @@ struct HistoryTemplate {
     sidebar: String,
     config: Config,
     common_headers: CommonHeaders,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 async fn history(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let sidebar = generate_sidebar(&config, "history".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "history".to_owned(), locale.clone());
     let template = HistoryTemplate {
         sidebar,
         config,
         common_headers,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -29,35 +38,40 @@ struct HXHistoryItemsTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 
 async fn hx_history(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_history_inner(config, headers, db, redis, 0).await
+    hx_history_inner(config, localization, headers, db, redis, 0).await
 }
 
 async fn hx_history_page(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_history_inner(config, headers, db, redis, page).await
+    hx_history_inner(config, localization, headers, db, redis, page).await
 }
 
 async fn hx_history_inner(
     config: Config,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     db: ScyllaDb,
     redis: RedisConn,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
-    let user = match get_user_login(headers, &db, redis.clone()).await {
+    let common_headers = extract_common_headers(&headers);
+    let user = match get_user_login(headers.clone(), &db, redis.clone()).await {
         Some(user) => user,
         None => {
             return Html(
@@ -122,6 +136,9 @@ async fn hx_history_inner(
 
     let next_url = format!("/hx/history/{}", page + 1);
 
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXHistoryItemsTemplate {
         media,
         current_medium_id: String::new(),
@@ -129,6 +146,7 @@ async fn hx_history_inner(
         page,
         has_more,
         next_url,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

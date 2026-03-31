@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
     <head>
         {% include "component-dependencies.html" %}
 
@@ -12,7 +12,7 @@
             property="og:url"
             content="{{ config.site_url }}/upload"
         />
-        <meta property="og:locale" content="{{ config.locale }}" />
+        <meta property="og:locale" content="{{ resolved_lang }}" />
         <meta property="og:description" content="{{ config.description }}" />
         <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
         <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -23,10 +23,10 @@
         <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                 <div class="card py-3 px-3 text-white" style="min-height: 80vh">
-                    <h3 class="my-2 mx-3">Upload</h3>
+                    <h3 class="my-2 mx-3">{{ locale.t("upload-page-title") }}</h3>
                     <hr />
                     <h1 class="m-3 text-center">
-                        What do you want to upload today?
+                        {{ locale.t("upload-heading") }}
                     </h1>
                     <div class="d-flex justify-content-center">
                         <div class="w-100" style="max-width: 600px">

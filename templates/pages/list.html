@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
     <head>
         {% include "component-dependencies.html" %}
         <title>{{ list.name }} - {{ config.instancename }}</title>
@@ -7,7 +7,7 @@
         <meta property="og:title" content="{{ list.name }}" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{{ config.site_url }}/l/{{ list.id }}" />
-        <meta property="og:locale" content="{{ config.locale }}" />
+        <meta property="og:locale" content="{{ resolved_lang }}" />
         <meta property="og:description" content="{{ config.description }}" />
         <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
         <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -25,18 +25,18 @@
                         <a hx-get="/hx/deletelist/{{ list.id }}"
                            hx-confirm="Are you sure you want to delete this list?"
                            class="btn btn-primary">
-                            <i class="fa-solid fa-trash text-danger"></i> Delete List
+                            <i class="fa-solid fa-trash text-danger"></i> {{ locale.t("list-delete") }}
                         </a>
                         {% endif %}
                     </div>
                     <p class="text-secondary m-0">
-                        by <a href="/u/{{ list.owner }}" class="text-secondary text-decoration-none">{{ list.owner }}</a>
+                        {{ locale.t("list-by") }} <a href="/u/{{ list.owner }}" class="text-secondary text-decoration-none">{{ list.owner }}</a>
                         {% if list.visibility == "public" %}
-                        <i class="fa-solid fa-globe fa-sm ms-2"></i> Public
+                        <i class="fa-solid fa-globe fa-sm ms-2"></i> {{ locale.t("list-visibility-public") }}
                         {% else if list.visibility == "restricted" %}
-                        <i class="fa-solid fa-users fa-sm ms-2"></i> Restricted
+                        <i class="fa-solid fa-users fa-sm ms-2"></i> {{ locale.t("list-visibility-restricted") }}
                         {% else %}
-                        <i class="fa-solid fa-lock fa-sm ms-2"></i> Private
+                        <i class="fa-solid fa-lock fa-sm ms-2"></i> {{ locale.t("list-visibility-private") }}
                         {% endif %}
                     </p>
                     <hr>

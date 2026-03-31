@@ -3,10 +3,12 @@ async fn hx_recommended(
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(meili): Extension<Arc<MeilisearchClient>>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Result<Html<Vec<u8>>, axum::response::Response> {
     let mediumid = mediumid.to_ascii_lowercase();
+    let common_headers = extract_common_headers(&headers);
     let user = get_user_login(headers, &db, redis).await;
     let visibility_filter = build_visibility_filter(&db, &user).await;
 
@@ -35,11 +37,15 @@ async fn hx_recommended(
         })
         .unwrap_or_default();
 
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXMediumListTemplate {
         current_medium_id: mediumid,
         list_id: String::new(),
         media,
         config,
+        locale,
     };
     match template.render() {
         Ok(rendered) => Ok(Html(minifi_html(rendered))),

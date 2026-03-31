@@ -1,7 +1,7 @@
 <div class="col-12">
     <form action="/studio/edit/{{ medium.id }}" method="post" class="mx-3" id="edit-form">
         <div class="form-group row my-3">
-            <label for="medium_id_display" class="col-4 col-form-label">URL</label>
+            <label for="medium_id_display" class="col-4 col-form-label">{{ locale.t("studio-description-url-label") }}</label>
             <div class="col-8">
                 <div class="input-group">
                     <input id="medium_id_display" type="text" class="form-control" value="{{ medium.id }}" disabled />
@@ -9,13 +9,13 @@
             </div>
         </div>
         <div class="form-group row my-3">
-            <label for="medium_name" class="col-4 col-form-label">Name</label>
+            <label for="medium_name" class="col-4 col-form-label">{{ locale.t("studio-description-name-label") }}</label>
             <div class="col-8">
                 <input id="medium_name" name="medium_name" type="text" class="form-control" required value="{{ medium.name }}" />
             </div>
         </div>
         <div class="form-group row my-3">
-            <label for="medium_description" class="col-4 col-form-label">Description</label>
+            <label for="medium_description" class="col-4 col-form-label">{{ locale.t("studio-description-label") }}</label>
             <div class="col-8">
                 <div id="medium_description_editor" style="height: 50vh"></div>
                 <input type="hidden" name="medium_description" id="medium_description" />
@@ -50,7 +50,7 @@
         <div class="form-group row my-3">
             <div class="offset-4 col-8">
                 <button name="submit" type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i>&nbsp;Save Changes
+                    <i class="fa-solid fa-floppy-disk"></i>&nbsp;{{ locale.t("studio-save-changes") }}
                 </button>
             </div>
         </div>

@@ -70,7 +70,7 @@
                     {% if let Some(vt) = item.visit_time %}
                     <i class="fa-solid fa-clock me-1"></i>{{ vt }}
                     {% else %}
-                    <i class="fa-solid fa-eye me-1"></i>{{ item.views }} views
+                    <i class="fa-solid fa-eye me-1"></i>{{ item.views }} {{ locale.t("unit-views") }}
                     {% endif %}
                 </p>
             </td>

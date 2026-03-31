@@ -5,9 +5,12 @@ struct TrendingTemplate {
     config: Config,
     common_headers: CommonHeaders,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn trending(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let schema_org_json = serde_json::to_string(&serde_json::json!({
@@ -22,13 +25,19 @@ async fn trending(
             "url": &config.site_url
         }
     })).unwrap_or_default();
-    let sidebar = generate_sidebar(&config, "trending".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "trending".to_owned(), locale.clone());
     let template = TrendingTemplate {
         sidebar,
         config,
         common_headers,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -36,16 +45,20 @@ async fn trending(
 async fn hx_trending(
     Extension(config): Extension<Config>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_trending_inner(config, redis, 0).await
+    hx_trending_inner(config, redis, localization, headers, 0).await
 }
 
 async fn hx_trending_page(
     Extension(config): Extension<Config>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_trending_inner(config, redis, page).await
+    hx_trending_inner(config, redis, localization, headers, page).await
 }
 
 /// Try to load a page of trending media from the Redis cache.
@@ -111,6 +124,8 @@ async fn try_trending_from_cache(redis: &mut RedisConn, offset: i64) -> Option<V
 async fn hx_trending_inner(
     config: Config,
     mut redis: RedisConn,
+    localization: Arc<LocalizationService>,
+    headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
     let offset = page * 30;
@@ -132,12 +147,17 @@ async fn hx_trending_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/trending/{}", next_page);
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXMediumCardTemplate {
         media,
         config,
         page,
         has_more,
         next_url,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
