@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
@@ -10,7 +10,7 @@
     <meta property="og:title" content="{{ config.instancename }} Studio - Lists" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}/studio/lists" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -23,12 +23,12 @@
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
             <div class="card py-3 px-3 text-white" style="min-height:30vh;">
                 <div class="row justify-content-between">
-                    <h3 class="my-2 mx-3" style="width:200px;">Lists</h3>
+                    <h3 class="my-2 mx-3" style="width:200px;">{{ locale.t("studio-tab-lists") }}</h3>
                     <div style="width:400px;">
                     <a href="/studio" class="btn btn-primary mx-3" style="width:150px;height:40px;" preload="mouseover"><i
-                            class="fa-solid fa-photo-film"></i>&nbsp;Media</a>
+                            class="fa-solid fa-photo-film"></i>&nbsp;{{ locale.t("studio-tab-media") }}</a>
                     <a href="/studio/concepts" class="btn btn-primary mx-3" style="width:150px;height:40px;" preload="mouseover"><i
-                            class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;Concepts</a>
+                            class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;{{ locale.t("studio-tab-concepts") }}</a>
                     </div>
                 </div>
                 <hr>

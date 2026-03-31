@@ -902,6 +902,8 @@ struct SearchTemplate {
     common_headers: CommonHeaders,
     initial_query: String,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 #[derive(Deserialize)]
@@ -912,6 +914,7 @@ struct SearchQuery {
 
 async fn search(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<SearchQuery>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -927,8 +930,12 @@ async fn search(
             "url": &config.site_url
         }
     })).unwrap_or_default();
-    let sidebar = generate_sidebar(&config, "search".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "search".to_owned(), locale.clone());
     let initial_query = params.q.unwrap_or_default();
     let template = SearchTemplate {
         sidebar,
@@ -936,6 +943,8 @@ async fn search(
         common_headers,
         initial_query,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

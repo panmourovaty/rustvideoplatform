@@ -22,10 +22,10 @@ async fn settings(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -50,10 +50,10 @@ async fn settings_password(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -78,10 +78,10 @@ async fn settings_profile_picture(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -106,10 +106,10 @@ async fn settings_channel_picture(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -134,10 +134,10 @@ async fn settings_diagnostics(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -747,10 +747,10 @@ async fn settings_theme(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,
@@ -915,10 +915,10 @@ async fn settings_language(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let sidebar = generate_sidebar(&config, "settings".to_owned());
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
     let template = SettingsTemplate {
         sidebar,
         config,

@@ -12,9 +12,9 @@
             <div class="input-group m-2 text-white">
                 <input id="searchInput" class="form-control searchinput" hx-post="/hx/searchsuggestions"
                     hx-trigger="keyup changed delay:250ms" hx-target="#suggestions" name="search"
-                    autocomplete="off" placeholder="Search..." aria-label="Search">
+                    autocomplete="off" placeholder="{{ locale.t("nav-search-placeholder") }}" aria-label="{{ locale.t("nav-search-placeholder") }}">
                 <div class="input-group-append">
-                    <button class="searchbtn btn-primary h-100" type="submit" aria-label="Submit search">
+                    <button class="searchbtn btn-primary h-100" type="submit" aria-label="{{ locale.t("nav-submit-search") }}">
                         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -22,16 +22,16 @@
             <ul id="suggestions" class="list-group text-white p-2 m- border" style="display: none;" role="listbox" aria-label="Search suggestions">
               <a href="/search" class="suggestionitem p-2" preload="mouseover">
                 <li role="option">
-                    <i class="fa-solid fa-magnifying-glass me-2" aria-hidden="true"></i><b>Use advanced search</b>
+                    <i class="fa-solid fa-magnifying-glass me-2" aria-hidden="true"></i><b>{{ locale.t("search-advanced-link") }}</b>
                 </li>
               </a>
             </ul>
         </form>
         <div class="my-1 text-white d-flex align-items-center gap-5">
             <div hx-get="/hx/usernav" hx-trigger="load" style="width:120px;height:40px;" class="mx-3 usernav-placeholder" preload="always">
-                <a href="/login" preload="mouseover" style="visibility:hidden;"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>Log in</button></a>
+                <a href="/login" preload="mouseover" style="visibility:hidden;"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>{{ locale.t("nav-login") }}</button></a>
             </div>
-            <button class="btn btn-primary ms-3" onclick="toggleSidebar()" aria-label="Toggle sidebar" aria-expanded="true" aria-controls="sidebar"><i class="fa-solid fa-bars fa-xl" aria-hidden="true"></i></button>
+            <button class="btn btn-primary ms-3" onclick="toggleSidebar()" aria-label="{{ locale.t("nav-toggle-sidebar") }}" aria-expanded="true" aria-controls="sidebar"><i class="fa-solid fa-bars fa-xl" aria-hidden="true"></i></button>
         </div>
     </div>
     {% if page_title is defined %}

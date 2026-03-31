@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
@@ -10,7 +10,7 @@
     <meta property="og:title" content="{{ config.instancename }}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -32,7 +32,7 @@
         </div>
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
             <div class="card py-3 px-3 text-white" style="min-height:100vh;">
-                <h3 class="my-2 mx-3"><a href="/trending" class="text-decoration-none text-white" preload="mouseover">Trending</a></h3>
+                <h3 class="my-2 mx-3"><a href="/trending" class="text-decoration-none text-white" preload="mouseover">{{ locale.t("nav-trending") }}</a></h3>
                 <hr>
                 <div hx-get="/hx/trending" hx-trigger="load" class="row mb-3 hx-placeholder" preload="always">
                 </div>

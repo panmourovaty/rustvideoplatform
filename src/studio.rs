@@ -5,11 +5,14 @@ struct StudioTemplate {
     config: Config,
     common_headers: CommonHeaders,
     active_tab: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn studio(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
@@ -18,13 +21,19 @@ async fn studio(
         ));
     }
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = StudioTemplate {
         sidebar,
         config,
         common_headers,
         active_tab: "media".to_owned(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -115,6 +124,7 @@ async fn studio_lists(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
@@ -123,13 +133,19 @@ async fn studio_lists(
         ));
     }
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = StudioTemplate {
         sidebar,
         config,
         common_headers,
         active_tab: "lists".to_owned(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -231,6 +247,8 @@ struct StudioEditTemplate {
     medium: MediumEdit,
     common_headers: CommonHeaders,
     active_tab: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 #[derive(Template)]
@@ -274,6 +292,7 @@ async fn studio_edit(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -299,8 +318,12 @@ async fn studio_edit(
                 ));
             }
 
-            let sidebar = generate_sidebar(&config, "studio".to_owned());
             let common_headers = extract_common_headers(&headers);
+            let locale = resolve_locale_noauth(
+                common_headers.accept_language.as_deref(), &config.locale, &localization,
+            );
+            let resolved_lang = locale.lang.clone();
+            let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
             let template = StudioEditTemplate {
                 sidebar,
                 config,
@@ -313,6 +336,8 @@ async fn studio_edit(
                 },
                 common_headers,
                 active_tab: "description".to_owned(),
+                locale,
+                resolved_lang,
             };
             Html(minifi_html(template.render().unwrap()))
         }

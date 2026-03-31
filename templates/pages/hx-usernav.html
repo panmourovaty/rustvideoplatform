@@ -11,9 +11,9 @@
         <span class="text-white user-name-clamp">{{ user.name }}</span>
     </button>
     <div class="dropdown-content border shadow">
-        <a class="dropdown-item" href="/u/{{ user.login }}" preload="mouseover"><i class="fa-solid fa-house-flag mx-2"></i>My Channel</a>
-        <a class="dropdown-item" href="/studio" preload="mouseover"><i class="fa-solid fa-pen-ruler mx-2"></i>Studio</a>
-        <a class="dropdown-item" href="/settings" preload="mouseover"><i class="fa-solid fa-gear mx-2"></i>Settings</a>
-        <a class="dropdown-item" href="/hx/logout"><i class="fa-solid fa-arrow-right-from-bracket mx-2"></i>Log out</a>
+        <a class="dropdown-item" href="/u/{{ user.login }}" preload="mouseover"><i class="fa-solid fa-house-flag mx-2"></i>{{ locale.t("usernav-my-channel") }}</a>
+        <a class="dropdown-item" href="/studio" preload="mouseover"><i class="fa-solid fa-pen-ruler mx-2"></i>{{ locale.t("nav-studio") }}</a>
+        <a class="dropdown-item" href="/settings" preload="mouseover"><i class="fa-solid fa-gear mx-2"></i>{{ locale.t("nav-settings") }}</a>
+        <a class="dropdown-item" href="/hx/logout"><i class="fa-solid fa-arrow-right-from-bracket mx-2"></i>{{ locale.t("usernav-log-out") }}</a>
     </div>
 </div>

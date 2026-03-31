@@ -40,6 +40,8 @@ struct ListPageTemplate {
     is_owner: bool,
     common_headers: CommonHeaders,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 #[derive(Template)]
@@ -74,6 +76,7 @@ async fn list_page(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(listid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -123,7 +126,11 @@ async fn list_page(
             "url": format!("{}/u/{}", config.site_url, list.owner)
         }
     })).unwrap_or_default();
-    let sidebar = generate_sidebar(&config, "list".to_owned());
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "list".to_owned(), locale.clone());
     let template = ListPageTemplate {
         sidebar,
         config,
@@ -131,6 +138,8 @@ async fn list_page(
         is_owner,
         common_headers,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -139,6 +148,7 @@ async fn medium_in_list(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((listid, mediumid)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -301,7 +311,11 @@ async fn medium_in_list(
         serde_json::to_string(&v).unwrap_or_default()
     };
 
-    let sidebar = generate_sidebar(&config, "medium".to_owned());
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "medium".to_owned(), locale.clone());
     let template = MediumTemplate {
         sidebar,
         medium_id,
@@ -325,6 +339,8 @@ async fn medium_in_list(
         is_logged_in,
         list_id: listid,
         list_name: list.4,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

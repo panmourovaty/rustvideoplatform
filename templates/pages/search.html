@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
 
-    <title>Search - {{ config.instancename }}</title>
+    <title>{{ locale.t("search-page-title") }} - {{ config.instancename }}</title>
 
     <meta name="description" content="{{ config.description }}" />
     <meta property="og:title" content="{{ config.instancename }} Search" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}/search" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -18,7 +18,7 @@
 </head>
 
 <body hx-ext="preload">
-    {% set page_title = "Search" %}
+    {% set page_title = locale.t("search-page-title") %}
     {{ sidebar }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
@@ -31,7 +31,7 @@
                             hx-indicator="#search-loading" role="search" aria-label="Advanced search">
                             <div class="search-input-group">
                                 <input class="search-main-input" id="searchMainInput" name="search"
-                                    placeholder="Search for videos, audio, pictures..."
+                                    placeholder="{{ locale.t("search-input-placeholder") }}"
                                     value="{{ initial_query }}" autocomplete="off" aria-label="Search query" />
                                 <button type="submit" class="search-submit-btn" aria-label="Submit search">
                                     <i class="fa-solid fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -40,48 +40,48 @@
 
                             <div class="search-filters">
                                 <div class="filter-group">
-                                    <label class="filter-label"><i class="fa-solid fa-compass me-1"></i>Search in</label>
+                                    <label class="filter-label"><i class="fa-solid fa-compass me-1"></i>{{ locale.t("search-filter-search-in") }}</label>
                                     <div class="filter-chips" id="searchInFilter">
-                                        <button type="button" class="filter-chip active" data-value="all"><i class="fa-solid fa-magnifying-glass me-1"></i>All</button>
-                                        <button type="button" class="filter-chip" data-value="media"><i class="fa-solid fa-photo-film me-1"></i>Media</button>
-                                        <button type="button" class="filter-chip" data-value="lists"><i class="fa-solid fa-list me-1"></i>Lists</button>
-                                        <button type="button" class="filter-chip" data-value="users"><i class="fa-solid fa-users me-1"></i>Users</button>
+                                        <button type="button" class="filter-chip active" data-value="all"><i class="fa-solid fa-magnifying-glass me-1"></i>{{ locale.t("search-filter-all") }}</button>
+                                        <button type="button" class="filter-chip" data-value="media"><i class="fa-solid fa-photo-film me-1"></i>{{ locale.t("search-filter-media") }}</button>
+                                        <button type="button" class="filter-chip" data-value="lists"><i class="fa-solid fa-list me-1"></i>{{ locale.t("search-filter-lists") }}</button>
+                                        <button type="button" class="filter-chip" data-value="users"><i class="fa-solid fa-users me-1"></i>{{ locale.t("search-filter-users") }}</button>
                                     </div>
                                     <input type="hidden" name="search_in" id="searchInInput" value="all" />
                                 </div>
 
                                 <div id="mediaSpecificFilters" style="display:none;">
                                     <div class="filter-group mb-1">
-                                        <label class="filter-label"><i class="fa-solid fa-photo-film me-1"></i>Type</label>
+                                        <label class="filter-label"><i class="fa-solid fa-photo-film me-1"></i>{{ locale.t("search-filter-type") }}</label>
                                         <div class="filter-chips" id="typeFilter">
-                                            <button type="button" class="filter-chip active" data-value="">All</button>
-                                            <button type="button" class="filter-chip" data-value="video"><i class="fa-solid fa-video me-1"></i>Video</button>
-                                            <button type="button" class="filter-chip" data-value="audio"><i class="fa-solid fa-music me-1"></i>Audio</button>
-                                            <button type="button" class="filter-chip" data-value="picture"><i class="fa-solid fa-image me-1"></i>Picture</button>
+                                            <button type="button" class="filter-chip active" data-value="">{{ locale.t("search-filter-all") }}</button>
+                                            <button type="button" class="filter-chip" data-value="video"><i class="fa-solid fa-video me-1"></i>{{ locale.t("search-filter-video") }}</button>
+                                            <button type="button" class="filter-chip" data-value="audio"><i class="fa-solid fa-music me-1"></i>{{ locale.t("search-filter-audio") }}</button>
+                                            <button type="button" class="filter-chip" data-value="picture"><i class="fa-solid fa-image me-1"></i>{{ locale.t("search-filter-picture") }}</button>
                                         </div>
                                         <input type="hidden" name="media_type" id="mediaTypeInput" value="" />
                                     </div>
 
                                     <div class="filter-group mb-1">
-                                        <label class="filter-label"><i class="fa-solid fa-arrow-down-wide-short me-1"></i>Sort by</label>
+                                        <label class="filter-label"><i class="fa-solid fa-arrow-down-wide-short me-1"></i>{{ locale.t("search-filter-sort") }}</label>
                                         <div class="filter-chips" id="sortFilter">
-                                            <button type="button" class="filter-chip active" data-value=""><i class="fa-solid fa-star me-1"></i>Relevance</button>
-                                            <button type="button" class="filter-chip" data-value="newest"><i class="fa-solid fa-clock me-1"></i>Newest</button>
-                                            <button type="button" class="filter-chip" data-value="oldest"><i class="fa-solid fa-clock-rotate-left me-1"></i>Oldest</button>
-                                            <button type="button" class="filter-chip" data-value="views"><i class="fa-solid fa-eye me-1"></i>Most viewed</button>
-                                            <button type="button" class="filter-chip" data-value="likes"><i class="fa-solid fa-heart me-1"></i>Most liked</button>
+                                            <button type="button" class="filter-chip active" data-value=""><i class="fa-solid fa-star me-1"></i>{{ locale.t("search-sort-relevance") }}</button>
+                                            <button type="button" class="filter-chip" data-value="newest"><i class="fa-solid fa-clock me-1"></i>{{ locale.t("search-sort-newest") }}</button>
+                                            <button type="button" class="filter-chip" data-value="oldest"><i class="fa-solid fa-clock-rotate-left me-1"></i>{{ locale.t("search-sort-oldest") }}</button>
+                                            <button type="button" class="filter-chip" data-value="views"><i class="fa-solid fa-eye me-1"></i>{{ locale.t("search-sort-most-viewed") }}</button>
+                                            <button type="button" class="filter-chip" data-value="likes"><i class="fa-solid fa-heart me-1"></i>{{ locale.t("search-sort-most-liked") }}</button>
                                         </div>
                                         <input type="hidden" name="sort_by" id="sortByInput" value="" />
                                     </div>
 
                                     <div class="filter-group mb-1">
-                                        <label class="filter-label"><i class="fa-solid fa-calendar me-1"></i>Upload date</label>
+                                        <label class="filter-label"><i class="fa-solid fa-calendar me-1"></i>{{ locale.t("search-filter-date") }}</label>
                                         <div class="filter-chips" id="dateFilter">
-                                            <button type="button" class="filter-chip active" data-value="">Any time</button>
-                                            <button type="button" class="filter-chip" data-value="today">Today</button>
-                                            <button type="button" class="filter-chip" data-value="week">This week</button>
-                                            <button type="button" class="filter-chip" data-value="month">This month</button>
-                                            <button type="button" class="filter-chip" data-value="year">This year</button>
+                                            <button type="button" class="filter-chip active" data-value="">{{ locale.t("search-date-anytime") }}</button>
+                                            <button type="button" class="filter-chip" data-value="today">{{ locale.t("search-date-today") }}</button>
+                                            <button type="button" class="filter-chip" data-value="week">{{ locale.t("search-date-week") }}</button>
+                                            <button type="button" class="filter-chip" data-value="month">{{ locale.t("search-date-month") }}</button>
+                                            <button type="button" class="filter-chip" data-value="year">{{ locale.t("search-date-year") }}</button>
                                         </div>
                                         <input type="hidden" name="date_range" id="dateRangeInput" value="" />
                                     </div>

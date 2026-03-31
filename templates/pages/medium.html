@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
     <head>
         <meta name="description" content="{{ medium_name }} - {{ config.instancename }}" />
         <meta property="og:title" content="{{ medium_name }}" />
@@ -7,7 +7,7 @@
             property="og:url"
             content="{{ config.site_url }}/m/{{ medium_id }}"
         />
-        <meta property="og:locale" content="{{ config.locale }}" />
+        <meta property="og:locale" content="{{ resolved_lang }}" />
         <meta property="og:description" content="{{ config.description }}" />
         <meta property="og:site_name" content="{{ config.instancename }}" />
 
@@ -425,7 +425,7 @@
                             hx-trigger="load delay:5s"
                             >{{ medium_views }}</b
                         ><b class="text-secondary">
-                            views, uploaded: {{ medium_upload }}</b
+                            {{ locale.t("mediumcard-views") }}, uploaded: {{ medium_upload }}</b
                         >
                         <div
                             id="description_wrapper"
@@ -446,7 +446,7 @@
                             type="button"
                             style="font-weight: 700"
                         >
-                            Show more
+                            {{ locale.t("medium-show-more") }}
                         </button>
                         <script>
                             document.addEventListener(
@@ -537,14 +537,14 @@
                                                     );
                                                     fade.style.display = "none";
                                                     toggle.textContent =
-                                                        "Show less";
+                                                        "{{ locale.t("medium-show-less") }}";
                                                 } else {
                                                     wrapper.classList.add(
                                                         "description-collapsed",
                                                     );
                                                     fade.style.display = "";
                                                     toggle.textContent =
-                                                        "Show more";
+                                                        "{{ locale.t("medium-show-more") }}";
                                                 }
                                             },
                                         );
@@ -587,7 +587,7 @@
                     class="card py-3 px-3 mt-3 text-white"
                     style="min-height: 30vh"
                 >
-                    <h3 class="my-2">Comments</h3>
+                    <h3 class="my-2">{{ locale.t("medium-comments-heading") }}</h3>
                     <script>
                         function initCommentDeltas(container) {
                             container
@@ -626,7 +626,7 @@
                             class="btn btn-primary mt-2"
                             type="button"
                         >
-                            Comment
+                            {{ locale.t("medium-comment-submit") }}
                         </button>
                     </div>
                     <hr />
@@ -726,7 +726,7 @@
             <div class="col-12 col-sm-12 col-md-12 col-lg-3">
                 <div class="card py-3 px-3 h-100" style="overflow-x: auto">
                     {% if list_id.is_empty() %}
-                    <h3 class="my-2 text-white text-center">Reccomended</h3>
+                    <h3 class="my-2 text-white text-center">{{ locale.t("medium-recommended") }}</h3>
                     <hr />
                     <div
                         hx-get="/hx/reccomended/{{ medium_id }}"

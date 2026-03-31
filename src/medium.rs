@@ -47,6 +47,8 @@ struct MediumTemplate {
     is_logged_in: bool,
     list_id: String,
     list_name: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -66,6 +68,7 @@ async fn medium(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -203,7 +206,11 @@ async fn medium(
         serde_json::to_string(&v).unwrap_or_default()
     };
 
-    let sidebar = generate_sidebar(&config, "medium".to_owned());
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "medium".to_owned(), locale.clone());
     let template = MediumTemplate {
         sidebar,
         medium_id,
@@ -227,6 +234,8 @@ async fn medium(
         is_logged_in,
         list_id: String::new(),
         list_name: String::new(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

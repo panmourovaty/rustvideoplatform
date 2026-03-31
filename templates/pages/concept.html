@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
     <head>
         {% include "component-dependencies.html" %}
         {% include "component-dependencies-quill.html" %}
@@ -14,7 +14,7 @@
             property="og:url"
             content="{{ config.site_url }}/concepts"
         />
-        <meta property="og:locale" content="{{ config.locale }}" />
+        <meta property="og:locale" content="{{ resolved_lang }}" />
         <meta property="og:description" content="{{ config.description }}" />
         <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
         <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -25,7 +25,7 @@
         <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                 <div class="card py-3 px-3 text-white" style="min-height: 80vh">
-                    <h3 class="my-2 mx-3">Concept</h3>
+                    <h3 class="my-2 mx-3">{{ locale.t("concept-heading") }}</h3>
                     <hr />
                     <form
                         action="/studio/concept/{{concept.id}}/publish"
@@ -35,7 +35,7 @@
                     >
                         <div class="form-group row my-3">
                             <label for="medium_id" class="col-4 col-form-label"
-                                >URL</label
+                                >{{ locale.t("concept-url-label") }}</label
                             >
                             <div class="col-8">
                                 <div class="input-group">
@@ -54,7 +54,7 @@
                             <label
                                 for="medium_name"
                                 class="col-4 col-form-label"
-                                >Name</label
+                                >{{ locale.t("concept-name-label") }}</label
                             >
                             <div class="col-8">
                                 <input
@@ -71,7 +71,7 @@
                             <label
                                 for="medium_description"
                                 class="col-4 col-form-label"
-                                >Description</label
+                                >{{ locale.t("concept-description-label") }}</label
                             >
                             <div class="col-8">
                                 <div
@@ -117,7 +117,7 @@
                             <label
                                 for="medium_visibility"
                                 class="col-4 col-form-label"
-                                >Visibility</label
+                                >{{ locale.t("concept-visibility-label") }}</label
                             >
                             <div class="col-8">
                                 <select
@@ -127,10 +127,10 @@
                                     required
                                 >
                                     <option value="public" selected>
-                                        Public
+                                        {{ locale.t("concept-visibility-public") }}
                                     </option>
-                                    <option value="hidden">Hidden</option>
-                                    <option value="restricted">Restricted to Group</option>
+                                    <option value="hidden">{{ locale.t("concept-visibility-hidden") }}</option>
+                                    <option value="restricted">{{ locale.t("concept-visibility-restricted") }}</option>
                                 </select>
                                 <select
                                     id="medium_restricted_group"
@@ -178,7 +178,7 @@
                                     type="submit"
                                     class="btn btn-primary"
                                 >
-                                    Publish
+                                    {{ locale.t("concept-publish") }}
                                 </button>
                             </div>
                         </div>

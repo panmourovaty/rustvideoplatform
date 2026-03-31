@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
@@ -10,7 +10,7 @@
     <meta property="og:title" content="{{ config.instancename }} - Login" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}/login" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -25,20 +25,20 @@
                 <div id="logininfo"></div>
                 <form hx-post="/hx/login" hx-target="#logininfo" hx-swap="innerHTML">
                     <div class="mb-3 text-start">
-                        <label class="form-label">User Name</label>
+                        <label class="form-label">{{ locale.t("login-username") }}</label>
                         <input class="form-control" type="text" id="login" name="login" autocomplete="username">
                     </div>
                     <div class="mb-3 text-start">
-                        <label class="form-label">Password</label>
+                        <label class="form-label">{{ locale.t("login-password") }}</label>
                         <div class="input-group">
                             <input class="form-control" type="password" id="password" name="password" autocomplete="current-password">
-                            <button type="button" class="btn btn-outline-secondary" title="Use Security Key" onclick="startWebAuthnLogin()">
-                                <i class="fa-solid fa-fingerprint"></i>&nbsp;WebAuthn
+                            <button type="button" class="btn btn-outline-secondary" title="{{ locale.t("login-webauthn-title") }}" onclick="startWebAuthnLogin()">
+                                <i class="fa-solid fa-fingerprint"></i>&nbsp;{{ locale.t("login-webauthn-button") }}
                             </button>
                         </div>
                         <div id="webauthn-login-result" class="mt-2 text-start">&nbsp;</div>
                     </div>
-                    <input class="btn btn-primary w-100" type="submit" value="Login" >
+                    <input class="btn btn-primary w-100" type="submit" value="{{ locale.t("login-submit") }}" >
                 </form>
             </div>
         </div>

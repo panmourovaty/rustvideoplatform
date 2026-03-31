@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
 
-    <title>Trending - {{ config.instancename }}</title>
+    <title>{{ locale.t("trending-page-title") }} - {{ config.instancename }}</title>
 
     <meta name="description" content="{{ config.description }}" />
-    <meta property="og:title" content="{{ config.instancename }} Trending" />
+    <meta property="og:title" content="{{ config.instancename }} {{ locale.t("trending-page-title") }}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ config.site_url }}/trending" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -18,7 +18,7 @@
 </head>
 
 <body hx-ext="preload">
-    {% set page_title = "Trending" %}
+    {% set page_title = locale.t("trending-page-title") %}
     {{ sidebar }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">

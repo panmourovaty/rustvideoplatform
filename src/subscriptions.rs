@@ -4,18 +4,27 @@ struct SubscriptionsTemplate {
     sidebar: String,
     config: Config,
     common_headers: CommonHeaders,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 
 async fn subscriptions(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let sidebar = generate_sidebar(&config, "subscribed".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "subscribed".to_owned(), locale.clone());
     let template = SubscriptionsTemplate {
         sidebar,
         config,
         common_headers,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

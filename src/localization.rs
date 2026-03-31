@@ -285,3 +285,14 @@ impl RequestLocale {
         self.service.translate(&self.lang, key)
     }
 }
+
+/// Resolve locale for public pages that have no DB/user context.
+/// Uses Accept-Language header negotiation and config fallback only.
+pub fn resolve_locale_noauth(
+    accept_language: Option<&str>,
+    config_locale: &str,
+    service: &Arc<LocalizationService>,
+) -> RequestLocale {
+    let lang = service.resolve_language(None, accept_language, config_locale);
+    RequestLocale::new(lang, service.clone())
+}

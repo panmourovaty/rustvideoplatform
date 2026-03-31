@@ -14,10 +14,13 @@ struct ChannelTemplate {
     common_headers: CommonHeaders,
     user: UserChannel,
     schema_org_json: String,
+    locale: RequestLocale,
+    resolved_lang: String,
 }
 async fn channel(
     Extension(db): Extension<ScyllaDb>,
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(userid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -57,8 +60,12 @@ async fn channel(
         subscribed: Some(subscriber_count),
     };
 
-    let sidebar = generate_sidebar(&config, "channel".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "channel".to_owned(), locale.clone());
     let schema_org_json = {
         let profile_url = format!("{}/u/{}", config.site_url, user.login);
         let mut main_entity = serde_json::json!({
@@ -91,6 +98,8 @@ async fn channel(
         common_headers,
         user,
         schema_org_json,
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }

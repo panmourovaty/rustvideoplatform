@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ config.locale }}">
+<html lang="{{ resolved_lang }}">
 
 <head>
     {% include "component-dependencies.html" %}
@@ -12,7 +12,7 @@
     <meta property="og:profile:username" content="{{ user.login }}" />
     <meta property="og:profile:first_name" content="{{ user.name }}" />
     <meta property="og:url" content="{{ config.site_url }}/u/{{ user.login }}" />
-    <meta property="og:locale" content="{{ config.locale }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
@@ -38,7 +38,7 @@
                     <tr>
                         <td class="text-center my-3">
                             <b class="text-white font-weight-bold">{{ user.name }}</b>
-                            <p class="text-secondary">{{ user.login }}<br>{{ user.subscribed.unwrap_or(0) }} subscribtions</p>
+                            <p class="text-secondary">{{ user.login }}<br>{{ user.subscribed.unwrap_or(0) }} {{ locale.t("channel-subscribers") }}</p>
                             <div hx-get="/hx/subscribebutton/{{ user.login }}" hx-trigger="load" class="subscribe-placeholder p-1"></div>
                         </td>
                     </tr>
@@ -49,10 +49,10 @@
             <div class="card py-3 px-3 text-white">
                 <ul class="nav nav-tabs mb-3">
                     <li class="nav-item">
-                        <button class="nav-link active text-white" hx-get="/hx/usermedia/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-photo-film me-2"></i>Media</button>
+                        <button class="nav-link active text-white" hx-get="/hx/usermedia/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("channel-tab-media") }}</button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link text-white" hx-get="/hx/userlists/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-list me-2"></i>Lists</button>
+                        <button class="nav-link text-white" hx-get="/hx/userlists/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-list me-2"></i>{{ locale.t("channel-tab-lists") }}</button>
                     </li>
                 </ul>
                 <div id="tab-content" class="row">

@@ -32,6 +32,7 @@ async fn studio_groups(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
@@ -40,13 +41,19 @@ async fn studio_groups(
         ));
     }
 
-    let sidebar = generate_sidebar(&config, "studio".to_owned());
     let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let resolved_lang = locale.lang.clone();
+    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
     let template = StudioTemplate {
         sidebar,
         config,
         common_headers,
         active_tab: "groups".to_owned(),
+        locale,
+        resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
 }
