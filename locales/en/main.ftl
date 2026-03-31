@@ -296,3 +296,207 @@ settings-2fa-webauthn-not-configured = WebAuthn is not configured on this server
 settings-2fa-webauthn-starting = Starting registration...
 settings-2fa-webauthn-touch = Touch your security key when it flashes...
 settings-2fa-webauthn-registered = Security key registered!
+
+# --- HX Fragment keys ---
+
+# Common/shared
+button-save = Save
+button-add = Add
+button-upload = Upload
+button-remove = Remove
+button-translate = Translate
+button-confirm = Confirm
+button-create = Create
+pagination-end = You have reached the end.
+visibility-public = Public
+visibility-private = Private
+visibility-hidden = Hidden
+visibility-restricted = Restricted to Group
+group-select-placeholder = -- Select a group --
+
+# Medium card / list
+medium-views = { $count } views
+medium-card-empty = Nothing to show here yet.
+
+# History items
+history-empty = No history yet. Start watching to see your history here.
+
+# List items
+list-item-count = { $count } items
+
+# List modal (save to list)
+listmodal-title = Save to list
+listmodal-added = Added
+listmodal-no-lists = You have no lists yet. Create one below.
+listmodal-new-name-placeholder = New list name...
+
+# User lists
+userlists-no-public = No public lists.
+
+# Search suggestions
+search-suggestions-users = Channels & Users
+search-suggestions-lists = Lists
+search-suggestions-media = Media
+
+# Search results
+search-results-count = { $count } results
+search-query-time = { $ms }ms
+search-users-header = Users
+search-lists-header = Lists
+search-media-header = Media
+search-see-all-users = See all { $count } users
+search-see-all-lists = See all { $count } lists
+search-see-all-media = See all { $count } media
+
+# Groups
+group-members-title = Members
+group-auto-all-registered = Automatically includes all logged-in users
+group-auto-subscribers = Automatically includes users subscribed to your channel
+group-member-count = { $count } members
+group-member-username-placeholder = Username to add...
+group-member-empty = No members yet. Add users by their username above.
+group-member-username-header = Username
+group-member-remove-confirm = Remove { $login } from this group?
+group-auto-all-registered-description = This is an automatic group that includes all registered users. Any logged-in user will have access to media or lists restricted to this group. Membership is managed automatically and cannot be changed.
+group-auto-subscribers-description = This is an automatic group that includes all users subscribed to your channel. Only users who have subscribed to you will have access to media or lists restricted to this group. Membership is managed automatically and cannot be changed.
+groups-empty = No groups yet. Create one above to restrict media and lists to specific users.
+studio-new-group-placeholder = New group name...
+studio-create-group = Create Group
+
+# Studio HX
+studio-views = { $count } views
+studio-edit-link = Edit
+studio-no-media = No media uploaded yet.
+studio-lists-empty = No lists yet.
+
+# Studio upload
+studio-upload-heading = What do you want to upload today?
+studio-upload-stats-transferred = 0 MB / 0 MB
+studio-upload-stats-speed = -- MB/s
+studio-upload-stats-eta = ETA: --
+studio-upload-failed = Upload failed. Please check your connection and try again.
+
+# Studio edit tabs
+studio-description-url-label = URL
+studio-description-name-label = Name
+studio-description-label = Description
+studio-save-changes = Save Changes
+
+# Studio edit - chapters
+studio-chapters-title = Chapters
+studio-chapters-instruction = Add chapters to help viewers navigate your media. Enter a start time and title for each chapter (HH:MM:SS format).
+studio-chapters-start-time = Start Time
+studio-chapters-title-header = Title
+studio-chapters-empty = No chapters yet. Click "Add Chapter" to get started.
+studio-chapters-add = Add Chapter
+studio-chapters-save = Save Chapters
+studio-chapters-time-placeholder = 00:00:00
+studio-chapters-remove-title = Remove chapter
+studio-chapters-save-success = Chapters saved successfully!
+studio-chapters-save-failed = Failed to save chapters.
+
+# Studio edit - subtitles
+studio-subtitles-title = Subtitles
+studio-subtitles-instruction = Upload subtitle files (.vtt, .srt, .ass, .ssa). SRT files are converted to WebVTT. ASS/SSA files are kept in their original format to preserve styling and rendered via LibASS. Each subtitle track needs a label (e.g. "English", "Spanish").
+studio-subtitles-label = Label
+studio-subtitles-empty = No subtitles yet. Use the form below to add a subtitle track.
+studio-subtitles-add-heading = Add Subtitle Track
+studio-subtitles-file-label = Subtitle File (.vtt, .srt, .ass, .ssa)
+studio-subtitles-ass-badge = ASS
+studio-subtitles-ass-title = Substation Alpha — rendered via LibASS
+studio-subtitles-remove-title = Remove subtitle
+studio-subtitles-delete-confirm = Delete subtitle track "{ $label }"?
+studio-subtitles-delete-success = Subtitle track deleted.
+studio-subtitles-delete-failed = Failed to delete.
+studio-subtitles-translate-heading = Translate Subtitle
+studio-subtitles-translate-instruction = Request an AI translation of an existing subtitle track into another language. The translation will be queued and processed automatically.
+studio-subtitles-translation-in-progress = Translation in progress...
+studio-subtitles-translation-queued = Another translation is already queued for this media. Please wait until it finishes before requesting a new one.
+studio-subtitles-source-label = Source Subtitle
+studio-subtitles-source-placeholder = -- Select source --
+studio-subtitles-target-language = Target Language
+studio-subtitles-language-placeholder = -- Select language --
+studio-subtitles-font-heading = Custom Subtitle Font
+studio-subtitles-font-instruction = Upload a custom font (.woff2 or .ttf — TTF files are automatically converted to WOFF2) to override the subtitle font for this media.
+studio-subtitles-font-active = Custom font active
+studio-subtitles-font-remove = Remove
+studio-subtitles-font-file-label = Font File (.woff2 or .ttf)
+studio-subtitles-upload-success = Subtitle track uploaded!
+studio-subtitles-upload-failed = Upload failed.
+studio-subtitles-font-upload-success = Font uploaded!
+studio-subtitles-font-remove-success = Font removed.
+studio-subtitles-font-remove-confirm = Remove custom subtitle font?
+
+# Studio edit - thumbnail
+studio-thumbnail-title = Thumbnail
+studio-thumbnail-instruction = Upload a custom thumbnail image. It will be converted to AVIF and JPEG at 1280x720 resolution.
+studio-thumbnail-remove = Remove Custom Thumbnail
+studio-thumbnail-current-alt = Current thumbnail
+studio-thumbnail-file-label = Image File (PNG, JPG, WEBP, etc.)
+studio-thumbnail-select-validation = Please select an image file.
+studio-thumbnail-uploading = Uploading and converting...
+studio-thumbnail-upload-success = Thumbnail uploaded and converted!
+studio-thumbnail-upload-failed = Upload failed.
+studio-thumbnail-remove-confirm = Remove custom thumbnail?
+studio-thumbnail-remove-success = Thumbnail removed.
+
+# Studio edit - danger zone
+studio-danger-title = Danger Zone
+studio-danger-subtitle = Destructive actions that cannot be undone.
+studio-danger-delete-label = Delete this media
+studio-danger-delete-description = Permanently delete "{ $name }". All comments and list entries will also be removed.
+studio-danger-delete-button = Delete Media
+studio-danger-delete-confirm = Are you sure you want to delete "{ $name }"? This action cannot be undone. All comments and list entries will also be removed.
+
+# Studio edit - permissions
+studio-permissions-visibility = Visibility
+studio-permissions-no-groups = You have no groups yet. Create one to use restricted visibility.
+
+# Concept
+concept-status-label = status:
+concept-status-preparing = preparing...
+concept-status-ready = ready!
+
+# Settings - password
+settings-password-title = Change Password
+settings-password-update = Update Password
+settings-loading-auth = Loading authentication settings...
+
+# Settings - profile/channel picture
+settings-profile-picture-empty = No profile picture set.
+settings-profile-picture-instruction = Select a public or hidden image from your channel to use as your profile picture.
+settings-no-images-message = You have no public or hidden images. Upload an image first.
+settings-channel-picture-empty = No channel picture set.
+settings-channel-picture-instruction = Select a public or hidden image from your channel to use as your channel picture.
+
+# Settings - diagnostics
+settings-diagnostics-build-info = Build Info
+settings-diagnostics-version = Version
+settings-diagnostics-git-commit = Git Commit
+settings-diagnostics-git-branch = Branch
+settings-diagnostics-server = Server
+settings-diagnostics-os-distro = OS Distro
+settings-diagnostics-kernel = Kernel
+settings-diagnostics-architecture = Architecture
+settings-diagnostics-services = Services
+settings-diagnostics-scylla = ScyllaDB / Cassandra
+settings-diagnostics-meilisearch = Meilisearch
+settings-diagnostics-redis = Redis / DragonflyDB
+settings-diagnostics-browser-codecs = Browser Codec Support
+settings-diagnostics-av1 = AV1
+settings-diagnostics-vp9 = VP9
+settings-diagnostics-h265 = H.265 (HEVC)
+settings-diagnostics-opus = Opus
+settings-diagnostics-checking = Checking...
+
+# Settings - theme
+settings-theme-save = Save
+
+# TOTP setup
+totp-setup-qr-heading = Scan QR Code
+totp-setup-qr-instruction = Open your authenticator app and scan the code below, or enter the secret manually.
+totp-setup-show-manual = Show manual entry key
+totp-setup-verify-heading = Verify Setup
+totp-setup-verify-instruction = Enter the 6-digit code from your authenticator to confirm setup.
+totp-code-placeholder = 000000
+totp-setup-confirm = Confirm

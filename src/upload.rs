@@ -1,17 +1,25 @@
 #[derive(Template)]
 #[template(path = "pages/hx-studio-upload.html", escape = "none")]
-struct HXStudioUploadTemplate {}
+struct HXStudioUploadTemplate {
+    locale: RequestLocale,
+}
 async fn hx_studio_upload(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
     }
-    let template = HXStudioUploadTemplate {};
+    let user_info = user_info.unwrap();
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioUploadTemplate { locale };
     Html(minifi_html(template.render().unwrap()))
 }
 

@@ -54,30 +54,34 @@ struct HXStudioTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 async fn hx_studio(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_studio_inner(config, db, redis, headers, 0).await
+    hx_studio_inner(config, db, redis, localization, headers, 0).await
 }
 
 async fn hx_studio_page(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_studio_inner(config, db, redis, headers, page).await
+    hx_studio_inner(config, db, redis, localization, headers, page).await
 }
 
 async fn hx_studio_inner(
     config: Config,
     db: ScyllaDb,
     redis: RedisConn,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
@@ -116,7 +120,10 @@ async fn hx_studio_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/studio/{}", next_page);
 
-    let template = HXStudioTemplate { media, config, page, has_more, next_url };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+
+    let template = HXStudioTemplate { media, config, page, has_more, next_url, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -157,27 +164,34 @@ struct HXStudioListsTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 async fn hx_studio_lists(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_studio_lists_inner(db, redis, headers, 0).await
+    hx_studio_lists_inner(config, db, redis, localization, headers, 0).await
 }
 
 async fn hx_studio_lists_page(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_studio_lists_inner(db, redis, headers, page).await
+    hx_studio_lists_inner(config, db, redis, localization, headers, page).await
 }
 
 async fn hx_studio_lists_inner(
+    config: Config,
     db: ScyllaDb,
     redis: RedisConn,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
@@ -227,7 +241,10 @@ async fn hx_studio_lists_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/studio/lists/{}", next_page);
 
-    let template = HXStudioListsTemplate { lists, page, has_more, next_url };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+
+    let template = HXStudioListsTemplate { lists, page, has_more, next_url, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -255,24 +272,28 @@ struct StudioEditTemplate {
 #[template(path = "pages/hx-studio-edit-description.html", escape = "none")]
 struct HXStudioEditDescriptionTemplate {
     medium: MediumEdit,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
 #[template(path = "pages/hx-studio-edit-chapters.html", escape = "none")]
 struct HXStudioEditChaptersTemplate {
     medium_id: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
 #[template(path = "pages/hx-studio-edit-subtitles.html", escape = "none")]
 struct HXStudioEditSubtitlesTemplate {
     medium_id: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
 #[template(path = "pages/hx-studio-edit-thumbnail.html", escape = "none")]
 struct HXStudioEditThumbnailTemplate {
     medium_id: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
@@ -280,6 +301,7 @@ struct HXStudioEditThumbnailTemplate {
 struct HXStudioEditDangerTemplate {
     medium_id: String,
     medium_name: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
@@ -287,6 +309,7 @@ struct HXStudioEditDangerTemplate {
 struct HXStudioEditPermissionsTemplate {
     medium: MediumEdit,
     owner_groups: Vec<UserGroup>,
+    locale: RequestLocale,
 }
 async fn studio_edit(
     Extension(config): Extension<Config>,
@@ -464,8 +487,10 @@ async fn hx_delete_video(
 }
 
 async fn hx_studio_edit_description(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -487,6 +512,8 @@ async fn hx_studio_edit_description(
                 return Html(minifi_html("".to_owned()));
             }
 
+            let common_headers = extract_common_headers(&headers);
+            let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
             let template = HXStudioEditDescriptionTemplate {
                 medium: MediumEdit {
                     id,
@@ -495,6 +522,7 @@ async fn hx_studio_edit_description(
                     restricted_to_group: restricted_to_group.unwrap_or_default(),
                     medium_type: media_type,
                 },
+                locale,
             };
             Html(minifi_html(template.render().unwrap()))
         }
@@ -503,8 +531,10 @@ async fn hx_studio_edit_description(
 }
 
 async fn hx_studio_edit_chapters_tab(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -524,13 +554,17 @@ async fn hx_studio_edit_chapters_tab(
         return Html(minifi_html("".to_owned()));
     }
 
-    let template = HXStudioEditChaptersTemplate { medium_id: mediumid };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioEditChaptersTemplate { medium_id: mediumid, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_studio_edit_subtitles_tab(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -550,13 +584,17 @@ async fn hx_studio_edit_subtitles_tab(
         return Html(minifi_html("".to_owned()));
     }
 
-    let template = HXStudioEditSubtitlesTemplate { medium_id: mediumid };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioEditSubtitlesTemplate { medium_id: mediumid, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_studio_edit_thumbnail_tab(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -576,13 +614,17 @@ async fn hx_studio_edit_thumbnail_tab(
         return Html(minifi_html("".to_owned()));
     }
 
-    let template = HXStudioEditThumbnailTemplate { medium_id: mediumid };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioEditThumbnailTemplate { medium_id: mediumid, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_studio_edit_danger_tab(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -604,7 +646,9 @@ async fn hx_studio_edit_danger_tab(
             if owner != user_info.login {
                 return Html(minifi_html("".to_owned()));
             }
-            let template = HXStudioEditDangerTemplate { medium_id: mediumid, medium_name };
+            let common_headers = extract_common_headers(&headers);
+            let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+            let template = HXStudioEditDangerTemplate { medium_id: mediumid, medium_name, locale };
             Html(minifi_html(template.render().unwrap()))
         }
         None => Html(minifi_html("".to_owned())),
@@ -612,8 +656,10 @@ async fn hx_studio_edit_danger_tab(
 }
 
 async fn hx_studio_edit_permissions_tab(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -651,6 +697,8 @@ async fn hx_studio_edit_permissions_tab(
                 .unwrap_or_default();
             owner_groups.extend(user_groups);
 
+            let common_headers = extract_common_headers(&headers);
+            let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
             let template = HXStudioEditPermissionsTemplate {
                 medium: MediumEdit {
                     id,
@@ -660,6 +708,7 @@ async fn hx_studio_edit_permissions_tab(
                     medium_type: media_type,
                 },
                 owner_groups,
+                locale,
             };
             Html(minifi_html(template.render().unwrap()))
         }

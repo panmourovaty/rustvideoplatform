@@ -40,13 +40,16 @@ async fn concepts(
 #[template(path = "pages/hx-concepts.html", escape = "none")]
 struct HXConceptsTemplate {
     concepts: Vec<MediumConcept>,
+    locale: RequestLocale,
 }
 async fn hx_concepts(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let userinfo = get_user_login(headers, &db, redis.clone()).await.unwrap();
+    let userinfo = get_user_login(headers.clone(), &db, redis.clone()).await.unwrap();
 
     let rows: Vec<(String, String, String, bool)> = db.session
         .execute_unpaged(&db.get_concepts_by_owner, (&userinfo.login,))
@@ -66,7 +69,9 @@ async fn hx_concepts(
         })
         .collect();
 
-    let template = HXConceptsTemplate { concepts };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&userinfo), &common_headers, &db, &localization, &config).await;
+    let template = HXConceptsTemplate { concepts, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 

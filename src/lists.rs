@@ -53,6 +53,7 @@ struct HXListItemsTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
@@ -61,6 +62,7 @@ struct HXListModalTemplate {
     lists: Vec<ListModalEntry>,
     medium_id: String,
     owner_groups: Vec<UserGroup>,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
@@ -70,6 +72,7 @@ struct HXUserListsTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 
 async fn list_page(
@@ -348,22 +351,28 @@ async fn medium_in_list(
 async fn hx_list_items(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
     Path(listid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_list_items_inner(config, db, listid, 0).await
+    hx_list_items_inner(config, db, localization, headers, listid, 0).await
 }
 
 async fn hx_list_items_page(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
     Path((listid, page)): Path<(String, i64)>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_list_items_inner(config, db, listid, page).await
+    hx_list_items_inner(config, db, localization, headers, listid, page).await
 }
 
 async fn hx_list_items_inner(
     config: Config,
     db: ScyllaDb,
+    localization: Arc<LocalizationService>,
+    headers: HeaderMap,
     listid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
@@ -406,6 +415,10 @@ async fn hx_list_items_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/listitems/{}/{}", listid, next_page);
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXListItemsTemplate {
         items,
         list_id: listid,
@@ -413,6 +426,7 @@ async fn hx_list_items_inner(
         page,
         has_more,
         next_url,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -420,6 +434,8 @@ async fn hx_list_items_inner(
 async fn hx_list_sidebar(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
     Path((listid, mediumid)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
     // Fetch all list items (no pagination for sidebar)
@@ -450,11 +466,16 @@ async fn hx_list_sidebar(
         }
     }
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXMediumListTemplate {
         media,
         current_medium_id: mediumid,
         list_id: listid,
         config,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -493,8 +514,10 @@ async fn fetch_lists_and_groups_for_modal(db: &ScyllaDb, user_login: &str, mediu
 }
 
 async fn hx_list_modal(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -506,17 +529,24 @@ async fn hx_list_modal(
 
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXListModalTemplate {
         lists,
         medium_id: mediumid,
         owner_groups,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_create_list(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
     Form(form): Form<CreateListForm>,
@@ -558,17 +588,24 @@ async fn hx_create_list(
     // Re-fetch lists and groups for modal template
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXListModalTemplate {
         lists,
         medium_id: mediumid,
         owner_groups,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_add_to_list(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((listid, mediumid)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -604,17 +641,24 @@ async fn hx_add_to_list(
     // Re-fetch lists and groups for modal template
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXListModalTemplate {
         lists,
         medium_id: mediumid,
         owner_groups,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
 
 async fn hx_remove_from_list(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((listid, mediumid)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
@@ -649,10 +693,15 @@ async fn hx_remove_from_list(
     // Re-fetch lists and groups for modal template
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXListModalTemplate {
         lists,
         medium_id: mediumid,
         owner_groups,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -710,30 +759,37 @@ async fn hx_delete_list(
 }
 
 async fn hx_user_lists(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(userid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_user_lists_inner(db, redis, headers, userid, 0).await
+    hx_user_lists_inner(config, db, redis, localization, headers, userid, 0).await
 }
 
 async fn hx_user_lists_page(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((userid, page)): Path<(String, i64)>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_user_lists_inner(db, redis, headers, userid, page).await
+    hx_user_lists_inner(config, db, redis, localization, headers, userid, page).await
 }
 
 async fn hx_user_lists_inner(
+    config: Config,
     db: ScyllaDb,
     redis: RedisConn,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     userid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    let common_headers = extract_common_headers(&headers);
     let user = get_user_login(headers, &db, redis.clone()).await;
     let user_login = user.as_ref().map(|u| u.login.clone()).unwrap_or_default();
 
@@ -781,6 +837,9 @@ async fn hx_user_lists_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/userlists/{}/{}", userid, next_page);
 
-    let template = HXUserListsTemplate { lists, page, has_more, next_url };
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
+    let template = HXUserListsTemplate { lists, page, has_more, next_url, locale };
     Html(minifi_html(template.render().unwrap()))
 }

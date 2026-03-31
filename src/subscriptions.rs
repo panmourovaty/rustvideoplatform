@@ -31,30 +31,34 @@ async fn subscriptions(
 
 async fn hx_subscriptions(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_subscriptions_inner(config, headers, db, redis, 0).await
+    hx_subscriptions_inner(config, localization, headers, db, redis, 0).await
 }
 
 async fn hx_subscriptions_page(
     Extension(config): Extension<Config>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_subscriptions_inner(config, headers, db, redis, page).await
+    hx_subscriptions_inner(config, localization, headers, db, redis, page).await
 }
 
 async fn hx_subscriptions_inner(
     config: Config,
+    localization: Arc<LocalizationService>,
     headers: HeaderMap,
     db: ScyllaDb,
     redis: RedisConn,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    let common_headers = extract_common_headers(&headers);
     let user = match get_user_login(headers, &db, redis.clone()).await {
         Some(user) => user,
         None => {
@@ -157,12 +161,16 @@ async fn hx_subscriptions_inner(
     let next_page = page + 1;
     let next_url = format!("/hx/subscriptions/{}", next_page);
 
+    let locale = resolve_locale_noauth(
+        common_headers.accept_language.as_deref(), &config.locale, &localization,
+    );
     let template = HXMediumCardTemplate {
         media,
         config,
         page,
         has_more,
         next_url,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

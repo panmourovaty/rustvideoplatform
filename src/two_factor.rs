@@ -152,15 +152,17 @@ struct HXSettings2FATotpSetupTemplate {
     secret_base32: String,
     totp_url: String,
     setup_token: String,
+    locale: RequestLocale,
 }
 
 async fn hx_settings_2fa_totp_setup(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(mut redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let user_info = get_user_login(headers, &db, redis.clone()).await;
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
@@ -199,11 +201,14 @@ async fn hx_settings_2fa_totp_setup(
         .await
         .unwrap_or(());
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXSettings2FATotpSetupTemplate {
         qr_base64,
         secret_base32,
         totp_url,
         setup_token,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -342,17 +347,20 @@ struct HXSettings2FATemplate {
     totp_enabled: bool,
     webauthn_creds: Vec<WebauthnCredInfo>,
     webauthn_available: bool,
+    locale: RequestLocale,
 }
 
 async fn hx_settings_2fa(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     Extension(webauthn_lock): Extension<
         std::sync::Arc<std::sync::RwLock<Option<webauthn_rs::Webauthn>>>,
     >,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let user_info = get_user_login(headers, &db, redis).await;
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
@@ -382,10 +390,14 @@ async fn hx_settings_2fa(
 
     let webauthn_available = webauthn_lock.read().map(|g| g.is_some()).unwrap_or(false);
 
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+
     let template = HXSettings2FATemplate {
         totp_enabled,
         webauthn_creds,
         webauthn_available,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

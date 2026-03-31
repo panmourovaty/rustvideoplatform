@@ -296,3 +296,207 @@ settings-2fa-webauthn-not-configured = WebAuthn n'est pas configuré sur ce serv
 settings-2fa-webauthn-starting = Démarrage de l'enregistrement...
 settings-2fa-webauthn-touch = Touchez votre clé de sécurité lorsqu'elle clignote...
 settings-2fa-webauthn-registered = Clé de sécurité enregistrée !
+
+# --- Clés de fragments HX ---
+
+# Commun/partagé
+button-save = Enregistrer
+button-add = Ajouter
+button-upload = Téléverser
+button-remove = Supprimer
+button-translate = Traduire
+button-confirm = Confirmer
+button-create = Créer
+pagination-end = Vous avez atteint la fin.
+visibility-public = Public
+visibility-private = Privé
+visibility-hidden = Masqué
+visibility-restricted = Restreint au groupe
+group-select-placeholder = -- Sélectionner un groupe --
+
+# Carte média / liste
+medium-views = { $count } vues
+medium-card-empty = Rien à afficher ici pour l'instant.
+
+# Éléments d'historique
+history-empty = Pas encore d'historique. Commencez à regarder pour voir votre historique ici.
+
+# Éléments de liste
+list-item-count = { $count } éléments
+
+# Modal de liste (enregistrer dans une liste)
+listmodal-title = Enregistrer dans une liste
+listmodal-added = Ajouté
+listmodal-no-lists = Vous n'avez pas encore de listes. Créez-en une ci-dessous.
+listmodal-new-name-placeholder = Nom de la nouvelle liste...
+
+# Listes utilisateur
+userlists-no-public = Aucune liste publique.
+
+# Suggestions de recherche
+search-suggestions-users = Chaînes & Utilisateurs
+search-suggestions-lists = Listes
+search-suggestions-media = Médias
+
+# Résultats de recherche
+search-results-count = { $count } résultats
+search-query-time = { $ms }ms
+search-users-header = Utilisateurs
+search-lists-header = Listes
+search-media-header = Médias
+search-see-all-users = Voir tous les { $count } utilisateurs
+search-see-all-lists = Voir toutes les { $count } listes
+search-see-all-media = Voir tous les { $count } médias
+
+# Groupes
+group-members-title = Membres
+group-auto-all-registered = Inclut automatiquement tous les utilisateurs connectés
+group-auto-subscribers = Inclut automatiquement les utilisateurs abonnés à votre chaîne
+group-member-count = { $count } membres
+group-member-username-placeholder = Nom d'utilisateur à ajouter...
+group-member-empty = Aucun membre pour l'instant. Ajoutez des utilisateurs par leur nom d'utilisateur ci-dessus.
+group-member-username-header = Nom d'utilisateur
+group-member-remove-confirm = Retirer { $login } de ce groupe ?
+group-auto-all-registered-description = Il s'agit d'un groupe automatique qui inclut tous les utilisateurs enregistrés. Tout utilisateur connecté aura accès aux médias ou listes restreints à ce groupe. L'adhésion est gérée automatiquement et ne peut pas être modifiée.
+group-auto-subscribers-description = Il s'agit d'un groupe automatique qui inclut tous les utilisateurs abonnés à votre chaîne. Seuls les utilisateurs qui vous ont abonné auront accès aux médias ou listes restreints à ce groupe. L'adhésion est gérée automatiquement et ne peut pas être modifiée.
+groups-empty = Aucun groupe pour l'instant. Créez-en un ci-dessus pour restreindre les médias et les listes à des utilisateurs spécifiques.
+studio-new-group-placeholder = Nom du nouveau groupe...
+studio-create-group = Créer un groupe
+
+# Studio HX
+studio-views = { $count } vues
+studio-edit-link = Modifier
+studio-no-media = Aucun média téléversé pour l'instant.
+studio-lists-empty = Aucune liste pour l'instant.
+
+# Téléversement studio
+studio-upload-heading = Que voulez-vous téléverser aujourd'hui ?
+studio-upload-stats-transferred = 0 Mo / 0 Mo
+studio-upload-stats-speed = -- Mo/s
+studio-upload-stats-eta = Temps restant : --
+studio-upload-failed = Échec du téléversement. Vérifiez votre connexion et réessayez.
+
+# Onglets d'édition studio
+studio-description-url-label = URL
+studio-description-name-label = Nom
+studio-description-label = Description
+studio-save-changes = Enregistrer les modifications
+
+# Édition studio - chapitres
+studio-chapters-title = Chapitres
+studio-chapters-instruction = Ajoutez des chapitres pour aider les spectateurs à naviguer dans votre média. Saisissez une heure de début et un titre pour chaque chapitre (format HH:MM:SS).
+studio-chapters-start-time = Heure de début
+studio-chapters-title-header = Titre
+studio-chapters-empty = Aucun chapitre pour l'instant. Cliquez sur « Ajouter un chapitre » pour commencer.
+studio-chapters-add = Ajouter un chapitre
+studio-chapters-save = Enregistrer les chapitres
+studio-chapters-time-placeholder = 00:00:00
+studio-chapters-remove-title = Supprimer le chapitre
+studio-chapters-save-success = Chapitres enregistrés avec succès !
+studio-chapters-save-failed = Échec de l'enregistrement des chapitres.
+
+# Édition studio - sous-titres
+studio-subtitles-title = Sous-titres
+studio-subtitles-instruction = Téléversez des fichiers de sous-titres (.vtt, .srt, .ass, .ssa). Les fichiers SRT sont convertis en WebVTT. Les fichiers ASS/SSA sont conservés dans leur format d'origine pour préserver le style et rendus via LibASS. Chaque piste de sous-titres nécessite une étiquette (ex. « Français », « Anglais »).
+studio-subtitles-label = Étiquette
+studio-subtitles-empty = Aucun sous-titre pour l'instant. Utilisez le formulaire ci-dessous pour ajouter une piste de sous-titres.
+studio-subtitles-add-heading = Ajouter une piste de sous-titres
+studio-subtitles-file-label = Fichier de sous-titres (.vtt, .srt, .ass, .ssa)
+studio-subtitles-ass-badge = ASS
+studio-subtitles-ass-title = Substation Alpha — rendu via LibASS
+studio-subtitles-remove-title = Supprimer le sous-titre
+studio-subtitles-delete-confirm = Supprimer la piste de sous-titres « { $label } » ?
+studio-subtitles-delete-success = Piste de sous-titres supprimée.
+studio-subtitles-delete-failed = Échec de la suppression.
+studio-subtitles-translate-heading = Traduire les sous-titres
+studio-subtitles-translate-instruction = Demandez une traduction IA d'une piste de sous-titres existante dans une autre langue. La traduction sera mise en file d'attente et traitée automatiquement.
+studio-subtitles-translation-in-progress = Traduction en cours...
+studio-subtitles-translation-queued = Une autre traduction est déjà en file d'attente pour ce média. Veuillez attendre qu'elle se termine avant d'en demander une nouvelle.
+studio-subtitles-source-label = Sous-titre source
+studio-subtitles-source-placeholder = -- Sélectionner la source --
+studio-subtitles-target-language = Langue cible
+studio-subtitles-language-placeholder = -- Sélectionner la langue --
+studio-subtitles-font-heading = Police de sous-titres personnalisée
+studio-subtitles-font-instruction = Téléversez une police personnalisée (.woff2 ou .ttf — les fichiers TTF sont automatiquement convertis en WOFF2) pour remplacer la police des sous-titres de ce média.
+studio-subtitles-font-active = Police personnalisée active
+studio-subtitles-font-remove = Supprimer
+studio-subtitles-font-file-label = Fichier de police (.woff2 ou .ttf)
+studio-subtitles-upload-success = Piste de sous-titres téléversée !
+studio-subtitles-upload-failed = Échec du téléversement.
+studio-subtitles-font-upload-success = Police téléversée !
+studio-subtitles-font-remove-success = Police supprimée.
+studio-subtitles-font-remove-confirm = Supprimer la police de sous-titres personnalisée ?
+
+# Édition studio - miniature
+studio-thumbnail-title = Miniature
+studio-thumbnail-instruction = Téléversez une miniature personnalisée. Elle sera convertie en AVIF et JPEG à une résolution de 1280x720.
+studio-thumbnail-remove = Supprimer la miniature personnalisée
+studio-thumbnail-current-alt = Miniature actuelle
+studio-thumbnail-file-label = Fichier image (PNG, JPG, WEBP, etc.)
+studio-thumbnail-select-validation = Veuillez sélectionner un fichier image.
+studio-thumbnail-uploading = Téléversement et conversion en cours...
+studio-thumbnail-upload-success = Miniature téléversée et convertie !
+studio-thumbnail-upload-failed = Échec du téléversement.
+studio-thumbnail-remove-confirm = Supprimer la miniature personnalisée ?
+studio-thumbnail-remove-success = Miniature supprimée.
+
+# Édition studio - zone dangereuse
+studio-danger-title = Zone dangereuse
+studio-danger-subtitle = Actions destructives qui ne peuvent pas être annulées.
+studio-danger-delete-label = Supprimer ce média
+studio-danger-delete-description = Supprimer définitivement « { $name } ». Tous les commentaires et entrées de liste seront également supprimés.
+studio-danger-delete-button = Supprimer le média
+studio-danger-delete-confirm = Êtes-vous sûr de vouloir supprimer « { $name } » ? Cette action ne peut pas être annulée. Tous les commentaires et entrées de liste seront également supprimés.
+
+# Édition studio - permissions
+studio-permissions-visibility = Visibilité
+studio-permissions-no-groups = Vous n'avez pas encore de groupes. Créez-en un pour utiliser la visibilité restreinte.
+
+# Concept
+concept-status-label = statut :
+concept-status-preparing = en préparation...
+concept-status-ready = prêt !
+
+# Paramètres - mot de passe
+settings-password-title = Changer le mot de passe
+settings-password-update = Mettre à jour le mot de passe
+settings-loading-auth = Chargement des paramètres d'authentification...
+
+# Paramètres - photo de profil/chaîne
+settings-profile-picture-empty = Aucune photo de profil définie.
+settings-profile-picture-instruction = Sélectionnez une image publique ou masquée de votre chaîne pour l'utiliser comme photo de profil.
+settings-no-images-message = Vous n'avez aucune image publique ou masquée. Téléversez d'abord une image.
+settings-channel-picture-empty = Aucune image de chaîne définie.
+settings-channel-picture-instruction = Sélectionnez une image publique ou masquée de votre chaîne pour l'utiliser comme image de chaîne.
+
+# Paramètres - diagnostics
+settings-diagnostics-build-info = Informations de build
+settings-diagnostics-version = Version
+settings-diagnostics-git-commit = Commit Git
+settings-diagnostics-git-branch = Branche
+settings-diagnostics-server = Serveur
+settings-diagnostics-os-distro = Distribution OS
+settings-diagnostics-kernel = Noyau
+settings-diagnostics-architecture = Architecture
+settings-diagnostics-services = Services
+settings-diagnostics-scylla = ScyllaDB / Cassandra
+settings-diagnostics-meilisearch = Meilisearch
+settings-diagnostics-redis = Redis / DragonflyDB
+settings-diagnostics-browser-codecs = Prise en charge des codecs du navigateur
+settings-diagnostics-av1 = AV1
+settings-diagnostics-vp9 = VP9
+settings-diagnostics-h265 = H.265 (HEVC)
+settings-diagnostics-opus = Opus
+settings-diagnostics-checking = Vérification en cours...
+
+# Paramètres - thème
+settings-theme-save = Enregistrer
+
+# Configuration TOTP
+totp-setup-qr-heading = Scanner le code QR
+totp-setup-qr-instruction = Ouvrez votre application d'authentification et scannez le code ci-dessous, ou saisissez le secret manuellement.
+totp-setup-show-manual = Afficher la clé de saisie manuelle
+totp-setup-verify-heading = Vérifier la configuration
+totp-setup-verify-instruction = Saisissez le code à 6 chiffres de votre application d'authentification pour confirmer la configuration.
+totp-code-placeholder = 000000
+totp-setup-confirm = Confirmer

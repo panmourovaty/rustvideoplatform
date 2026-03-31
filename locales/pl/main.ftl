@@ -296,3 +296,207 @@ settings-2fa-webauthn-not-configured = WebAuthn nie jest skonfigurowany na tym s
 settings-2fa-webauthn-starting = Uruchamianie rejestracji...
 settings-2fa-webauthn-touch = Dotknij klucza bezpieczeństwa, gdy miga...
 settings-2fa-webauthn-registered = Klucz bezpieczeństwa zarejestrowany!
+
+# --- Klucze fragmentów HX ---
+
+# Wspólne/udostępnione
+button-save = Zapisz
+button-add = Dodaj
+button-upload = Prześlij
+button-remove = Usuń
+button-translate = Przetłumacz
+button-confirm = Potwierdź
+button-create = Utwórz
+pagination-end = Osiągnąłeś koniec.
+visibility-public = Publiczne
+visibility-private = Prywatne
+visibility-hidden = Ukryte
+visibility-restricted = Ograniczone do grupy
+group-select-placeholder = -- Wybierz grupę --
+
+# Karta medium / lista
+medium-views = { $count } wyświetleń
+medium-card-empty = Na razie nie ma tu nic do wyświetlenia.
+
+# Elementy historii
+history-empty = Brak historii. Zacznij oglądać, aby zobaczyć historię tutaj.
+
+# Elementy listy
+list-item-count = { $count } elementów
+
+# Modal listy (zapisz na liście)
+listmodal-title = Zapisz na liście
+listmodal-added = Dodano
+listmodal-no-lists = Nie masz jeszcze żadnych list. Utwórz jedną poniżej.
+listmodal-new-name-placeholder = Nazwa nowej listy...
+
+# Listy użytkownika
+userlists-no-public = Brak publicznych list.
+
+# Podpowiedzi wyszukiwania
+search-suggestions-users = Kanały i użytkownicy
+search-suggestions-lists = Listy
+search-suggestions-media = Media
+
+# Wyniki wyszukiwania
+search-results-count = { $count } wyników
+search-query-time = { $ms }ms
+search-users-header = Użytkownicy
+search-lists-header = Listy
+search-media-header = Media
+search-see-all-users = Zobacz wszystkich { $count } użytkowników
+search-see-all-lists = Zobacz wszystkie { $count } listy
+search-see-all-media = Zobacz wszystkie { $count } media
+
+# Grupy
+group-members-title = Członkowie
+group-auto-all-registered = Automatycznie obejmuje wszystkich zalogowanych użytkowników
+group-auto-subscribers = Automatycznie obejmuje użytkowników subskrybujących Twój kanał
+group-member-count = { $count } członków
+group-member-username-placeholder = Nazwa użytkownika do dodania...
+group-member-empty = Brak członków. Dodaj użytkowników po ich nazwie użytkownika powyżej.
+group-member-username-header = Nazwa użytkownika
+group-member-remove-confirm = Usunąć { $login } z tej grupy?
+group-auto-all-registered-description = Jest to automatyczna grupa obejmująca wszystkich zarejestrowanych użytkowników. Każdy zalogowany użytkownik będzie miał dostęp do mediów lub list ograniczonych do tej grupy. Członkostwo jest zarządzane automatycznie i nie można go zmieniać.
+group-auto-subscribers-description = Jest to automatyczna grupa obejmująca wszystkich użytkowników subskrybujących Twój kanał. Dostęp do mediów lub list ograniczonych do tej grupy będą mieli tylko użytkownicy, którzy Cię subskrybują. Członkostwo jest zarządzane automatycznie i nie można go zmieniać.
+groups-empty = Brak grup. Utwórz jedną powyżej, aby ograniczyć media i listy do określonych użytkowników.
+studio-new-group-placeholder = Nazwa nowej grupy...
+studio-create-group = Utwórz grupę
+
+# Studio HX
+studio-views = { $count } wyświetleń
+studio-edit-link = Edytuj
+studio-no-media = Nie przesłano jeszcze żadnych mediów.
+studio-lists-empty = Brak list.
+
+# Przesyłanie w studio
+studio-upload-heading = Co chcesz dzisiaj przesłać?
+studio-upload-stats-transferred = 0 MB / 0 MB
+studio-upload-stats-speed = -- MB/s
+studio-upload-stats-eta = Pozostało: --
+studio-upload-failed = Przesyłanie nie powiodło się. Sprawdź połączenie i spróbuj ponownie.
+
+# Zakładki edycji studia
+studio-description-url-label = URL
+studio-description-name-label = Nazwa
+studio-description-label = Opis
+studio-save-changes = Zapisz zmiany
+
+# Edycja studia - rozdziały
+studio-chapters-title = Rozdziały
+studio-chapters-instruction = Dodaj rozdziały, aby pomóc widzom poruszać się po Twoich mediach. Wprowadź czas rozpoczęcia i tytuł każdego rozdziału (format HH:MM:SS).
+studio-chapters-start-time = Czas rozpoczęcia
+studio-chapters-title-header = Tytuł
+studio-chapters-empty = Brak rozdziałów. Kliknij "Dodaj rozdział", aby rozpocząć.
+studio-chapters-add = Dodaj rozdział
+studio-chapters-save = Zapisz rozdziały
+studio-chapters-time-placeholder = 00:00:00
+studio-chapters-remove-title = Usuń rozdział
+studio-chapters-save-success = Rozdziały zapisane pomyślnie!
+studio-chapters-save-failed = Nie udało się zapisać rozdziałów.
+
+# Edycja studia - napisy
+studio-subtitles-title = Napisy
+studio-subtitles-instruction = Prześlij pliki napisów (.vtt, .srt, .ass, .ssa). Pliki SRT są konwertowane do WebVTT. Pliki ASS/SSA są zachowywane w oryginalnym formacie dla zachowania stylu i renderowane przez LibASS. Każda ścieżka napisów wymaga etykiety (np. "Polski", "Angielski").
+studio-subtitles-label = Etykieta
+studio-subtitles-empty = Brak napisów. Użyj formularza poniżej, aby dodać ścieżkę napisów.
+studio-subtitles-add-heading = Dodaj ścieżkę napisów
+studio-subtitles-file-label = Plik napisów (.vtt, .srt, .ass, .ssa)
+studio-subtitles-ass-badge = ASS
+studio-subtitles-ass-title = Substation Alpha — renderowane przez LibASS
+studio-subtitles-remove-title = Usuń napisy
+studio-subtitles-delete-confirm = Usunąć ścieżkę napisów "{ $label }"?
+studio-subtitles-delete-success = Ścieżka napisów usunięta.
+studio-subtitles-delete-failed = Usunięcie nie powiodło się.
+studio-subtitles-translate-heading = Przetłumacz napisy
+studio-subtitles-translate-instruction = Zażądaj tłumaczenia AI istniejącej ścieżki napisów na inny język. Tłumaczenie zostanie dodane do kolejki i przetworzone automatycznie.
+studio-subtitles-translation-in-progress = Tłumaczenie w toku...
+studio-subtitles-translation-queued = Dla tego medium jest już w kolejce inne tłumaczenie. Poczekaj na jego zakończenie przed zleceniem nowego.
+studio-subtitles-source-label = Źródłowe napisy
+studio-subtitles-source-placeholder = -- Wybierz źródło --
+studio-subtitles-target-language = Język docelowy
+studio-subtitles-language-placeholder = -- Wybierz język --
+studio-subtitles-font-heading = Niestandardowa czcionka napisów
+studio-subtitles-font-instruction = Prześlij niestandardową czcionkę (.woff2 lub .ttf — pliki TTF są automatycznie konwertowane do WOFF2) aby zastąpić czcionkę napisów dla tego medium.
+studio-subtitles-font-active = Niestandardowa czcionka aktywna
+studio-subtitles-font-remove = Usuń
+studio-subtitles-font-file-label = Plik czcionki (.woff2 lub .ttf)
+studio-subtitles-upload-success = Ścieżka napisów przesłana!
+studio-subtitles-upload-failed = Przesyłanie nie powiodło się.
+studio-subtitles-font-upload-success = Czcionka przesłana!
+studio-subtitles-font-remove-success = Czcionka usunięta.
+studio-subtitles-font-remove-confirm = Usunąć niestandardową czcionkę napisów?
+
+# Edycja studia - miniatura
+studio-thumbnail-title = Miniatura
+studio-thumbnail-instruction = Prześlij niestandardowy obraz miniatury. Zostanie przekonwertowany do formatu AVIF i JPEG w rozdzielczości 1280x720.
+studio-thumbnail-remove = Usuń niestandardową miniaturę
+studio-thumbnail-current-alt = Bieżąca miniatura
+studio-thumbnail-file-label = Plik obrazu (PNG, JPG, WEBP itp.)
+studio-thumbnail-select-validation = Proszę wybrać plik obrazu.
+studio-thumbnail-uploading = Przesyłanie i konwertowanie...
+studio-thumbnail-upload-success = Miniatura przesłana i przekonwertowana!
+studio-thumbnail-upload-failed = Przesyłanie nie powiodło się.
+studio-thumbnail-remove-confirm = Usunąć niestandardową miniaturę?
+studio-thumbnail-remove-success = Miniatura usunięta.
+
+# Edycja studia - strefa niebezpieczna
+studio-danger-title = Strefa niebezpieczna
+studio-danger-subtitle = Destruktywne działania, których nie można cofnąć.
+studio-danger-delete-label = Usuń to medium
+studio-danger-delete-description = Trwale usuń "{ $name }". Wszystkie komentarze i wpisy list zostaną również usunięte.
+studio-danger-delete-button = Usuń medium
+studio-danger-delete-confirm = Czy na pewno chcesz usunąć "{ $name }"? Tej czynności nie można cofnąć. Wszystkie komentarze i wpisy list zostaną również usunięte.
+
+# Edycja studia - uprawnienia
+studio-permissions-visibility = Widoczność
+studio-permissions-no-groups = Nie masz jeszcze żadnych grup. Utwórz jedną, aby używać ograniczonej widoczności.
+
+# Koncept
+concept-status-label = status:
+concept-status-preparing = przygotowywanie...
+concept-status-ready = gotowe!
+
+# Ustawienia - hasło
+settings-password-title = Zmień hasło
+settings-password-update = Zaktualizuj hasło
+settings-loading-auth = Ładowanie ustawień uwierzytelniania...
+
+# Ustawienia - zdjęcie profilowe/kanału
+settings-profile-picture-empty = Nie ustawiono zdjęcia profilowego.
+settings-profile-picture-instruction = Wybierz publiczny lub ukryty obraz ze swojego kanału, aby użyć go jako zdjęcie profilowe.
+settings-no-images-message = Nie masz żadnych publicznych ani ukrytych obrazów. Najpierw prześlij obraz.
+settings-channel-picture-empty = Nie ustawiono obrazu kanału.
+settings-channel-picture-instruction = Wybierz publiczny lub ukryty obraz ze swojego kanału, aby użyć go jako obraz kanału.
+
+# Ustawienia - diagnostyka
+settings-diagnostics-build-info = Informacje o kompilacji
+settings-diagnostics-version = Wersja
+settings-diagnostics-git-commit = Commit Git
+settings-diagnostics-git-branch = Gałąź
+settings-diagnostics-server = Serwer
+settings-diagnostics-os-distro = Dystrybucja OS
+settings-diagnostics-kernel = Jądro
+settings-diagnostics-architecture = Architektura
+settings-diagnostics-services = Usługi
+settings-diagnostics-scylla = ScyllaDB / Cassandra
+settings-diagnostics-meilisearch = Meilisearch
+settings-diagnostics-redis = Redis / DragonflyDB
+settings-diagnostics-browser-codecs = Obsługa kodeków przeglądarki
+settings-diagnostics-av1 = AV1
+settings-diagnostics-vp9 = VP9
+settings-diagnostics-h265 = H.265 (HEVC)
+settings-diagnostics-opus = Opus
+settings-diagnostics-checking = Sprawdzanie...
+
+# Ustawienia - motyw
+settings-theme-save = Zapisz
+
+# Konfiguracja TOTP
+totp-setup-qr-heading = Skanuj kod QR
+totp-setup-qr-instruction = Otwórz aplikację uwierzytelniającą i zeskanuj poniższy kod lub wprowadź klucz tajny ręcznie.
+totp-setup-show-manual = Pokaż klucz do ręcznego wprowadzenia
+totp-setup-verify-heading = Zweryfikuj konfigurację
+totp-setup-verify-instruction = Wprowadź 6-cyfrowy kod z aplikacji uwierzytelniającej, aby potwierdzić konfigurację.
+totp-code-placeholder = 000000
+totp-setup-confirm = Potwierdź

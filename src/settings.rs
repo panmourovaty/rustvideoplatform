@@ -166,10 +166,13 @@ async fn settings_2fa(
 #[template(path = "pages/hx-settings-channel-name.html", escape = "none")]
 struct HXSettingsChannelNameTemplate {
     current_name: String,
+    locale: RequestLocale,
 }
 async fn hx_settings_channel_name(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
@@ -177,8 +180,11 @@ async fn hx_settings_channel_name(
         return Html(minifi_html("<script>window.location.replace(\"/login\");</script>".to_owned()));
     }
     let user_info = user_info.unwrap();
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXSettingsChannelNameTemplate {
         current_name: user_info.name,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -211,17 +217,24 @@ async fn hx_settings_channel_name_save(
 
 #[derive(Template)]
 #[template(path = "pages/hx-settings-password.html", escape = "none")]
-struct HXSettingsPasswordTemplate {}
+struct HXSettingsPasswordTemplate {
+    locale: RequestLocale,
+}
 async fn hx_settings_password(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html("<script>window.location.replace(\"/login\");</script>".to_owned()));
     }
-    let template = HXSettingsPasswordTemplate {};
+    let user_info = user_info.unwrap();
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXSettingsPasswordTemplate { locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -298,11 +311,13 @@ struct HXSettingsProfilePictureTemplate {
     media: Vec<PictureMedium>,
     current_picture: Option<String>,
     config: Config,
+    locale: RequestLocale,
 }
 async fn hx_settings_profile_picture(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
@@ -332,7 +347,9 @@ async fn hx_settings_profile_picture(
         })
         .collect();
 
-    let template = HXSettingsProfilePictureTemplate { media, current_picture, config };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXSettingsProfilePictureTemplate { media, current_picture, config, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -388,11 +405,13 @@ struct HXSettingsChannelPictureTemplate {
     media: Vec<PictureMedium>,
     current_picture: Option<String>,
     config: Config,
+    locale: RequestLocale,
 }
 async fn hx_settings_channel_picture(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
@@ -422,7 +441,9 @@ async fn hx_settings_channel_picture(
         })
         .collect();
 
-    let template = HXSettingsChannelPictureTemplate { media, current_picture, config };
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXSettingsChannelPictureTemplate { media, current_picture, config, locale };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -550,18 +571,22 @@ struct HXSettingsDiagnosticsTemplate {
     scylla_version: String,
     meilisearch_version: String,
     redis_version: String,
+    locale: RequestLocale,
 }
 
 async fn hx_settings_diagnostics(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(meili): Extension<Arc<MeilisearchClient>>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html("<script>window.location.replace(\"/login\");</script>".to_owned()));
     }
+    let user_info = user_info.unwrap();
 
     let git_commit = env!("GIT_COMMIT_HASH").to_owned();
     let git_branch = env!("GIT_BRANCH").to_owned();
@@ -571,7 +596,10 @@ async fn hx_settings_diagnostics(
     let os_arch = std::env::consts::ARCH.to_owned();
     let scylla_version = get_scylla_version(&db).await;
     let meilisearch_version = get_meilisearch_version(&meili).await;
-    let redis_version = get_redis_version(redis).await;
+    let redis_version = get_redis_version(redis.clone()).await;
+
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
 
     let template = HXSettingsDiagnosticsTemplate {
         git_commit,
@@ -583,6 +611,7 @@ async fn hx_settings_diagnostics(
         scylla_version,
         meilisearch_version,
         redis_version,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -634,14 +663,17 @@ fn is_valid_theme_name(name: &str) -> bool {
 struct HXSettingsThemeTemplate {
     available_themes: Vec<String>,
     current_theme: String,
+    locale: RequestLocale,
 }
 
 async fn hx_settings_theme(
+    Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let user_info = get_user_login(headers, &db, redis).await;
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
@@ -656,10 +688,13 @@ async fn hx_settings_theme(
         .unwrap_or_else(|| "default".to_owned());
 
     let available_themes = list_available_themes().await;
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
 
     let template = HXSettingsThemeTemplate {
         available_themes,
         current_theme,
+        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }

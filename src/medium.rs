@@ -316,6 +316,7 @@ struct HXMediumCardTemplate {
     page: i64,
     has_more: bool,
     next_url: String,
+    locale: RequestLocale,
 }
 
 #[derive(Template)]
@@ -325,4 +326,5 @@ struct HXMediumListTemplate {
     list_id: String,
     media: Vec<Medium>,
     config: Config,
+    locale: RequestLocale,
 }
