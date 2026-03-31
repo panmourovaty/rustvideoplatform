@@ -5,7 +5,7 @@
 
 {% if !users.is_empty() %}
 <div class="search-section-header">
-    <h5 class="search-section-title"><i class="fa-solid fa-users me-2"></i>Users <span class="text-secondary">({{ users_total }})</span></h5>
+    <h5 class="search-section-title"><i class="fa-solid fa-users me-2"></i>{{ locale.t("search-users-header") }} <span class="text-secondary">({{ users_total }})</span></h5>
 </div>
 {% for hit in users %}
 <a href="/u/{{ hit.login }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
@@ -35,7 +35,7 @@
 
 {% if !lists.is_empty() %}
 <div class="search-section-header">
-    <h5 class="search-section-title"><i class="fa-solid fa-list me-2"></i>Lists <span class="text-secondary">({{ lists_total }})</span></h5>
+    <h5 class="search-section-title"><i class="fa-solid fa-list me-2"></i>{{ locale.t("search-lists-header") }} <span class="text-secondary">({{ lists_total }})</span></h5>
 </div>
 {% for hit in lists %}
 <a href="/l/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
@@ -62,7 +62,7 @@
 
 {% if !media.is_empty() %}
 <div class="search-section-header">
-    <h5 class="search-section-title"><i class="fa-solid fa-photo-film me-2"></i>Media <span class="text-secondary">({{ media_total }})</span></h5>
+    <h5 class="search-section-title"><i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("search-media-header") }} <span class="text-secondary">({{ media_total }})</span></h5>
 </div>
 {% for hit in media %}
 <a href="/m/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">

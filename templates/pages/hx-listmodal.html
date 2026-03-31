@@ -1,7 +1,7 @@
 <div class="list-modal-overlay" id="listModalOverlay" onclick="closeListModal(event)">
     <div class="list-modal-content" onclick="event.stopPropagation()">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="text-white m-0"><i class="fa-solid fa-list me-2"></i>Save to list</h4>
+            <h4 class="text-white m-0"><i class="fa-solid fa-list me-2"></i>{{ locale.t("listmodal-title") }}</h4>
             <a class="btn text-white" style="cursor:pointer" onclick="document.getElementById('listModalOverlay').style.display='none'">
                 <i class="fa-solid fa-xmark fa-lg"></i>
             </a>
@@ -15,37 +15,37 @@
                 <a hx-get="/hx/removefromlist/{{ list.id }}/{{ medium_id }}"
                    hx-target="#listmodal-body"
                    class="btn btn-secondary btn-sm">
-                    <i class="fa-solid fa-check"></i> Added
+                    <i class="fa-solid fa-check"></i> {{ locale.t("listmodal-added") }}
                 </a>
                 {% else %}
                 <a hx-get="/hx/addtolist/{{ list.id }}/{{ medium_id }}"
                    hx-target="#listmodal-body"
                    class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus"></i> Add
+                    <i class="fa-solid fa-plus"></i> {{ locale.t("button-add") }}
                 </a>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
         {% if lists.is_empty() %}
-        <p class="text-secondary text-center">You have no lists yet. Create one below.</p>
+        <p class="text-secondary text-center">{{ locale.t("listmodal-no-lists") }}</p>
         {% endif %}
         <hr>
         <form hx-post="/hx/createlist/{{ medium_id }}" hx-target="#listmodal-body">
             <div class="input-group mb-2">
-                <input type="text" name="name" class="form-control" placeholder="New list name..." required>
+                <input type="text" name="name" class="form-control" placeholder="{{ locale.t("listmodal-new-name-placeholder") }}" required>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-plus"></i> Create
+                    <i class="fa-solid fa-plus"></i> {{ locale.t("button-create") }}
                 </button>
             </div>
             <div class="d-flex align-items-center gap-2 mx-2">
                 <select name="visibility" class="form-select form-select-sm" style="width:auto;" id="listmodal-visibility">
-                    <option value="hidden">Private</option>
-                    <option value="public">Public</option>
-                    <option value="restricted">Restricted to Group</option>
+                    <option value="hidden">{{ locale.t("visibility-private") }}</option>
+                    <option value="public">{{ locale.t("visibility-public") }}</option>
+                    <option value="restricted">{{ locale.t("visibility-restricted") }}</option>
                 </select>
                 <select name="restricted_group" class="form-select form-select-sm" style="width:auto;" id="listmodal-group-select">
-                    <option value="">-- Group --</option>
+                    <option value="">{{ locale.t("group-select-placeholder") }}</option>
                     {% for group in owner_groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
                     {% endfor %}

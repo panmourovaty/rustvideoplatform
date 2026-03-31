@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-center mt-3">
     <div class="w-100" style="max-width: 600px">
-        <h1 class="m-3 text-center">What do you want to upload today?</h1>
+        <h1 class="m-3 text-center">{{ locale.t("studio-upload-heading") }}</h1>
         <div id="upload-container">
             <div class="d-flex flex-column align-items-center">
                 <input
@@ -17,7 +17,7 @@
                     style="width: 150px"
                     onclick="startUpload()"
                 >
-                    <i class="fa-solid fa-upload"></i>&nbsp;Upload
+                    <i class="fa-solid fa-upload"></i>&nbsp;{{ locale.t("button-upload") }}
                 </button>
 
                 <div id="upload-progress-area" style="display: none; width: 100%; max-width: 500px;">

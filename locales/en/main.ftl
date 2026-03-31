@@ -444,7 +444,7 @@ studio-thumbnail-remove-success = Thumbnail removed.
 studio-danger-title = Danger Zone
 studio-danger-subtitle = Destructive actions that cannot be undone.
 studio-danger-delete-label = Delete this media
-studio-danger-delete-description = Permanently delete "{ $name }". All comments and list entries will also be removed.
+studio-danger-delete-description = Permanently delete. All comments and list entries will also be removed.
 studio-danger-delete-button = Delete Media
 studio-danger-delete-confirm = Are you sure you want to delete "{ $name }"? This action cannot be undone. All comments and list entries will also be removed.
 
@@ -500,3 +500,7 @@ totp-setup-verify-heading = Verify Setup
 totp-setup-verify-instruction = Enter the 6-digit code from your authenticator to confirm setup.
 totp-code-placeholder = 000000
 totp-setup-confirm = Confirm
+
+# Units
+unit-views = views
+unit-items = items

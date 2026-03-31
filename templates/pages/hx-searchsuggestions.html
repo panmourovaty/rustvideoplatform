@@ -1,6 +1,6 @@
 {% if !users.is_empty() %}
 <li class="suggestion-section-header">
-    <i class="fa-solid fa-user me-2"></i>Channels &amp; Users
+    <i class="fa-solid fa-user me-2"></i>{{ locale.t("search-suggestions-users") }}
 </li>
 {% for user in users %}
 <a href="/u/{{ user.login }}" class="text-decoration-none suggestionitem" preload="mouseover">
@@ -23,7 +23,7 @@
 
 {% if !lists.is_empty() %}
 <li class="suggestion-section-header {% if !users.is_empty() %}mt-1{% endif %}">
-    <i class="fa-solid fa-list me-2"></i>Lists
+    <i class="fa-solid fa-list me-2"></i>{{ locale.t("search-suggestions-lists") }}
 </li>
 {% for list in lists %}
 <a href="/l/{{ list.id }}" class="text-decoration-none suggestionitem" preload="mouseover">
@@ -42,7 +42,7 @@
 
 {% if !media.is_empty() %}
 <li class="suggestion-section-header {% if !users.is_empty() || !lists.is_empty() %}mt-1{% endif %}">
-    <i class="fa-solid fa-film me-2"></i>Media
+    <i class="fa-solid fa-film me-2"></i>{{ locale.t("search-suggestions-media") }}
 </li>
 {% include "pages/hx-mediumlist.html" %}
 {% endif %}

@@ -4,13 +4,13 @@
             {% if current_picture.is_some() %}
             <img src="{{ config.source_server_url }}/source/{{ current_picture.clone().unwrap() }}/thumbnail.avif" style="max-width:300px;max-height:170px;" class="border rounded flex-shrink-0">
             {% else %}
-            <p class="text-secondary mb-0">No channel picture set.</p>
+            <p class="text-secondary mb-0">{{ locale.t("settings-channel-picture-empty") }}</p>
             {% endif %}
             {% if !media.is_empty() %}
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>Save</button>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>{{ locale.t("button-save") }}</button>
             {% endif %}
         </div>
-        <p class="text-secondary">Select a public or hidden image from your channel to use as your channel picture.</p>
+        <p class="text-secondary">{{ locale.t("settings-channel-picture-instruction") }}</p>
         <div class="row g-2 mb-3">
             {% for m in media %}
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
@@ -20,7 +20,7 @@
                         <img src="{{ config.source_server_url }}/source/{{ m.id }}/thumbnail.avif" style="width:100%;height:99px;object-fit:cover;" class="rounded">
                         <small class="text-white text-truncate mt-1">{{ m.name }}</small>
                         {% if m.visibility == "hidden" %}
-                        <small class="text-secondary"><i class="fa-solid fa-eye-slash"></i> Hidden</small>
+                        <small class="text-secondary"><i class="fa-solid fa-eye-slash"></i> {{ locale.t("visibility-hidden") }}</small>
                         {% endif %}
                     </div>
                 </label>
@@ -28,7 +28,7 @@
             {% endfor %}
         </div>
         {% if media.is_empty() %}
-        <p class="text-secondary">You have no public or hidden images. Upload an image first.</p>
+        <p class="text-secondary">{{ locale.t("settings-no-images-message") }}</p>
         {% endif %}
     </form>
     <div id="settings-result" class="mt-3"></div>

@@ -444,7 +444,7 @@ studio-thumbnail-remove-success = Náhledový obrázek odebrán.
 studio-danger-title = Nebezpečná zóna
 studio-danger-subtitle = Destruktivní akce, které nelze vrátit zpět.
 studio-danger-delete-label = Smazat toto médium
-studio-danger-delete-description = Trvale smazat „{ $name }". Budou odstraněny také všechny komentáře a záznamy v seznamech.
+studio-danger-delete-description = Trvale smazat. Budou odstraněny také všechny komentáře a záznamy v seznamech.
 studio-danger-delete-button = Smazat médium
 studio-danger-delete-confirm = Opravdu chcete smazat „{ $name }"? Tuto akci nelze vrátit zpět. Budou odstraněny také všechny komentáře a záznamy v seznamech.
 
@@ -500,3 +500,7 @@ totp-setup-verify-heading = Ověřit nastavení
 totp-setup-verify-instruction = Zadejte 6místný kód z ověřovací aplikace pro potvrzení nastavení.
 totp-code-placeholder = 000000
 totp-setup-confirm = Potvrdit
+
+# Units
+unit-views = zhlédnutí
+unit-items = položek

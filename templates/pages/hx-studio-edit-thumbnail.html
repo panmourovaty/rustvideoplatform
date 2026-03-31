@@ -1,20 +1,20 @@
 <div class="col-12 mx-3">
-    <h5><i class="fa-solid fa-image"></i>&nbsp;Thumbnail</h5>
-    <p class="text-secondary">Upload a custom thumbnail image. It will be converted to AVIF and JPEG at 1280×720 resolution.</p>
+    <h5><i class="fa-solid fa-image"></i>&nbsp;{{ locale.t("studio-thumbnail-title") }}</h5>
+    <p class="text-secondary">{{ locale.t("studio-thumbnail-instruction") }}</p>
     <div id="thumbnail-current" class="mb-2" style="display:none">
-        <img id="thumbnail-preview" src="/source/{{ medium_id }}/thumbnail.avif" alt="Current thumbnail" style="max-width:320px;max-height:180px;border-radius:4px;border:1px solid #444;" class="mb-2 d-block" />
+        <img id="thumbnail-preview" src="/source/{{ medium_id }}/thumbnail.avif" alt="{{ locale.t("studio-thumbnail-current-alt") }}" style="max-width:320px;max-height:180px;border-radius:4px;border:1px solid #444;" class="mb-2 d-block" />
         <button type="button" class="btn btn-sm btn-outline-danger" id="delete-thumbnail-btn">
-            <i class="fa-solid fa-trash"></i>&nbsp;Remove Custom Thumbnail
+            <i class="fa-solid fa-trash"></i>&nbsp;{{ locale.t("studio-thumbnail-remove") }}
         </button>
     </div>
     <div id="thumbnail-upload-row" class="row g-2 align-items-end">
         <div class="col-sm-7">
-            <label for="thumbnail-file-input" class="form-label">Image File (PNG, JPG, WEBP, etc.)</label>
+            <label for="thumbnail-file-input" class="form-label">{{ locale.t("studio-thumbnail-file-label") }}</label>
             <input type="file" class="form-control form-control-sm" id="thumbnail-file-input" accept="image/*" />
         </div>
         <div class="col-sm-3">
             <button type="button" class="btn btn-primary btn-sm w-100" id="upload-thumbnail-btn">
-                <i class="fa-solid fa-upload"></i>&nbsp;Upload
+                <i class="fa-solid fa-upload"></i>&nbsp;{{ locale.t("button-upload") }}
             </button>
         </div>
     </div>
@@ -22,6 +22,13 @@
 </div>
 <script>
 (function() {
+    var MSG_SELECT = '{{ locale.t("studio-thumbnail-select-validation") }}';
+    var MSG_UPLOADING = '{{ locale.t("studio-thumbnail-uploading") }}';
+    var MSG_UPLOAD_SUCCESS = '{{ locale.t("studio-thumbnail-upload-success") }}';
+    var MSG_UPLOAD_FAILED = '{{ locale.t("studio-thumbnail-upload-failed") }}';
+    var MSG_REMOVE_CONFIRM = '{{ locale.t("studio-thumbnail-remove-confirm") }}';
+    var MSG_REMOVE_SUCCESS = '{{ locale.t("studio-thumbnail-remove-success") }}';
+
     function showThumbStatus(type, msg) {
         var el = document.getElementById('thumbnail-status');
         var icon = type === 'success' ? 'fa-check' : 'fa-xmark';
@@ -46,13 +53,13 @@
         var btn = this;
         var fileInput = document.getElementById('thumbnail-file-input');
         if (!fileInput.files || fileInput.files.length === 0) {
-            showThumbStatus('danger', 'Please select an image file.');
+            showThumbStatus('danger', MSG_SELECT);
             return;
         }
         var formData = new FormData();
         formData.append('file', fileInput.files[0]);
         btn.disabled = true;
-        showThumbStatus('warning', 'Uploading and converting...');
+        showThumbStatus('warning', MSG_UPLOADING);
         fetch('/studio/edit/{{ medium_id }}/thumbnail', {
             method: 'POST',
             body: formData
@@ -63,19 +70,19 @@
             if (data.ok) {
                 fileInput.value = '';
                 setThumbnailExists(true);
-                showThumbStatus('success', 'Thumbnail uploaded and converted!');
+                showThumbStatus('success', MSG_UPLOAD_SUCCESS);
             } else {
-                showThumbStatus('danger', data.error || 'Upload failed.');
+                showThumbStatus('danger', data.error || MSG_UPLOAD_FAILED);
             }
         })
         .catch(function() {
             btn.disabled = false;
-            showThumbStatus('danger', 'Upload failed.');
+            showThumbStatus('danger', MSG_UPLOAD_FAILED);
         });
     });
 
     document.getElementById('delete-thumbnail-btn').addEventListener('click', function() {
-        if (!confirm('Remove custom thumbnail?')) return;
+        if (!confirm(MSG_REMOVE_CONFIRM)) return;
         fetch('/studio/edit/{{ medium_id }}/thumbnail/delete', {
             method: 'POST'
         })
@@ -83,12 +90,12 @@
         .then(function(data) {
             if (data.ok) {
                 setThumbnailExists(false);
-                showThumbStatus('success', 'Thumbnail removed.');
+                showThumbStatus('success', MSG_REMOVE_SUCCESS);
             } else {
-                showThumbStatus('danger', data.error || 'Failed to remove thumbnail.');
+                showThumbStatus('danger', data.error || MSG_REMOVE_SUCCESS);
             }
         })
-        .catch(function() { showThumbStatus('danger', 'Failed to remove thumbnail.'); });
+        .catch(function() { showThumbStatus('danger', MSG_UPLOAD_FAILED); });
     });
 })();
 </script>

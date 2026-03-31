@@ -444,7 +444,7 @@ studio-thumbnail-remove-success = Miniature supprimée.
 studio-danger-title = Zone dangereuse
 studio-danger-subtitle = Actions destructives qui ne peuvent pas être annulées.
 studio-danger-delete-label = Supprimer ce média
-studio-danger-delete-description = Supprimer définitivement « { $name } ». Tous les commentaires et entrées de liste seront également supprimés.
+studio-danger-delete-description = Supprimer définitivement. Tous les commentaires et entrées de liste seront également supprimés.
 studio-danger-delete-button = Supprimer le média
 studio-danger-delete-confirm = Êtes-vous sûr de vouloir supprimer « { $name } » ? Cette action ne peut pas être annulée. Tous les commentaires et entrées de liste seront également supprimés.
 
@@ -500,3 +500,7 @@ totp-setup-verify-heading = Vérifier la configuration
 totp-setup-verify-instruction = Saisissez le code à 6 chiffres de votre application d'authentification pour confirmer la configuration.
 totp-code-placeholder = 000000
 totp-setup-confirm = Confirmer
+
+# Units
+unit-views = vues
+unit-items = éléments

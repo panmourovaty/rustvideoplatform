@@ -1,22 +1,22 @@
 <div class="col-12">
     <form action="/studio/edit/{{ medium.id }}/permissions" method="post" class="mx-3">
         <div class="form-group row my-3">
-            <label for="medium_visibility" class="col-4 col-form-label">Visibility</label>
+            <label for="medium_visibility" class="col-4 col-form-label">{{ locale.t("studio-permissions-visibility") }}</label>
             <div class="col-8">
                 <select id="medium_visibility" name="medium_visibility" class="form-select" required>
-                    <option value="public" {% if medium.visibility == "public" %}selected{% endif %}>Public</option>
-                    <option value="hidden" {% if medium.visibility == "hidden" %}selected{% endif %}>Hidden</option>
-                    <option value="restricted" {% if medium.visibility == "restricted" %}selected{% endif %}>Restricted to Group</option>
+                    <option value="public" {% if medium.visibility == "public" %}selected{% endif %}>{{ locale.t("visibility-public") }}</option>
+                    <option value="hidden" {% if medium.visibility == "hidden" %}selected{% endif %}>{{ locale.t("visibility-hidden") }}</option>
+                    <option value="restricted" {% if medium.visibility == "restricted" %}selected{% endif %}>{{ locale.t("visibility-restricted") }}</option>
                 </select>
                 <select id="medium_restricted_group" name="medium_restricted_group" class="form-select mt-2" style="display:none">
-                    <option value="">-- Select a group --</option>
+                    <option value="">{{ locale.t("group-select-placeholder") }}</option>
                     {% for group in owner_groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
                     {% endfor %}
                 </select>
                 {% if owner_groups.is_empty() %}
                 <small class="text-secondary mt-1" id="no-groups-hint" style="display:none">
-                    You have no groups yet. <a href="/studio/groups" class="text-primary">Create one</a> to use restricted visibility.
+                    {{ locale.t("studio-permissions-no-groups") }} <a href="/studio/groups" class="text-primary">{{ locale.t("button-create") }}</a>
                 </small>
                 {% endif %}
             </div>
@@ -49,7 +49,7 @@
         <div class="form-group row my-3">
             <div class="offset-4 col-8">
                 <button name="submit" type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i>&nbsp;Save Changes
+                    <i class="fa-solid fa-floppy-disk"></i>&nbsp;{{ locale.t("studio-save-changes") }}
                 </button>
             </div>
         </div>

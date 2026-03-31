@@ -9,11 +9,11 @@
         </div>
         <p class="text-secondary mb-0">{{ list.item_count.unwrap_or(0) }} items
             {% if list.visibility == "public" %}
-            <i class="fa-solid fa-globe ms-1" title="Public"></i>
+            <i class="fa-solid fa-globe ms-1" title="{{ locale.t("visibility-public") }}"></i>
             {% else if list.visibility == "restricted" %}
-            <i class="fa-solid fa-users ms-1" title="Restricted to Group"></i>
+            <i class="fa-solid fa-users ms-1" title="{{ locale.t("visibility-restricted") }}"></i>
             {% else %}
-            <i class="fa-solid fa-lock ms-1" title="Private"></i>
+            <i class="fa-solid fa-lock ms-1" title="{{ locale.t("visibility-private") }}"></i>
             {% endif %}
         </p>
     </div>
@@ -27,9 +27,9 @@
 {% else %}
 <div class="col-12 text-center my-4">
     {% if lists.is_empty() && page == 0 %}
-    <p class="text-secondary">No lists yet.</p>
+    <p class="text-secondary">{{ locale.t("studio-lists-empty") }}</p>
     {% else %}
-    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>You have reached the end.</p>
+    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>{{ locale.t("pagination-end") }}</p>
     {% endif %}
 </div>
 {% endif %}

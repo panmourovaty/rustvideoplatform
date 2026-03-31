@@ -1,76 +1,76 @@
 <div class="col-12 col-md-8 col-lg-6">
-    <h5 class="mb-3">Build Info</h5>
+    <h5 class="mb-3">{{ locale.t("settings-diagnostics-build-info") }}</h5>
     <table class="table table-hover table-bordered text-white">
         <tbody>
             <tr>
-                <td>Version</td>
+                <td>{{ locale.t("settings-diagnostics-version") }}</td>
                 <td><code>{{ version }}</code></td>
             </tr>
             <tr>
-                <td>Git Commit</td>
+                <td>{{ locale.t("settings-diagnostics-git-commit") }}</td>
                 <td><code>{{ git_commit }}</code></td>
             </tr>
             <tr>
-                <td>Branch</td>
+                <td>{{ locale.t("settings-diagnostics-git-branch") }}</td>
                 <td><code>{{ git_branch }}</code></td>
             </tr>
         </tbody>
     </table>
 
-    <h5 class="mb-3 mt-4">Server</h5>
+    <h5 class="mb-3 mt-4">{{ locale.t("settings-diagnostics-server") }}</h5>
     <table class="table table-hover table-bordered text-white">
         <tbody>
             <tr>
-                <td>OS Distro</td>
+                <td>{{ locale.t("settings-diagnostics-os-distro") }}</td>
                 <td><code>{{ os_distro }}</code></td>
             </tr>
             <tr>
-                <td>Kernel</td>
+                <td>{{ locale.t("settings-diagnostics-kernel") }}</td>
                 <td><code>{{ os_kernel }}</code></td>
             </tr>
             <tr>
-                <td>Architecture</td>
+                <td>{{ locale.t("settings-diagnostics-architecture") }}</td>
                 <td><code>{{ os_arch }}</code></td>
             </tr>
         </tbody>
     </table>
 
-    <h5 class="mb-3 mt-4">Services</h5>
+    <h5 class="mb-3 mt-4">{{ locale.t("settings-diagnostics-services") }}</h5>
     <table class="table table-hover table-bordered text-white">
         <tbody>
             <tr>
-                <td>ScyllaDB / Cassandra</td>
+                <td>{{ locale.t("settings-diagnostics-scylla") }}</td>
                 <td><code>{{ scylla_version }}</code></td>
             </tr>
             <tr>
-                <td>Meilisearch</td>
+                <td>{{ locale.t("settings-diagnostics-meilisearch") }}</td>
                 <td><code>{{ meilisearch_version }}</code></td>
             </tr>
             <tr>
-                <td>Redis / DragonflyDB</td>
+                <td>{{ locale.t("settings-diagnostics-redis") }}</td>
                 <td><code>{{ redis_version }}</code></td>
             </tr>
         </tbody>
     </table>
 
-    <h5 class="mb-3 mt-4">Browser Codec Support</h5>
+    <h5 class="mb-3 mt-4">{{ locale.t("settings-diagnostics-browser-codecs") }}</h5>
     <table class="table table-hover table-bordered text-white">
         <tbody>
             <tr>
-                <td>AV1</td>
-                <td id="codec-av1"><code>Checking...</code></td>
+                <td>{{ locale.t("settings-diagnostics-av1") }}</td>
+                <td id="codec-av1"><code>{{ locale.t("settings-diagnostics-checking") }}</code></td>
             </tr>
             <tr>
-                <td>VP9</td>
-                <td id="codec-vp9"><code>Checking...</code></td>
+                <td>{{ locale.t("settings-diagnostics-vp9") }}</td>
+                <td id="codec-vp9"><code>{{ locale.t("settings-diagnostics-checking") }}</code></td>
             </tr>
             <tr>
-                <td>H.265 (HEVC)</td>
-                <td id="codec-h265"><code>Checking...</code></td>
+                <td>{{ locale.t("settings-diagnostics-h265") }}</td>
+                <td id="codec-h265"><code>{{ locale.t("settings-diagnostics-checking") }}</code></td>
             </tr>
             <tr>
-                <td>Opus</td>
-                <td id="codec-opus"><code>Checking...</code></td>
+                <td>{{ locale.t("settings-diagnostics-opus") }}</td>
+                <td id="codec-opus"><code>{{ locale.t("settings-diagnostics-checking") }}</code></td>
             </tr>
         </tbody>
     </table>

@@ -28,8 +28,8 @@
                         >{{ concept.name }}</b
                     >
                     <p class="text-secondary">
-                        status:&nbsp; {% if !concept.processed %} preparing...
-                        {% else %} ready! {% endif %} {% if concept.type ==
+                        {{ locale.t("concept-status-label") }}&nbsp; {% if !concept.processed %} {{ locale.t("concept-status-preparing") }}
+                        {% else %} {{ locale.t("concept-status-ready") }} {% endif %} {% if concept.type ==
                         "video" %}
                         <i class="fa-solid fa-video fa-sm ms-1"></i>
                         {% else if concept.type == "audio" %}

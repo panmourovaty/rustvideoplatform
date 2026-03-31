@@ -444,7 +444,7 @@ studio-thumbnail-remove-success = Vorschaubild entfernt.
 studio-danger-title = Gefahrenzone
 studio-danger-subtitle = Destruktive Aktionen, die nicht rückgängig gemacht werden können.
 studio-danger-delete-label = Diese Medien löschen
-studio-danger-delete-description = „{ $name }" dauerhaft löschen. Alle Kommentare und Listeneinträge werden ebenfalls entfernt.
+studio-danger-delete-description = Dauerhaft löschen. Alle Kommentare und Listeneinträge werden ebenfalls entfernt.
 studio-danger-delete-button = Medien löschen
 studio-danger-delete-confirm = Sind Sie sicher, dass Sie „{ $name }" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden. Alle Kommentare und Listeneinträge werden ebenfalls entfernt.
 
@@ -500,3 +500,7 @@ totp-setup-verify-heading = Einrichtung bestätigen
 totp-setup-verify-instruction = Geben Sie den 6-stelligen Code aus Ihrer Authentifizierungs-App ein, um die Einrichtung zu bestätigen.
 totp-code-placeholder = 000000
 totp-setup-confirm = Bestätigen
+
+# Units
+unit-views = Aufrufe
+unit-items = Elemente

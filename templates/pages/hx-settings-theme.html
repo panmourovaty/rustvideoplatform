@@ -1,12 +1,12 @@
 <div class="col-12 col-md-8 col-lg-6">
     <form hx-post="/hx/settings/theme" hx-target="#theme-result" hx-swap="innerHTML">
         <div class="mb-3">
-            <label class="form-label">Select CSS Theme</label>
+            <label class="form-label">{{ locale.t("settings-theme-label") }}</label>
             <div class="d-flex flex-column gap-2">
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="theme" id="theme-default" value="default" {% if current_theme == "default" %}checked{% endif %}>
                     <label class="form-check-label" for="theme-default">
-                        <strong>Default</strong> &mdash; the standard platform style
+                        <strong>{{ locale.t("settings-theme-default-name") }}</strong> &mdash; {{ locale.t("settings-theme-default-desc") }}
                     </label>
                 </div>
                 {% for theme in available_themes %}
@@ -14,16 +14,16 @@
                     <input class="form-check-input" type="radio" name="theme" id="theme-{{ theme }}" value="{{ theme }}" {% if current_theme == theme.as_str() %}checked{% endif %}>
                     <label class="form-check-label" for="theme-{{ theme }}">
                         <strong>{{ theme }}</strong>
-                        <a href="/source/system_style/{{ theme }}.css" target="_blank" class="ms-2 small text-secondary" title="View CSS source"><i class="fa-solid fa-code"></i></a>
+                        <a href="/source/system_style/{{ theme }}.css" target="_blank" class="ms-2 small text-secondary" title="{{ locale.t("settings-theme-view-source") }}"><i class="fa-solid fa-code"></i></a>
                     </label>
                 </div>
                 {% endfor %}
                 {% if available_themes.is_empty() %}
-                <p class="text-secondary small mb-0">No additional themes are installed. Place <code>.css</code> files in <code>source/system_style/</code> to add themes.</p>
+                <p class="text-secondary small mb-0">{{ locale.t("settings-theme-no-themes") }}</p>
                 {% endif %}
             </div>
         </div>
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>Save</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-2"></i>{{ locale.t("button-save") }}</button>
     </form>
     <div id="theme-result" class="mt-3"></div>
 </div>

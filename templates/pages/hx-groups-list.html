@@ -19,7 +19,7 @@
 </div>
 {% endfor %}
 {% if groups.is_empty() %}
-<p class="text-secondary text-center">No groups yet. Create one above to restrict media and lists to specific users.</p>
+<p class="text-secondary text-center">{{ locale.t("groups-empty") }}</p>
 {% endif %}
 <div class="col-12">
     <div id="group-members-panel"></div>

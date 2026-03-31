@@ -48,7 +48,7 @@
                         {{ medium.views }} views
                     </p>
                     <span class="text-secondary m-0" style="font-size: 0.8em;">
-                        <i class="fa-solid fa-pen-to-square fa-sm"></i> Edit
+                        <i class="fa-solid fa-pen-to-square fa-sm"></i> {{ locale.t("studio-edit-link") }}
                     </span>
                 </td>
             </tr>
@@ -64,9 +64,9 @@
 {% else %}
 <div class="col-12 text-center my-4">
     {% if media.is_empty() && page == 0 %}
-    <p class="text-secondary">No media uploaded yet.</p>
+    <p class="text-secondary">{{ locale.t("studio-no-media") }}</p>
     {% else %}
-    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>You have reached the end.</p>
+    <p class="text-secondary"><i class="fa-solid fa-circle-check me-2"></i>{{ locale.t("pagination-end") }}</p>
     {% endif %}
 </div>
 {% endif %}

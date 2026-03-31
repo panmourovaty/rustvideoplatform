@@ -444,7 +444,7 @@ studio-thumbnail-remove-success = Miniatura usunięta.
 studio-danger-title = Strefa niebezpieczna
 studio-danger-subtitle = Destruktywne działania, których nie można cofnąć.
 studio-danger-delete-label = Usuń to medium
-studio-danger-delete-description = Trwale usuń "{ $name }". Wszystkie komentarze i wpisy list zostaną również usunięte.
+studio-danger-delete-description = Trwale usuń. Wszystkie komentarze i wpisy list zostaną również usunięte.
 studio-danger-delete-button = Usuń medium
 studio-danger-delete-confirm = Czy na pewno chcesz usunąć "{ $name }"? Tej czynności nie można cofnąć. Wszystkie komentarze i wpisy list zostaną również usunięte.
 
@@ -500,3 +500,7 @@ totp-setup-verify-heading = Zweryfikuj konfigurację
 totp-setup-verify-instruction = Wprowadź 6-cyfrowy kod z aplikacji uwierzytelniającej, aby potwierdzić konfigurację.
 totp-code-placeholder = 000000
 totp-setup-confirm = Potwierdź
+
+# Units
+unit-views = wyświetleń
+unit-items = elementów
