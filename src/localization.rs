@@ -23,6 +23,11 @@ const LOCALE_DE: &str = include_str!("../locales/de/main.ftl");
 const LOCALE_FR: &str = include_str!("../locales/fr/main.ftl");
 const LOCALE_ES: &str = include_str!("../locales/es/main.ftl");
 const LOCALE_PL: &str = include_str!("../locales/pl/main.ftl");
+const LOCALE_CN: &str = include_str!("../locales/cn/main.ftl");
+const LOCALE_HE: &str = include_str!("../locales/he/main.ftl");
+const LOCALE_HI: &str = include_str!("../locales/hi/main.ftl");
+const LOCALE_RU: &str = include_str!("../locales/ru/main.ftl");
+const LOCALE_SK: &str = include_str!("../locales/sk/main.ftl");
 
 /// All embedded locales as (code, ftl_source) pairs.
 static EMBEDDED_LOCALES: &[(&str, &str)] = &[
@@ -32,6 +37,11 @@ static EMBEDDED_LOCALES: &[(&str, &str)] = &[
     ("fr", LOCALE_FR),
     ("es", LOCALE_ES),
     ("pl", LOCALE_PL),
+    ("cn", LOCALE_CN),
+    ("he", LOCALE_HE),
+    ("hi", LOCALE_HI),
+    ("ru", LOCALE_RU),
+    ("sk", LOCALE_SK),
 ];
 
 /// Human-readable display name for a language code.
@@ -43,6 +53,11 @@ pub fn lang_display_name(code: &str) -> &'static str {
         "fr" => "Français",
         "es" => "Español",
         "pl" => "Polski",
+        "cn" => "简体中文",
+        "he" => "עברית",
+        "hi" => "हिन्दी",
+        "ru" => "Русский",
+        "sk" => "Slovenčina",
         _ => "Unknown",
     }
 }
