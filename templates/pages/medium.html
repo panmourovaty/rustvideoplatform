@@ -280,7 +280,6 @@
                         import { WebGPURenderer } from "three/webgpu";
                         import { OrbitControls } from "three/addons/controls/OrbitControls.js";
                         import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-                        import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
                         (async () => {
                             const container = document.getElementById('threejs-container');
@@ -345,24 +344,18 @@
 
                             new ResizeObserver(resizeRenderer).observe(container);
 
-                            // ── Skybox (RoomEnvironment) ──────────────────────────────
-                            const pmrem = new THREE.PMREMGenerator(renderer);
-                            const roomEnvTexture = pmrem.fromScene(new RoomEnvironment()).texture;
+                            // ── Skybox toggle ─────────────────────────────────────────
+                            // PMREMGenerator requires a WebGLRenderer, so we use a plain
+                            // colour swap that works with WebGPURenderer.
                             let skyboxEnabled = false;
-
                             const cardBgColor = new THREE.Color(cardBg);
+                            const skyBgColor  = new THREE.Color(0x6e8fa8); // soft blue-grey studio
+
                             const skyboxBtn = document.getElementById('threejs-skybox-btn');
                             skyboxBtn.addEventListener('click', () => {
                                 skyboxEnabled = !skyboxEnabled;
-                                if (skyboxEnabled) {
-                                    scene.background  = roomEnvTexture;
-                                    scene.environment = roomEnvTexture;
-                                    skyboxBtn.classList.add('active');
-                                } else {
-                                    scene.background  = cardBgColor;
-                                    scene.environment = null;
-                                    skyboxBtn.classList.remove('active');
-                                }
+                                scene.background = skyboxEnabled ? skyBgColor : cardBgColor;
+                                skyboxBtn.classList.toggle('active', skyboxEnabled);
                             });
 
                             // ── Animation ─────────────────────────────────────────────
