@@ -273,7 +273,7 @@
 
                             new ResizeObserver(resizeRenderer).observe(container);
 
-                            new GLTFLoader().load('https://cdn.vids.cz/source/9u96bypkyt/model.glb', (gltf) => {
+                            new GLTFLoader().load('{{ config.source_server_url }}/source/{{ medium_id }}/model.glb', (gltf) => {
                                 const model = gltf.scene;
                                 scene.add(model);
 
