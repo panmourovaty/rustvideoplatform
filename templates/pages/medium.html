@@ -47,18 +47,18 @@
         <meta property="og:type" content="image" />
         <meta
             property="og:image"
-            content="https://{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
+            content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
         />
         <meta
             property="og:image:secure_url"
-            content="https://{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
+            content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
         />
         <meta property="og:image:type" content="image/avif" />
         {% else if medium_type == "document_pdf" %}
         <meta property="og:type" content="article" />
         <meta
             property="og:image"
-            content="https://{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
+            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
         />
         {% else if medium_type == "object_3d" %}
         <meta property="og:type" content="website" />
