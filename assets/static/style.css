@@ -16614,3 +16614,68 @@ body.sidebar-collapsed .sidebarbackground {
     position: absolute !important;
     z-index: 9999 !important;
 }
+
+/* ── 3D model viewer ─────────────────────────────────────────────────────── */
+#threejs-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    position: relative;
+    background: var(--bs-dark, #121212);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#threejs-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+#threejs-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #aaa;
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+#threejs-hint {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+#threejs-controls {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    gap: 5px;
+}
+
+#threejs-controls button {
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border: none;
+    border-radius: var(--bs-border-radius);
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s;
+    line-height: 1.6;
+}
+
+#threejs-controls button:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+#threejs-controls button.active {
+    background: rgba(255, 255, 255, 0.18);
+    outline: 1px solid rgba(255, 255, 255, 0.3);
+}
