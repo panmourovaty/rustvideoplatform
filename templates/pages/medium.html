@@ -338,14 +338,17 @@
                         import * as THREE from 'three';
                         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
                         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+                        import WebGPURenderer from 'three/addons/renderers/WebGPURenderer.js';
 
+                        (async () => {
                         const container = document.getElementById('threejs-container');
                         const canvas = document.getElementById('threejs-canvas');
 
-                        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                        const renderer = new WebGPURenderer({ canvas: canvas, antialias: true });
                         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                         renderer.outputColorSpace = THREE.SRGBColorSpace;
                         renderer.shadowMap.enabled = true;
+                        await renderer.init();
 
                         const scene = new THREE.Scene();
                         scene.background = new THREE.Color(0x0f0f1a);
@@ -419,15 +422,14 @@
                             }
                         );
 
-                        function animate() {
-                            requestAnimationFrame(animate);
+                        renderer.setAnimationLoop(() => {
                             controls.update();
                             renderer.render(scene, camera);
-                        }
-                        animate();
+                        });
 
                         const resizeObserver = new ResizeObserver(resizeRenderer);
                         resizeObserver.observe(container);
+                        })();
                         </script>
                         {% endif %}
                     </div>
