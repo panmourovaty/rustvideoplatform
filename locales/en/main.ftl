@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Subtitles
 studio-edit-tab-thumbnail = Thumbnail
 studio-edit-tab-permissions = Permissions
 studio-edit-tab-danger = Danger Zone
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -439,6 +440,25 @@ studio-thumbnail-upload-success = Thumbnail uploaded and converted!
 studio-thumbnail-upload-failed = Upload failed.
 studio-thumbnail-remove-confirm = Remove custom thumbnail?
 studio-thumbnail-remove-success = Thumbnail removed.
+
+# Studio edit - 3D textures
+studio-textures-title = 3D Model Textures
+studio-textures-instruction = Upload texture images to embed into the 3D model. After uploading, click "Apply to GLB" to bake the textures into the model file using Blender. Textures are matched to material slots by filename (e.g. albedo, normal, roughness, metallic).
+studio-textures-file-label = Texture Image (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Please select a texture image.
+studio-textures-uploading = Uploading texture...
+studio-textures-upload-success = Texture uploaded successfully.
+studio-textures-upload-failed = Upload failed.
+studio-textures-delete-confirm = Delete texture
+studio-textures-delete-success = Texture deleted.
+studio-textures-delete-failed = Delete failed.
+studio-textures-none = No textures uploaded yet.
+studio-textures-apply-heading = Apply Textures to GLB
+studio-textures-apply-description = This will run Blender in the background to embed the uploaded textures into the model file. The process may take a moment.
+studio-textures-apply-btn = Apply to GLB
+studio-textures-applying = Applying textures with Blender, please wait...
+studio-textures-apply-success = Textures applied and GLB updated!
+studio-textures-apply-failed = Failed to apply textures.
 
 # Studio edit - danger zone
 studio-danger-title = Danger Zone

@@ -165,6 +165,7 @@ studio-edit-tab-subtitles = 字幕
 studio-edit-tab-thumbnail = 缩略图
 studio-edit-tab-permissions = 权限
 studio-edit-tab-danger = 危险区域
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL

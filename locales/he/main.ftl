@@ -165,6 +165,7 @@ studio-edit-tab-subtitles = כתוביות
 studio-edit-tab-thumbnail = תמונה ממוזערת
 studio-edit-tab-permissions = הרשאות
 studio-edit-tab-danger = אזור מסוכן
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL

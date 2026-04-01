@@ -1,0 +1,490 @@
+/// Blender Python script: embed uploaded textures into an existing GLB
+const BLENDER_EMBED_TEXTURES_SCRIPT: &str = r#"
+import bpy, sys, os, glob
+
+argv = sys.argv
+try:
+    sep = argv.index("--")
+    args = argv[sep + 1:]
+except ValueError:
+    print("Usage: blender --background --python script.py -- <model.glb> <textures_dir>", file=sys.stderr)
+    sys.exit(1)
+
+model_path = args[0]
+textures_dir = args[1]
+
+# Supported image extensions
+IMAGE_EXTS = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tga'}
+
+texture_files = [
+    f for f in os.listdir(textures_dir)
+    if os.path.splitext(f)[1].lower() in IMAGE_EXTS
+]
+
+if not texture_files:
+    print("No texture files found in textures directory", file=sys.stderr)
+    sys.exit(1)
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+
+try:
+    bpy.ops.import_scene.gltf(filepath=model_path)
+except Exception as e:
+    print(f"Failed to import GLB: {e}", file=sys.stderr)
+    sys.exit(1)
+
+# Naming conventions: map filename stem patterns to PBR socket names
+SOCKET_HINTS = {
+    'basecolor': 'Base Color', 'base_color': 'Base Color', 'albedo': 'Base Color',
+    'diffuse': 'Base Color', 'color': 'Base Color', 'col': 'Base Color',
+    'normal': 'Normal', 'norm': 'Normal', 'nrm': 'Normal', 'nrml': 'Normal',
+    'roughness': 'Roughness', 'rough': 'Roughness', 'rgh': 'Roughness',
+    'metallic': 'Metallic', 'metal': 'Metallic', 'met': 'Metallic',
+    'ao': 'Ambient Occlusion', 'occlusion': 'Ambient Occlusion',
+    'emission': 'Emission Color', 'emissive': 'Emission Color', 'emit': 'Emission Color',
+}
+
+def get_socket_hint(stem):
+    stem_lower = stem.lower()
+    for key, socket in SOCKET_HINTS.items():
+        if key in stem_lower:
+            return socket
+    return None
+
+def ensure_material_nodes(mat):
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    bsdf = nodes.get('Principled BSDF')
+    if bsdf is None:
+        for n in nodes:
+            if n.type == 'BSDF_PRINCIPLED':
+                bsdf = n
+                break
+    if bsdf is None:
+        bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    return mat.node_tree, bsdf
+
+def add_texture_to_material(mat, img, socket_name, is_non_color=False):
+    tree, bsdf = ensure_material_nodes(mat)
+    nodes = tree.nodes
+    links = tree.links
+
+    tex_node = nodes.new('ShaderNodeTexImage')
+    tex_node.image = img
+    if is_non_color:
+        tex_node.image.colorspace_settings.name = 'Non-Color'
+
+    if socket_name == 'Normal':
+        # Need a Normal Map node between texture and BSDF
+        norm_node = nodes.new('ShaderNodeNormalMap')
+        links.new(tex_node.outputs['Color'], norm_node.inputs['Color'])
+        links.new(norm_node.outputs['Normal'], bsdf.inputs['Normal'])
+    elif socket_name in bsdf.inputs:
+        links.new(tex_node.outputs['Color'], bsdf.inputs[socket_name])
+
+# Gather all materials in the scene
+all_materials = [m for m in bpy.data.materials if m.use_nodes or True]
+
+for tex_file in texture_files:
+    tex_path = os.path.join(textures_dir, tex_file)
+    stem = os.path.splitext(tex_file)[0]
+    socket_name = get_socket_hint(stem)
+
+    img = bpy.data.images.load(tex_path)
+
+    is_non_color = socket_name in ('Normal', 'Roughness', 'Metallic', 'Ambient Occlusion')
+
+    if socket_name is None:
+        # Fallback: apply as Base Color to all materials that have no base color texture
+        socket_name = 'Base Color'
+
+    applied = False
+    for mat in all_materials:
+        if mat.name.startswith('.') or not mat:
+            continue
+        mat.use_nodes = True
+        tree, bsdf = ensure_material_nodes(mat)
+        input_sock = bsdf.inputs.get(socket_name)
+        if input_sock is not None and not input_sock.is_linked:
+            add_texture_to_material(mat, img, socket_name, is_non_color)
+            applied = True
+            print(f"Applied {tex_file} -> {socket_name} on material '{mat.name}'")
+
+    if not applied:
+        # If all materials already had that slot linked, still apply to first material
+        for mat in all_materials:
+            if not mat or mat.name.startswith('.'):
+                continue
+            mat.use_nodes = True
+            add_texture_to_material(mat, img, socket_name, is_non_color)
+            print(f"Force-applied {tex_file} -> {socket_name} on material '{mat.name}'")
+            break
+
+try:
+    bpy.ops.export_scene.gltf(filepath=model_path, export_format='GLB')
+    print(f"Exported GLB with embedded textures to {model_path}")
+except Exception as e:
+    print(f"Export failed: {e}", file=sys.stderr)
+    sys.exit(1)
+"#;
+
+#[derive(Template)]
+#[template(path = "pages/hx-studio-edit-textures.html", escape = "none")]
+struct HXStudioEditTexturesTemplate {
+    medium_id: String,
+    locale: RequestLocale,
+}
+
+async fn hx_studio_edit_textures_tab(
+    Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    Extension(localization): Extension<Arc<LocalizationService>>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+) -> axum::response::Html<Vec<u8>> {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
+        return Html(minifi_html("".to_owned()));
+    }
+    let user_info = user_info.unwrap();
+
+    let owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+        .await
+        .ok().and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .map(|(o,)| o);
+
+    if owner.as_deref() != Some(user_info.login.as_str()) {
+        return Html(minifi_html("".to_owned()));
+    }
+
+    let common_headers = extract_common_headers(&headers);
+    let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
+    let template = HXStudioEditTexturesTemplate { medium_id: mediumid, locale };
+    Html(minifi_html(template.render().unwrap()))
+}
+
+async fn studio_textures_list(
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+) -> Json<serde_json::Value> {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
+        return Json(serde_json::json!({ "textures": [] }));
+    }
+    let user_info = user_info.unwrap();
+
+    let owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+        .await
+        .ok().and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .map(|(o,)| o);
+
+    if owner.as_deref() != Some(user_info.login.as_str()) {
+        return Json(serde_json::json!({ "textures": [] }));
+    }
+
+    let textures_dir = format!("source/{}/textures", mediumid);
+    let mut textures: Vec<String> = Vec::new();
+
+    if let Ok(mut entries) = tokio::fs::read_dir(&textures_dir).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let ext = std::path::Path::new(&name)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "tga" | "ktx2") {
+                textures.push(name);
+            }
+        }
+    }
+
+    textures.sort();
+    Json(serde_json::json!({ "textures": textures }))
+}
+
+async fn studio_textures_upload(
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+    mut multipart: Multipart,
+) -> Response<Body> {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
+        return Response::builder()
+            .status(StatusCode::UNAUTHORIZED)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"not logged in\"}"))
+            .unwrap();
+    }
+    let user_info = user_info.unwrap();
+
+    let owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+        .await
+        .ok().and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .map(|(o,)| o);
+
+    match owner {
+        Some(ref o) if o == &user_info.login => {}
+        Some(_) => {
+            return Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"not authorized\"}"))
+                .unwrap();
+        }
+        None => {
+            return Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"media not found\"}"))
+                .unwrap();
+        }
+    }
+
+    let mut file_bytes: Vec<u8> = Vec::new();
+    let mut original_filename = String::new();
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        if field.name().unwrap_or("") == "file" {
+            original_filename = field
+                .file_name()
+                .unwrap_or("texture")
+                .to_string();
+            file_bytes = field.bytes().await.unwrap_or_default().to_vec();
+            break;
+        }
+    }
+
+    if file_bytes.is_empty() {
+        return Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"file is required\"}"))
+            .unwrap();
+    }
+
+    // Validate extension
+    let ext = std::path::Path::new(&original_filename)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "bmp" | "tga" | "ktx2") {
+        return Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"unsupported file type\"}"))
+            .unwrap();
+    }
+
+    // Sanitise filename: keep only alphanumeric, dash, underscore, dot
+    let safe_name: String = original_filename
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' { c } else { '_' })
+        .collect();
+    let safe_name = if safe_name.is_empty() { format!("texture.{}", ext) } else { safe_name };
+
+    let textures_dir = format!("source/{}/textures", mediumid);
+    if let Err(_) = tokio::fs::create_dir_all(&textures_dir).await {
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to create textures directory\"}"))
+            .unwrap();
+    }
+
+    let dest = format!("{}/{}", textures_dir, safe_name);
+    if let Err(_) = tokio::fs::write(&dest, &file_bytes).await {
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to write texture file\"}"))
+            .unwrap();
+    }
+
+    Response::builder()
+        .header(axum::http::header::CONTENT_TYPE, "application/json")
+        .body(Body::from("{\"ok\":true}"))
+        .unwrap()
+}
+
+#[derive(Deserialize)]
+struct DeleteTextureForm {
+    filename: String,
+}
+
+async fn studio_textures_delete(
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+    Json(body): Json<DeleteTextureForm>,
+) -> Response<Body> {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
+        return Response::builder()
+            .status(StatusCode::UNAUTHORIZED)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"not logged in\"}"))
+            .unwrap();
+    }
+    let user_info = user_info.unwrap();
+
+    let owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+        .await
+        .ok().and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .map(|(o,)| o);
+
+    match owner {
+        Some(ref o) if o == &user_info.login => {}
+        Some(_) => {
+            return Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"not authorized\"}"))
+                .unwrap();
+        }
+        None => {
+            return Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"media not found\"}"))
+                .unwrap();
+        }
+    }
+
+    // Validate filename: reject any path traversal
+    let filename = &body.filename;
+    if filename.contains('/') || filename.contains('\\') || filename.starts_with('.') {
+        return Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"invalid filename\"}"))
+            .unwrap();
+    }
+
+    let path = format!("source/{}/textures/{}", mediumid, filename);
+    let _ = tokio::fs::remove_file(&path).await;
+
+    Response::builder()
+        .header(axum::http::header::CONTENT_TYPE, "application/json")
+        .body(Body::from("{\"ok\":true}"))
+        .unwrap()
+}
+
+async fn studio_textures_apply(
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+) -> Response<Body> {
+    let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(user_info.clone()).await {
+        return Response::builder()
+            .status(StatusCode::UNAUTHORIZED)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"not logged in\"}"))
+            .unwrap();
+    }
+    let user_info = user_info.unwrap();
+
+    let owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+        .await
+        .ok().and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .map(|(o,)| o);
+
+    match owner {
+        Some(ref o) if o == &user_info.login => {}
+        Some(_) => {
+            return Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"not authorized\"}"))
+                .unwrap();
+        }
+        None => {
+            return Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"media not found\"}"))
+                .unwrap();
+        }
+    }
+
+    let glb_path = format!("source/{}/model.glb", mediumid);
+    if !std::path::Path::new(&glb_path).exists() {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"model.glb not found — model may still be processing\"}"))
+            .unwrap();
+    }
+
+    let textures_dir = format!("source/{}/textures", mediumid);
+    if !std::path::Path::new(&textures_dir).exists() {
+        return Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"no textures uploaded yet\"}"))
+            .unwrap();
+    }
+
+    // Write the Blender script to a temp location
+    let script_path = format!("source/{}/.tmp_embed_textures.py", mediumid);
+    if let Err(_) = tokio::fs::write(&script_path, BLENDER_EMBED_TEXTURES_SCRIPT).await {
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to write Blender script\"}"))
+            .unwrap();
+    }
+
+    let script_path_c = script_path.clone();
+    let glb_path_c = glb_path.clone();
+    let textures_dir_c = textures_dir.clone();
+
+    let result = tokio::task::spawn_blocking(move || {
+        use std::process::Command;
+        let cmd = format!(
+            "blender --background --python '{}' -- '{}' '{}'",
+            script_path_c, glb_path_c, textures_dir_c
+        );
+        Command::new("sh").arg("-c").arg(&cmd).status()
+    }).await;
+
+    let _ = tokio::fs::remove_file(&script_path).await;
+
+    match result {
+        Ok(Ok(status)) if status.success() => {
+            Response::builder()
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"ok\":true}"))
+                .unwrap()
+        }
+        Ok(Ok(status)) => {
+            let msg = format!("{{\"error\":\"Blender exited with code {:?}\"}}", status.code());
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(msg))
+                .unwrap()
+        }
+        _ => {
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"failed to run Blender\"}"))
+                .unwrap()
+        }
+    }
+}

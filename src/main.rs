@@ -337,6 +337,16 @@ async fn main() {
             "/studio/edit/{mediumid}/thumbnail/delete",
             post(studio_thumbnail_delete),
         )
+        .route("/studio/edit/{mediumid}/textures.json", get(studio_textures_list))
+        .route("/studio/edit/{mediumid}/textures", post(studio_textures_upload))
+        .route(
+            "/studio/edit/{mediumid}/textures/delete",
+            post(studio_textures_delete),
+        )
+        .route(
+            "/studio/edit/{mediumid}/textures/apply",
+            post(studio_textures_apply),
+        )
         .route("/hx/studio/delete/{mediumid}", get(hx_delete_video))
         .route(
             "/hx/studio/edit/{mediumid}/description",
@@ -353,6 +363,10 @@ async fn main() {
         .route(
             "/hx/studio/edit/{mediumid}/thumbnail",
             get(hx_studio_edit_thumbnail_tab),
+        )
+        .route(
+            "/hx/studio/edit/{mediumid}/textures",
+            get(hx_studio_edit_textures_tab),
         )
         .route(
             "/hx/studio/edit/{mediumid}/permissions",
@@ -617,6 +631,7 @@ include!("studio.rs");
 include!("chapters.rs");
 include!("subtitles.rs");
 include!("thumbnail.rs");
+include!("texture_3d.rs");
 include!("upload.rs");
 include!("concept.rs");
 include!("serve.rs");

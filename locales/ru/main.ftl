@@ -165,6 +165,7 @@ studio-edit-tab-subtitles = Субтитры
 studio-edit-tab-thumbnail = Значок
 studio-edit-tab-permissions = Доступ
 studio-edit-tab-danger = Опасная зона
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL

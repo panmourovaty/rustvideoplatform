@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Napisy
 studio-edit-tab-thumbnail = Miniatura
 studio-edit-tab-permissions = Uprawnienia
 studio-edit-tab-danger = Strefa niebezpieczna
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL

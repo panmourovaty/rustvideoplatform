@@ -165,6 +165,7 @@ studio-edit-tab-subtitles = उपशीर्षक (Subtitles)
 studio-edit-tab-thumbnail = थंबनेल
 studio-edit-tab-permissions = अनुमतियाँ
 studio-edit-tab-danger = डेंजर ज़ोन
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL

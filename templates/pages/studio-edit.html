@@ -79,6 +79,18 @@
                                 <i class="fa-solid fa-image me-2"></i>{{ locale.t("studio-edit-tab-thumbnail") }}
                             </button>
                         </li>
+                        {% if medium.medium_type == "object_3d" %}
+                        <li class="nav-item">
+                            <button class="nav-link {% if active_tab == "textures" %}active {% endif %}text-white"
+                                    hx-get="/hx/studio/edit/{{ medium.id }}/textures"
+                                    hx-target="#tab-content"
+                                    hx-swap="innerHTML"
+                                    preload="mouseover"
+                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                <i class="fa-solid fa-palette me-2"></i>{{ locale.t("studio-edit-tab-textures") }}
+                            </button>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <button class="nav-link {% if active_tab == "permissions" %}active {% endif %}text-white"
                                     hx-get="/hx/studio/edit/{{ medium.id }}/permissions"
@@ -107,6 +119,8 @@
                         <div hx-get="/hx/studio/edit/{{ medium.id }}/subtitles" hx-trigger="load" class="mb-3 hx-placeholder"></div>
                         {% else if active_tab == "thumbnail" %}
                         <div hx-get="/hx/studio/edit/{{ medium.id }}/thumbnail" hx-trigger="load" class="mb-3 hx-placeholder"></div>
+                        {% else if active_tab == "textures" %}
+                        <div hx-get="/hx/studio/edit/{{ medium.id }}/textures" hx-trigger="load" class="mb-3 hx-placeholder"></div>
                         {% else if active_tab == "permissions" %}
                         <div hx-get="/hx/studio/edit/{{ medium.id }}/permissions" hx-trigger="load" class="mb-3 hx-placeholder"></div>
                         {% else if active_tab == "danger" %}

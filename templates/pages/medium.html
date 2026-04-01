@@ -54,7 +54,7 @@
             width: 100%;
             aspect-ratio: 16/9;
             position: relative;
-            background: #0f0f1a;
+            background: var(--bs-dark, #121212);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -247,9 +247,16 @@
 
                             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                             renderer.shadowMap.enabled = true;
+                            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                            renderer.toneMappingExposure = 1.0;
 
                             const scene = new THREE.Scene();
-                            scene.background = new THREE.Color(0x0f0f0f);
+
+                            // Match the card background color from CSS
+                            const cardBg = getComputedStyle(document.documentElement)
+                                .getPropertyValue('--bs-dark').trim() || '#121212';
+                            scene.background = new THREE.Color(cardBg);
 
                             const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 10000);
                             camera.position.set(0, 0, 5);
@@ -257,11 +264,28 @@
                             const controls = new OrbitControls(camera, canvas);
                             controls.enableDamping = true;
 
-                            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-                            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                            dirLight.position.set(5, 10, 7.5);
-                            dirLight.castShadow = true;
-                            scene.add(dirLight);
+                            // Hemisphere light: warm sky above, cool bounce below
+                            const hemiLight = new THREE.HemisphereLight(0xffeedd, 0x334455, 0.6);
+                            scene.add(hemiLight);
+
+                            // Key light (main, from upper-front-right)
+                            const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
+                            keyLight.position.set(5, 8, 6);
+                            keyLight.castShadow = true;
+                            keyLight.shadow.mapSize.set(1024, 1024);
+                            keyLight.shadow.camera.near = 0.1;
+                            keyLight.shadow.camera.far = 200;
+                            scene.add(keyLight);
+
+                            // Fill light (dimmer, from upper-front-left)
+                            const fillLight = new THREE.DirectionalLight(0xc8d8ff, 0.6);
+                            fillLight.position.set(-4, 4, 3);
+                            scene.add(fillLight);
+
+                            // Rim / back light (from behind-above)
+                            const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+                            rimLight.position.set(0, 6, -8);
+                            scene.add(rimLight);
 
                             function resizeRenderer() {
                                 const w = container.clientWidth;
