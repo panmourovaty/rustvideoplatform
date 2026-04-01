@@ -1,389 +1,279 @@
 <!doctype html>
 <html lang="{{ resolved_lang }}">
-    <head>
-        <meta name="description" content="{{ medium_name }} - {{ config.instancename }}" />
-        <meta property="og:title" content="{{ medium_name }}" />
-        <meta
-            property="og:url"
-            content="{{ config.site_url }}/m/{{ medium_id }}"
-        />
-        <meta property="og:locale" content="{{ resolved_lang }}" />
-        <meta property="og:description" content="{{ config.description }}" />
-        <meta property="og:site_name" content="{{ config.instancename }}" />
 
-        {% if medium_type == "video" %}
-        <meta property="og:type" content="video.movie" />
-        <meta
-            property="og:video"
-            content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4"
-        />
-        <meta
-            property="og:video:secure_url"
-            content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4"
-        />
-        <meta property="og:video:type" content="video/mp4" />
-        <meta property="og:video:width" content="1280" />
-        <meta property="og:video:height" content="720" />
-        <meta
-            property="og:image"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
-        />
-        {% else if medium_type == "audio" %}
-        <meta property="og:type" content="music.song" />
-        <meta
-            property="og:audio"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-        />
-        <meta
-            property="og:audio:secure_url"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-        />
-        <meta property="og:audio:type" content="audio/ogg" />
-        <meta
-            property="og:image"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
-        />
-        {% else if medium_type == "picture" %}
-        <meta property="og:type" content="image" />
-        <meta
-            property="og:image"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
-        />
-        <meta
-            property="og:image:secure_url"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
-        />
-        <meta property="og:image:type" content="image/avif" />
-        {% else if medium_type == "document_pdf" %}
-        <meta property="og:type" content="article" />
-        <meta
-            property="og:image"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
-        />
-        {% else if medium_type == "object_3d" %}
-        <meta property="og:type" content="website" />
-        <meta
-            property="og:image"
-            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
-        />
-        {% endif %}
+<head>
+    <meta name="description" content="{{ medium_name }} - {{ config.instancename }}" />
+    <meta property="og:title" content="{{ medium_name }}" />
+    <meta property="og:url" content="{{ config.site_url }}/m/{{ medium_id }}" />
+    <meta property="og:locale" content="{{ resolved_lang }}" />
+    <meta property="og:description" content="{{ config.description }}" />
+    <meta property="og:site_name" content="{{ config.instancename }}" />
 
-        <title>{{ medium_name }}</title>
+    {% if medium_type == "video" %}
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:video" content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4" />
+    <meta property="og:video:secure_url" content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="1280" />
+    <meta property="og:video:height" content="720" />
+    <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    {% else if medium_type == "audio" %}
+    <meta property="og:type" content="music.song" />
+    <meta property="og:audio" content="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg" />
+    <meta property="og:audio:secure_url" content="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg" />
+    <meta property="og:audio:type" content="audio/ogg" />
+    <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    {% else if medium_type == "picture" %}
+    <meta property="og:type" content="image" />
+    <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif" />
+    <meta property="og:image:secure_url" content="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif" />
+    <meta property="og:image:type" content="image/avif" />
+    {% else if medium_type == "document_pdf" %}
+    <meta property="og:type" content="article" />
+    <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    {% else if medium_type == "object_3d" %}
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    {% endif %}
 
-        <script type="application/ld+json">{{ schema_org_json }}</script>
+    <title>{{ medium_name }}</title>
 
-        {% include "component-dependencies.html" %}
-        {% include "component-dependencies-quill.html" %}
-        {% include "component-dependencies-tomselect.html" %}
-        {% if medium_type == "video" || medium_type == "audio" %}
-        <link
-            rel="stylesheet"
-            href="https://cdn.vidstack.io/player/theme.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://cdn.vidstack.io/player/video.css"
-        />
-        <script
-            src="https://cdn.vidstack.io/player"
-            type="module"
-            defer
-        ></script>
-        {% endif %}
-        {% if medium_type == "object_3d" %}
-        <style>
-            #threejs-container {
-                width: 100%;
-                aspect-ratio: 16/9;
-                position: relative;
-                background: #0f0f1a;
-                border-radius: 4px;
-                overflow: hidden;
-            }
-            #threejs-canvas {
-                width: 100% !important;
-                height: 100% !important;
-                display: block;
-            }
-            #threejs-loading {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: #aaa;
-                font-size: 1rem;
-                pointer-events: none;
-            }
-            #threejs-hint {
-                position: absolute;
-                bottom: 8px;
-                right: 12px;
-                color: rgba(255,255,255,0.45);
-                font-size: 0.75rem;
-                pointer-events: none;
-            }
-        </style>
-        {% endif %} {% if medium_type == "audio" %}
-        <style>
-            media-player[data-started] media-poster {
-                opacity: 1;
-                visibility: visible;
-            }
-            media-poster img {
-                object-fit: cover;
-            }
-        </style>
-        {% endif %} {% if medium_custom_font && !medium_has_ass_captions %}
-        <style>
-            @font-face {
-                font-family: "SubtitleFont";
-                src: url("{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2")
-                    format("woff2");
-            }
-            :root {
-                --media-user-font-family:
-                    "SubtitleFont", var(--bs-font-sans-serif) !important;
-            }
-        </style>
-        {% endif %}
-    </head>
+    <script type="application/ld+json">{{ schema_org_json }}</script>
 
-    <body hx-ext="preload">
-        {{ sidebar }} {% include "component-navbar.html" %}
-        <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
-            <div class="col-12 col-sm-12 col-md-12 col-lg-9">
-                <div class="card py-3 px-3 text-white" style="min-height: 85vh">
-                    <div
-                        class="d-flex justify-content-center player-container"
-                    >
-                        {% if medium_type == "video" %}
-                        <media-player
-                            view-type="video"
-                            aspect-ratio="16/9"
-                            load="eager"
-                            posterLoad="eager"
-                            stream-type="on-demand"
-                            preload="auto"
-                            autoplay
-                            keep-alive
-                            crossorigin
-                            playsinline
-                        >
-                            <media-provider>
-                                {% if is_cmaf %}
-                                <source
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
-                                    type="application/x-mpegurl"
-                                />
-                                <source
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                    type="application/dash+xml"
-                                />
-                                {% else %}
-                                <source
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                    type="application/dash+xml"
-                                />
-                                {% endif %} {% if medium_captions_exist %} {%
-                                for caption in medium_captions_list %} {% if
-                                !caption.is_ass %}
-                                <track
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                    kind="subtitles"
-                                    label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
-                                />
-                                {% else %}
-                                <track
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                    kind="subtitles"
-                                    label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
-                                    data-type="ass"
-                                />
-                                {% endif %} {% endfor %} {% endif %} {% if
-                                medium_chapters_exist %}
-                                <track
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
-                                    kind="chapters"
-                                    default
-                                />
+    {% include "component-dependencies.html" %}
+    {% include "component-dependencies-quill.html" %}
+    {% include "component-dependencies-tomselect.html" %}
+    {% if medium_type == "video" || medium_type == "audio" %}
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+    <script src="https://cdn.vidstack.io/player" type="module" defer></script>
+    {% endif %}
+    {% if medium_type == "object_3d" %}
+    <style>
+        #threejs-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            position: relative;
+            background: #0f0f1a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #threejs-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        #threejs-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #aaa;
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        #threejs-hint {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+    </style>
+    {% endif %} {% if medium_type == "audio" %}
+    <style>
+        media-player[data-started] media-poster {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        media-poster img {
+            object-fit: cover;
+        }
+    </style>
+    {% endif %} {% if medium_custom_font && !medium_has_ass_captions %}
+    <style>
+        @font-face {
+            font-family: "SubtitleFont";
+            src: url("{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2") format("woff2");
+        }
+
+        :root {
+            --media-user-font-family:
+                "SubtitleFont", var(--bs-font-sans-serif) !important;
+        }
+    </style>
+    {% endif %}
+</head>
+
+<body hx-ext="preload">
+    {{ sidebar }} {% include "component-navbar.html" %}
+    <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-9">
+            <div class="card py-3 px-3 text-white" style="min-height: 85vh">
+                <div class="d-flex justify-content-center player-container">
+                    {% if medium_type == "video" %}
+                    <media-player view-type="video" aspect-ratio="16/9" load="eager" posterLoad="eager"
+                        stream-type="on-demand" preload="auto" autoplay keep-alive crossorigin playsinline>
+                        <media-provider>
+                            {% if is_cmaf %}
+                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
+                                type="application/x-mpegurl" />
+                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
+                                type="application/dash+xml" />
+                            {% else %}
+                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
+                                type="application/dash+xml" />
+                            {% endif %} {% if medium_captions_exist %} {%
+                            for caption in medium_captions_list %} {% if
+                            !caption.is_ass %}
+                            <track
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
+                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}" />
+                            {% else %}
+                            <track
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
+                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}"
+                                data-type="ass" />
+                            {% endif %} {% endfor %} {% endif %} {% if
+                            medium_chapters_exist %}
+                            <track src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
+                                kind="chapters" default />
+                            {% endif %}
+                            <media-poster class="vds-poster"
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
+                                alt="Cover Image"></media-poster>
+                        </media-provider>
+                        <media-video-layout {% if medium_previews_exist %}thumbnails="/m/{{ medium_id }}/previews.vtt"
+                            {% endif %}></media-video-layout>
+                    </media-player>
+                    {% if medium_has_ass_captions %}
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            var player = document.querySelector("media-player");
+                            if (!player) return;
+
+                            var workerBlobUrl = URL.createObjectURL(
+                                new Blob(
+                                    ['importScripts("https://cdn.jsdelivr.net/npm/jassub/dist/jassub-worker.js")'],
+                                    { type: 'text/javascript' }
+                                )
+                            );
+
+                            import('https://cdn.vidstack.io/player').then(function (vidstack) {
+                                var options = { workerUrl: workerBlobUrl };
+                                {% if medium_custom_font %}
+                                options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
+                                options.fallbackFont = "default";
                                 {% endif %}
-                                <media-poster
-                                    class="vds-poster"
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                    alt="Cover Image"
-                                ></media-poster>
-                            </media-provider>
-                            <media-video-layout
-                                {%
-                                if
-                                medium_previews_exist
-                                %}thumbnails="/m/{{ medium_id }}/previews.vtt"
-                                {%
-                                endif
-                                %}
-                            ></media-video-layout>
-                        </media-player>
-                        {% if medium_has_ass_captions %}
-                        <script>
-                            document.addEventListener("DOMContentLoaded", function () {
-                                var player = document.querySelector("media-player");
-                                if (!player) return;
-
-                                // importScripts-based blob URL bypasses cross-origin Worker restriction
-                                // while preserving the CDN script's own base URL for WASM/font resolution.
-                                var workerBlobUrl = URL.createObjectURL(
-                                    new Blob(
-                                        ['importScripts("https://cdn.jsdelivr.net/npm/jassub/dist/jassub-worker.js")'],
-                                        { type: 'text/javascript' }
+                                player.textRenderers.add(
+                                    new vidstack.LibASSTextRenderer(
+                                        function () { return import('https://cdn.jsdelivr.net/npm/jassub'); },
+                                        options
                                     )
                                 );
-
-                                import('https://cdn.vidstack.io/player').then(function (vidstack) {
-                                    var options = { workerUrl: workerBlobUrl };
-                                    {% if medium_custom_font %}
-                                    options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
-                                    options.fallbackFont = "default";
-                                    {% endif %}
-                                    player.textRenderers.add(
-                                        new vidstack.LibASSTextRenderer(
-                                            function () { return import('https://cdn.jsdelivr.net/npm/jassub'); },
-                                            options
-                                        )
-                                    );
-                                });
                             });
-                        </script>
-                        {% endif %}
-                        {% else if medium_type == "audio" %}
-                        <media-player
-                            src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-                            view-type="video"
-                            aspect-ratio="16/9"
-                            load="eager"
-                            posterLoad="eager"
-                            stream-type="on-demand"
-                            preload="auto"
-                            autoplay
-                            keep-alive
-                            crossorigin
-                            playsinline
-                        >
-                            <media-provider>
-                                {% if medium_captions_exist %} {% for caption in
-                                medium_captions_list %} {% if !caption.is_ass %}
-                                <track
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                    kind="subtitles"
-                                    label="{{ caption.label }}"
-                                    lang="{{ caption.label }}"
-                                />
-                                {% endif %} {% endfor %} {% endif %} {% if
-                                medium_chapters_exist %}
-                                <track
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
-                                    kind="chapters"
-                                    default
-                                />
-                                {% endif %}
-                                <media-poster
-                                    class="vds-poster"
-                                    src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                    alt="Cover Image"
-                                ></media-poster>
-                            </media-provider>
-                            <media-video-layout></media-video-layout>
-                        </media-player>
-                        {% else if medium_type == "picture" %}
-                        <img
-                            src="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
-                            class="medium-picture"
-                        />
-                        {% else if medium_type == "document_pdf" %}
-                        <div class="pdf-viewer-wrapper" id="pdfViewerWrapper">
-                            <embed
-                                src="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
-                                type="application/pdf"
-                                class="medium-pdf"
-                            />
-                            <button
-                                class="pdf-fullscreen-btn"
-                                onclick="togglePdfFullscreen()"
-                                title="Toggle fullscreen"
-                                aria-label="Toggle fullscreen"
-                            >
-                                <i
-                                    class="fa-solid fa-expand"
-                                    id="pdfFullscreenIcon"
-                                    aria-hidden="true"
-                                ></i>
-                            </button>
-                        </div>
-                        {% else if medium_type == "object_3d" %}
-                        <div id="threejs-container">
-                            <canvas id="threejs-canvas"></canvas>
-                            <div id="threejs-loading">Loading 3D model...</div>
-                            <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
-                        </div>
-                        <script type="importmap">
-                        {
-                          "imports": {
-                            "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.min.js",
-                            "three/addons/": "https://cdn.jsdelivr.net/npm/three/examples/jsm/"
-                          }
+                        });
+                    </script>
+                    {% endif %}
+                    {% else if medium_type == "audio" %}
+                    <media-player src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
+                        view-type="video" aspect-ratio="16/9" load="eager" posterLoad="eager" stream-type="on-demand"
+                        preload="auto" autoplay keep-alive crossorigin playsinline>
+                        <media-provider>
+                            {% if medium_captions_exist %} {% for caption in
+                            medium_captions_list %} {% if !caption.is_ass %}
+                            <track
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
+                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}" />
+                            {% endif %} {% endfor %} {% endif %} {% if
+                            medium_chapters_exist %}
+                            <track src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
+                                kind="chapters" default />
+                            {% endif %}
+                            <media-poster class="vds-poster"
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
+                                alt="Cover Image"></media-poster>
+                        </media-provider>
+                        <media-video-layout></media-video-layout>
+                    </media-player>
+                    {% else if medium_type == "picture" %}
+                    <img src="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
+                        class="medium-picture" />
+                    {% else if medium_type == "document_pdf" %}
+                    <div class="pdf-viewer-wrapper" id="pdfViewerWrapper">
+                        <embed src="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
+                            type="application/pdf" class="medium-pdf" />
+                        <button class="pdf-fullscreen-btn" onclick="togglePdfFullscreen()" title="Toggle fullscreen"
+                            aria-label="Toggle fullscreen">
+                            <i class="fa-solid fa-expand" id="pdfFullscreenIcon" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    {% else if medium_type == "object_3d" %}
+                    <div id="threejs-container">
+                        <canvas id="threejs-canvas"></canvas>
+                        <div id="threejs-loading">Loading 3D model...</div>
+                        <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
+                    </div>
+                    <script type="importmap">
+                    {
+                        "imports": {
+                            "three": "https://unpkg.com/three@latest/build/three.module.js",
+                            "three/webgpu": "https://unpkg.com/three@latest/build/three.webgpu.js",
+                            "three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
                         }
-                        </script>
-                        <script type="module">
-                        import * as THREE from 'three';
-                        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-                        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-                        import WebGPURenderer from 'three/addons/capabilities/WebGPU.js';
+                    }
+                    </script>
+                    <script type="module">
+                        import * as THREE from "three";
+                        import { WebGPURenderer } from "three/webgpu";
+                        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+                        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
                         (async () => {
-                        const container = document.getElementById('threejs-container');
-                        const canvas = document.getElementById('threejs-canvas');
+                            const container = document.getElementById('threejs-container');
+                            const canvas = document.getElementById('threejs-canvas');
 
-                        const renderer = new WebGPURenderer({ canvas: canvas, antialias: true });
-                        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                        renderer.outputColorSpace = THREE.SRGBColorSpace;
-                        renderer.shadowMap.enabled = true;
-                        await renderer.init();
+                            const renderer = new WebGPURenderer({
+                                canvas,
+                                antialias: true
+                            });
 
-                        const scene = new THREE.Scene();
-                        scene.background = new THREE.Color(0x0f0f1a);
+                            await renderer.init();
 
-                        const camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.001, 10000);
-                        camera.position.set(0, 0, 5);
+                            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                            renderer.shadowMap.enabled = true;
 
-                        const controls = new OrbitControls(camera, canvas);
-                        controls.enableDamping = true;
-                        controls.dampingFactor = 0.05;
-                        controls.screenSpacePanning = true;
+                            const scene = new THREE.Scene();
+                            scene.background = new THREE.Color(0x0f0f0f);
 
-                        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-                        scene.add(ambientLight);
-                        const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
-                        dirLight1.position.set(5, 10, 7.5);
-                        dirLight1.castShadow = true;
-                        scene.add(dirLight1);
-                        const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.4);
-                        dirLight2.position.set(-5, -3, -5);
-                        scene.add(dirLight2);
+                            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 10000);
+                            camera.position.set(0, 0, 5);
 
-                        function resizeRenderer() {
-                            const w = container.clientWidth;
-                            const h = container.clientHeight;
-                            renderer.setSize(w, h, false);
-                            camera.aspect = w / h;
-                            camera.updateProjectionMatrix();
-                        }
-                        resizeRenderer();
+                            const controls = new OrbitControls(camera, canvas);
+                            controls.enableDamping = true;
 
-                        const loader = new GLTFLoader();
-                        loader.load(
-                            '{{ config.source_server_url }}/source/{{ medium_id }}/model.glb',
-                            function (gltf) {
+                            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+                            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                            dirLight.position.set(5, 10, 7.5);
+                            dirLight.castShadow = true;
+                            scene.add(dirLight);
+
+                            function resizeRenderer() {
+                                const w = container.clientWidth;
+                                const h = container.clientHeight;
+                                renderer.setSize(w, h, false);
+                                camera.aspect = w / h;
+                                camera.updateProjectionMatrix();
+                            }
+
+                            new ResizeObserver(resizeRenderer).observe(container);
+
+                            new GLTFLoader().load('https://cdn.vids.cz/source/9u96bypkyt/model.glb', (gltf) => {
                                 const model = gltf.scene;
                                 scene.add(model);
 
@@ -391,79 +281,44 @@
                                 const center = box.getCenter(new THREE.Vector3());
                                 const size = box.getSize(new THREE.Vector3());
                                 const maxDim = Math.max(size.x, size.y, size.z);
-                                const fov = camera.fov * (Math.PI / 180);
-                                const dist = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * 1.8;
+                                const dist = maxDim / (2 * Math.tan((camera.fov * Math.PI) / 360)) * 1.5;
 
-                                camera.position.set(
-                                    center.x + dist * 0.6,
-                                    center.y + dist * 0.35,
-                                    center.z + dist * 0.8
-                                );
-                                camera.near = dist * 0.001;
-                                camera.far = dist * 100;
-                                camera.updateProjectionMatrix();
+                                camera.position.set(center.x, center.y + dist * 0.2, center.z + dist);
                                 controls.target.copy(center);
                                 controls.update();
 
-                                const loadingEl = document.getElementById('threejs-loading');
-                                if (loadingEl) loadingEl.style.display = 'none';
-                            },
-                            function (xhr) {
-                                if (xhr.total > 0) {
-                                    const pct = Math.round(xhr.loaded / xhr.total * 100);
-                                    const el = document.getElementById('threejs-loading');
-                                    if (el) el.textContent = 'Loading ' + pct + '%';
-                                }
-                            },
-                            function (error) {
-                                const el = document.getElementById('threejs-loading');
-                                if (el) el.textContent = 'Failed to load 3D model';
-                                console.error('GLTFLoader error:', error);
-                            }
-                        );
+                                document.getElementById('threejs-loading')?.remove();
+                            });
 
-                        renderer.setAnimationLoop(() => {
-                            controls.update();
-                            renderer.render(scene, camera);
-                        });
+                            renderer.setAnimationLoop(() => {
+                                controls.update();
+                                renderer.render(scene, camera);
+                            });
 
-                        const resizeObserver = new ResizeObserver(resizeRenderer);
-                        resizeObserver.observe(container);
                         })();
-                        </script>
-                        {% endif %}
+                    </script>
+                    {% endif %}
+                </div>
+                <div class="medium-info-grid mt-2">
+                    <div class="medium-title-col medium-title-wrapper">
+                        <h1 id="medium-title" class="mb-0 fw-bold">
+                            {{ medium_name }}
+                        </h1>
                     </div>
-                    <!-- Info grid: title + channel/subscribe on left; engagement bar right-aligned on desktop -->
-                    <div class="medium-info-grid mt-2">
-                        <!-- Title (grid col 1, row 1) -->
-                        <div class="medium-title-col medium-title-wrapper">
-                            <h1 id="medium-title" class="mb-0 fw-bold">
-                                {{ medium_name }}
-                            </h1>
-                        </div>
-                        <!-- Channel + subscribe (grid col 1, row 2) -->
-                        <div
-                            class="medium-channel-col d-flex align-items-center mt-1"
-                        >
-                            <a
-                                href="/u/{{ medium_owner }}"
-                                class="text-secondary text-decoration-none d-flex align-items-center gap-2"
-                                preload="mouseover"
-                            >
-                                {% if medium_owner_picture.is_some() %}
-                                <img
-                                    src="{{ config.source_server_url }}/source/{{ medium_owner_picture.clone().unwrap() }}/thumbnail-small.avif"
-                                    style="
+                    <div class="medium-channel-col d-flex align-items-center mt-1">
+                        <a href="/u/{{ medium_owner }}"
+                            class="text-secondary text-decoration-none d-flex align-items-center gap-2"
+                            preload="mouseover">
+                            {% if medium_owner_picture.is_some() %}
+                            <img src="{{ config.source_server_url }}/source/{{ medium_owner_picture.clone().unwrap() }}/thumbnail-small.avif"
+                                style="
                                         width: 36px;
                                         height: 36px;
                                         border-radius: 50%;
                                         object-fit: cover;
-                                    "
-                                    alt="{{ medium_owner_name }} profile picture"
-                                />
-                                {% else %}
-                                <div
-                                    style="
+                                    " alt="{{ medium_owner_name }} profile picture" />
+                            {% else %}
+                            <div style="
                                         width: 36px;
                                         height: 36px;
                                         border-radius: 50%;
@@ -471,454 +326,356 @@
                                         display: flex;
                                         align-items: center;
                                         justify-content: center;
-                                    "
-                                >
-                                    <i
-                                        class="fa-solid fa-user"
-                                        style="font-size: 16px; color: white"
-                                    ></i>
-                                </div>
+                                    ">
+                                <i class="fa-solid fa-user" style="font-size: 16px; color: white"></i>
+                            </div>
+                            {% endif %}
+                            <span class="fs-5">{{ medium_owner_name }}</span>
+                        </a>
+                        <div hx-get="/hx/subscribebutton/{{ medium_owner }}" hx-trigger="load"
+                            class="subscribe-placeholder p-1 ms-2"></div>
+                    </div>
+                    <div class="medium-engagement-col d-flex align-items-center">
+                        <ul class="list-group list-unstyled list-group-horizontal py-3 px-2 mb-0"
+                            style="background-color: var(--bs-primary)">
+                            <li hx-get="/hx/likedislikebutton/{{ medium_id }}" hx-trigger="load" hx-swap="outerHTML">
+                            </li>
+                            <li class="mx-4">
+                                {% if medium_type == "video" %}
+                                <a href="/m/{{ medium_id }}/video.mp4" class="text-white text-decoration-none"
+                                    download="{{ medium_name }}.mp4" aria-label="Download {{ medium_name }}"><i
+                                        class="fa-solid fa-download fa-xl" aria-hidden="true"></i></a>
+                                {% else if medium_type == "audio" %}
+                                <a href="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
+                                    class="text-white text-decoration-none" download="{{ medium_id }}.ogg"
+                                    aria-label="Download {{ medium_name }}"><i class="fa-solid fa-download fa-xl"
+                                        aria-hidden="true"></i></a>
+                                {% else if medium_type == "picture" %}
+                                <a href="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
+                                    class="text-white text-decoration-none" download="{{ medium_id }}.avif"
+                                    aria-label="Download {{ medium_name }}"><i class="fa-solid fa-download fa-xl"
+                                        aria-hidden="true"></i></a>
+                                {% else if medium_type == "document_pdf" %}
+                                <a href="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
+                                    class="text-white text-decoration-none" download="{{ medium_id }}.pdf"
+                                    aria-label="Download {{ medium_name }}"><i class="fa-solid fa-download fa-xl"
+                                        aria-hidden="true"></i></a>
+                                {% else if medium_type == "object_3d" %}
+                                <a href="{{ config.source_server_url }}/source/{{ medium_id }}/model.{{ medium_3d_original_ext }}"
+                                    class="text-white text-decoration-none"
+                                    download="{{ medium_name }}.{{ medium_3d_original_ext }}"
+                                    aria-label="Download {{ medium_name }}"><i class="fa-solid fa-download fa-xl"
+                                        aria-hidden="true"></i></a>
                                 {% endif %}
-                                <span class="fs-5"
-                                    >{{ medium_owner_name }}</span
-                                >
-                            </a>
-                            <div
-                                hx-get="/hx/subscribebutton/{{ medium_owner }}"
-                                hx-trigger="load"
-                                class="subscribe-placeholder p-1 ms-2"
-                            ></div>
-                        </div>
-                        <!-- Engagement bar (grid col 2, rows 1-2 on desktop; stacks below on mobile) -->
-                        <div
-                            class="medium-engagement-col d-flex align-items-center"
-                        >
-                            <ul
-                                class="list-group list-unstyled list-group-horizontal py-3 px-2 mb-0"
-                                style="background-color: var(--bs-primary)"
-                            >
-                                <li
-                                    hx-get="/hx/likedislikebutton/{{ medium_id }}"
-                                    hx-trigger="load"
-                                    hx-swap="outerHTML"
-                                ></li>
-                                <li class="mx-4">
-                                    {% if medium_type == "video" %}
-                                    <a
-                                        href="/m/{{ medium_id }}/video.mp4"
-                                        class="text-white text-decoration-none"
-                                        download="{{ medium_name }}.mp4"
-                                        aria-label="Download {{ medium_name }}"
-                                        ><i
-                                            class="fa-solid fa-download fa-xl"
-                                            aria-hidden="true"
-                                        ></i
-                                    ></a>
-                                    {% else if medium_type == "audio" %}
-                                    <a
-                                        href="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-                                        class="text-white text-decoration-none"
-                                        download="{{ medium_id }}.ogg"
-                                        aria-label="Download {{ medium_name }}"
-                                        ><i
-                                            class="fa-solid fa-download fa-xl"
-                                            aria-hidden="true"
-                                        ></i
-                                    ></a>
-                                    {% else if medium_type == "picture" %}
-                                    <a
-                                        href="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
-                                        class="text-white text-decoration-none"
-                                        download="{{ medium_id }}.avif"
-                                        aria-label="Download {{ medium_name }}"
-                                        ><i
-                                            class="fa-solid fa-download fa-xl"
-                                            aria-hidden="true"
-                                        ></i
-                                    ></a>
-                                    {% else if medium_type == "document_pdf" %}
-                                    <a
-                                        href="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
-                                        class="text-white text-decoration-none"
-                                        download="{{ medium_id }}.pdf"
-                                        aria-label="Download {{ medium_name }}"
-                                        ><i
-                                            class="fa-solid fa-download fa-xl"
-                                            aria-hidden="true"
-                                        ></i
-                                    ></a>
-                                    {% else if medium_type == "object_3d" %}
-                                    <a
-                                        href="{{ config.source_server_url }}/source/{{ medium_id }}/model.{{ medium_3d_original_ext }}"
-                                        class="text-white text-decoration-none"
-                                        download="{{ medium_name }}.{{ medium_3d_original_ext }}"
-                                        aria-label="Download {{ medium_name }}"
-                                        ><i
-                                            class="fa-solid fa-download fa-xl"
-                                            aria-hidden="true"
-                                        ></i
-                                    ></a>
-                                    {% endif %}
-                                </li>
-                                {% if is_logged_in %}
-                                <li class="mx-2">
-                                    <a
-                                        class="text-decoration-none text-white"
-                                        style="cursor: pointer"
-                                        aria-label="Add to list"
-                                        role="button"
-                                        onclick="
+                            </li>
+                            {% if is_logged_in %}
+                            <li class="mx-2">
+                                <a class="text-decoration-none text-white" style="cursor: pointer"
+                                    aria-label="Add to list" role="button" onclick="
                                             document.getElementById(
                                                 'listModalOverlay',
                                             ).style.display = 'flex'
-                                        "
-                                        ><i class="fa-solid fa-list fa-xl" aria-hidden="true"></i
-                                    ></a>
-                                </li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                    <hr />
-                    <div class="my-1">
-                        <b
-                            class="text-secondary"
-                            hx-get="/hx/new_view/{{ medium_id }}"
-                            hx-trigger="load delay:5s"
-                            >{{ medium_views }}</b
-                        ><b class="text-secondary">
-                            {{ locale.t("mediumcard-views") }}, uploaded: {{ medium_upload }}</b
-                        >
-                        <div
-                            id="description_wrapper"
-                            class="mt-3 description-wrapper description-collapsed"
-                        >
-                            <div
-                                id="medium_description_view"
-                                class="description-content"
-                            ></div>
-                            <div
-                                id="description_fade"
-                                class="description-fade"
-                            ></div>
-                        </div>
-                        <button
-                            id="description_toggle"
-                            class="btn btn-sm text-secondary mt-1 px-0 d-none"
-                            type="button"
-                            style="font-weight: 700"
-                        >
-                            {{ locale.t("medium-show-more") }}
-                        </button>
-                        <script>
-                            document.addEventListener(
-                                "DOMContentLoaded",
-                                function () {
-                                    if (typeof hljs !== "undefined") {
-                                        const quillView = new Quill(
-                                            "#medium_description_view",
-                                            {
-                                                theme: "snow",
-                                                readOnly: true,
-                                                modules: {
-                                                    toolbar: false,
-                                                    syntax: true,
-                                                },
-                                            },
-                                        );
-
-                                        quillView.setText(
-                                            "Loading description...",
-                                        );
-
-                                        quillView.on(
-                                            "text-change",
-                                            function () {
-                                                var codeBlocks =
-                                                    document.querySelectorAll(
-                                                        "pre code",
-                                                    );
-                                                codeBlocks.forEach(
-                                                    function (block) {
-                                                        hljs.highlightBlock(
-                                                            block,
-                                                        );
-                                                    },
-                                                );
-                                            },
-                                        );
-
-                                        const wrapper = document.getElementById(
-                                            "description_wrapper",
-                                        );
-                                        const toggle =
-                                            document.getElementById(
-                                                "description_toggle",
-                                            );
-                                        const fade =
-                                            document.getElementById(
-                                                "description_fade",
-                                            );
-                                        const descView =
-                                            document.getElementById(
-                                                "medium_description_view",
-                                            );
-
-                                        function checkOverflow() {
-                                            const contentHeight =
-                                                descView.scrollHeight;
-                                            const collapsedMax =
-                                                6 * 1.5 * 16; /* ~6 lines */
-                                            if (
-                                                contentHeight >
-                                                collapsedMax + 10
-                                            ) {
-                                                toggle.classList.remove(
-                                                    "d-none",
-                                                );
-                                                fade.style.display = "";
-                                            } else {
-                                                toggle.classList.add("d-none");
-                                                fade.style.display = "none";
-                                                wrapper.classList.remove(
-                                                    "description-collapsed",
-                                                );
-                                            }
-                                        }
-
-                                        toggle.addEventListener(
-                                            "click",
-                                            function () {
-                                                const isCollapsed =
-                                                    wrapper.classList.contains(
-                                                        "description-collapsed",
-                                                    );
-                                                if (isCollapsed) {
-                                                    wrapper.classList.remove(
-                                                        "description-collapsed",
-                                                    );
-                                                    fade.style.display = "none";
-                                                    toggle.textContent =
-                                                        "{{ locale.t("medium-show-less") }}";
-                                                } else {
-                                                    wrapper.classList.add(
-                                                        "description-collapsed",
-                                                    );
-                                                    fade.style.display = "";
-                                                    toggle.textContent =
-                                                        "{{ locale.t("medium-show-more") }}";
-                                                }
-                                            },
-                                        );
-
-                                        // Fetch the description JSON
-                                        const jsonUrl =
-                                            "/m/{{ medium_id }}/description.json";
-
-                                        fetch(jsonUrl)
-                                            .then((response) => {
-                                                if (!response.ok)
-                                                    throw new Error(
-                                                        "Failed to fetch description.json",
-                                                    );
-                                                return response.json();
-                                            })
-                                            .then((data) => {
-                                                quillView.setContents(data);
-                                                // Check after content loads and renders
-                                                setTimeout(checkOverflow, 100);
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                quillView.setText(
-                                                    "Failed to load description.",
-                                                );
-                                                setTimeout(checkOverflow, 100);
-                                            });
-                                    } else {
-                                        console.error(
-                                            "Highlight.js is not loaded!",
-                                        );
-                                    }
-                                },
-                            );
-                        </script>
+                                        "><i class="fa-solid fa-list fa-xl" aria-hidden="true"></i></a>
+                            </li>
+                            {% endif %}
+                        </ul>
                     </div>
                 </div>
-                <div
-                    class="card py-3 px-3 mt-3 text-white"
-                    style="min-height: 30vh"
-                >
-                    <h3 class="my-2">{{ locale.t("medium-comments-heading") }}</h3>
-                    <script>
-                        function initCommentDeltas(container) {
-                            container
-                                .querySelectorAll("[data-comment-delta]")
-                                .forEach(function (el) {
-                                    if (el.dataset.commentInit) return;
-                                    el.dataset.commentInit = "1";
-                                    try {
-                                        var delta = JSON.parse(
-                                            el.getAttribute(
-                                                "data-comment-delta",
-                                            ),
-                                        );
-                                        var q = new Quill(el, {
-                                            theme: "snow",
-                                            readOnly: true,
-                                            modules: { toolbar: false },
-                                        });
-                                        q.setContents(delta);
-                                    } catch (e) {
-                                        console.error(
-                                            "Failed to render comment delta",
-                                            e,
-                                        );
-                                    }
-                                });
-                        }
-                    </script>
-                    <hr />
-                    {% if is_logged_in %}
-                    <div class="mb-3">
-                        <div id="comment_editor" style="height: 120px"></div>
-                        <input type="hidden" id="comment_text" />
-                        <button
-                            id="comment_submit_btn"
-                            class="btn btn-primary mt-2"
-                            type="button"
-                        >
-                            {{ locale.t("medium-comment-submit") }}
-                        </button>
+                <hr />
+                <div class="my-1">
+                    <b class="text-secondary" hx-get="/hx/new_view/{{ medium_id }}" hx-trigger="load delay:5s">{{
+                        medium_views }}</b><b class="text-secondary">
+                        {{ locale.t("mediumcard-views") }}, uploaded: {{ medium_upload }}</b>
+                    <div id="description_wrapper" class="mt-3 description-wrapper description-collapsed">
+                        <div id="medium_description_view" class="description-content"></div>
+                        <div id="description_fade" class="description-fade"></div>
                     </div>
-                    <hr />
+                    <button id="description_toggle" class="btn btn-sm text-secondary mt-1 px-0 d-none" type="button"
+                        style="font-weight: 700">
+                        {{ locale.t("medium-show-more") }}
+                    </button>
                     <script>
                         document.addEventListener(
                             "DOMContentLoaded",
                             function () {
-                                const commentQuill = new Quill(
-                                    "#comment_editor",
-                                    {
-                                        theme: "snow",
-                                        placeholder: "Write a comment...",
-                                        modules: {
-                                            toolbar: [
-                                                [
-                                                    "bold",
-                                                    "italic",
-                                                    "underline",
-                                                    "strike",
-                                                ],
-                                                ["link", "code-block"],
-                                                [
-                                                    { list: "ordered" },
-                                                    { list: "bullet" },
-                                                ],
-                                            ],
-                                        },
-                                    },
-                                );
-
-                                const submitBtn =
-                                    document.getElementById(
-                                        "comment_submit_btn",
-                                    );
-                                submitBtn.addEventListener(
-                                    "click",
-                                    function () {
-                                        const text = commentQuill
-                                            .getText()
-                                            .trim();
-                                        if (text.length === 0) return;
-
-                                        const delta = JSON.stringify(
-                                            commentQuill.getContents(),
-                                        );
-                                        const formData = new FormData();
-                                        formData.append("text", delta);
-
-                                        submitBtn.disabled = true;
-                                        fetch(
-                                            "/hx/comments/{{ medium_id }}/add",
-                                            {
-                                                method: "POST",
-                                                body: new URLSearchParams(
-                                                    formData,
-                                                ),
+                                if (typeof hljs !== "undefined") {
+                                    const quillView = new Quill(
+                                        "#medium_description_view",
+                                        {
+                                            theme: "snow",
+                                            readOnly: true,
+                                            modules: {
+                                                toolbar: false,
+                                                syntax: true,
                                             },
-                                        )
-                                            .then((response) => {
-                                                if (!response.ok)
-                                                    throw new Error(
-                                                        "Failed to post comment",
-                                                    );
-                                                return response.text();
-                                            })
-                                            .then((html) => {
-                                                const commentsList =
-                                                    document.getElementById(
-                                                        "comments-list",
-                                                    );
-                                                commentsList.insertAdjacentHTML(
-                                                    "afterbegin",
-                                                    html,
+                                        },
+                                    );
+
+                                    quillView.setText(
+                                        "Loading description...",
+                                    );
+
+                                    quillView.on(
+                                        "text-change",
+                                        function () {
+                                            var codeBlocks =
+                                                document.querySelectorAll(
+                                                    "pre code",
                                                 );
-                                                initCommentDeltas(commentsList);
-                                                commentQuill.setText("");
-                                                submitBtn.disabled = false;
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                submitBtn.disabled = false;
-                                            });
-                                    },
-                                );
+                                            codeBlocks.forEach(
+                                                function (block) {
+                                                    hljs.highlightBlock(
+                                                        block,
+                                                    );
+                                                },
+                                            );
+                                        },
+                                    );
+
+                                    const wrapper = document.getElementById(
+                                        "description_wrapper",
+                                    );
+                                    const toggle =
+                                        document.getElementById(
+                                            "description_toggle",
+                                        );
+                                    const fade =
+                                        document.getElementById(
+                                            "description_fade",
+                                        );
+                                    const descView =
+                                        document.getElementById(
+                                            "medium_description_view",
+                                        );
+
+                                    function checkOverflow() {
+                                        const contentHeight =
+                                            descView.scrollHeight;
+                                        const collapsedMax =
+                                            6 * 1.5 * 16;
+                                        if (
+                                            contentHeight >
+                                            collapsedMax + 10
+                                        ) {
+                                            toggle.classList.remove(
+                                                "d-none",
+                                            );
+                                            fade.style.display = "";
+                                        } else {
+                                            toggle.classList.add("d-none");
+                                            fade.style.display = "none";
+                                            wrapper.classList.remove(
+                                                "description-collapsed",
+                                            );
+                                        }
+                                    }
+
+                                    toggle.addEventListener(
+                                        "click",
+                                        function () {
+                                            const isCollapsed =
+                                                wrapper.classList.contains(
+                                                    "description-collapsed",
+                                                );
+                                            if (isCollapsed) {
+                                                wrapper.classList.remove(
+                                                    "description-collapsed",
+                                                );
+                                                fade.style.display = "none";
+                                                toggle.textContent =
+                                                    "{{ locale.t("medium - show - less") }}";
+                                            } else {
+                                                wrapper.classList.add(
+                                                    "description-collapsed",
+                                                );
+                                                fade.style.display = "";
+                                                toggle.textContent =
+                                                    "{{ locale.t("medium - show - more") }}";
+                                            }
+                                        },
+                                    );
+
+                                    const jsonUrl =
+                                        "/m/{{ medium_id }}/description.json";
+
+                                    fetch(jsonUrl)
+                                        .then((response) => {
+                                            if (!response.ok)
+                                                throw new Error(
+                                                    "Failed to fetch description.json",
+                                                );
+                                            return response.json();
+                                        })
+                                        .then((data) => {
+                                            quillView.setContents(data);
+                                            setTimeout(checkOverflow, 100);
+                                        })
+                                        .catch((err) => {
+                                            console.error(err);
+                                            quillView.setText(
+                                                "Failed to load description.",
+                                            );
+                                            setTimeout(checkOverflow, 100);
+                                        });
+                                } else {
+                                    console.error(
+                                        "Highlight.js is not loaded!",
+                                    );
+                                }
                             },
                         );
                     </script>
-                    {% endif %}
-                    <div
-                        id="comments-list"
-                        hx-get="/hx/comments/{{ medium_id }}"
-                        hx-trigger="revealed"
-                        class="hx-placeholder"
-                    ></div>
                 </div>
             </div>
-            <div class="col-12 col-sm-12 col-md-12 col-lg-3">
-                <div class="card py-3 px-3 h-100" style="overflow-x: auto">
-                    {% if list_id.is_empty() %}
-                    <h3 class="my-2 text-white text-center">{{ locale.t("medium-recommended") }}</h3>
-                    <hr />
-                    <div
-                        hx-get="/hx/reccomended/{{ medium_id }}"
-                        hx-trigger="load"
-                        class="hx-placeholder"
-                    ></div>
-                    {% else %}
-                    <h5 class="text-white text-center mb-3">
-                        <i class="fa-solid fa-list me-1"></i>
-                        <a
-                            href="/l/{{ list_id }}"
-                            class="text-white text-decoration-none"
-                            >{{ list_name }}</a
-                        >
-                    </h5>
-                    <div
-                        hx-get="/hx/listsidebar/{{ list_id }}/{{ medium_id }}"
-                        hx-trigger="load"
-                        class="hx-placeholder"
-                    ></div>
-                    {% endif %}
+            <div class="card py-3 px-3 mt-3 text-white" style="min-height: 30vh">
+                <h3 class="my-2">{{ locale.t("medium-comments-heading") }}</h3>
+                <script>
+                    function initCommentDeltas(container) {
+                        container
+                            .querySelectorAll("[data-comment-delta]")
+                            .forEach(function (el) {
+                                if (el.dataset.commentInit) return;
+                                el.dataset.commentInit = "1";
+                                try {
+                                    var delta = JSON.parse(
+                                        el.getAttribute(
+                                            "data-comment-delta",
+                                        ),
+                                    );
+                                    var q = new Quill(el, {
+                                        theme: "snow",
+                                        readOnly: true,
+                                        modules: { toolbar: false },
+                                    });
+                                    q.setContents(delta);
+                                } catch (e) {
+                                    console.error(
+                                        "Failed to render comment delta",
+                                        e,
+                                    );
+                                }
+                            });
+                    }
+                </script>
+                <hr />
+                {% if is_logged_in %}
+                <div class="mb-3">
+                    <div id="comment_editor" style="height: 120px"></div>
+                    <input type="hidden" id="comment_text" />
+                    <button id="comment_submit_btn" class="btn btn-primary mt-2" type="button">
+                        {{ locale.t("medium-comment-submit") }}
+                    </button>
                 </div>
+                <hr />
+                <script>
+                    document.addEventListener(
+                        "DOMContentLoaded",
+                        function () {
+                            const commentQuill = new Quill(
+                                "#comment_editor",
+                                {
+                                    theme: "snow",
+                                    placeholder: "Write a comment...",
+                                    modules: {
+                                        toolbar: [
+                                            [
+                                                "bold",
+                                                "italic",
+                                                "underline",
+                                                "strike",
+                                            ],
+                                            ["link", "code-block"],
+                                            [
+                                                { list: "ordered" },
+                                                { list: "bullet" },
+                                            ],
+                                        ],
+                                    },
+                                },
+                            );
+
+                            const submitBtn =
+                                document.getElementById(
+                                    "comment_submit_btn",
+                                );
+                            submitBtn.addEventListener(
+                                "click",
+                                function () {
+                                    const text = commentQuill
+                                        .getText()
+                                        .trim();
+                                    if (text.length === 0) return;
+
+                                    const delta = JSON.stringify(
+                                        commentQuill.getContents(),
+                                    );
+                                    const formData = new FormData();
+                                    formData.append("text", delta);
+
+                                    submitBtn.disabled = true;
+                                    fetch(
+                                        "/hx/comments/{{ medium_id }}/add",
+                                        {
+                                            method: "POST",
+                                            body: new URLSearchParams(
+                                                formData,
+                                            ),
+                                        },
+                                    )
+                                        .then((response) => {
+                                            if (!response.ok)
+                                                throw new Error(
+                                                    "Failed to post comment",
+                                                );
+                                            return response.text();
+                                        })
+                                        .then((html) => {
+                                            const commentsList =
+                                                document.getElementById(
+                                                    "comments-list",
+                                                );
+                                            commentsList.insertAdjacentHTML(
+                                                "afterbegin",
+                                                html,
+                                            );
+                                            initCommentDeltas(commentsList);
+                                            commentQuill.setText("");
+                                            submitBtn.disabled = false;
+                                        })
+                                        .catch((err) => {
+                                            console.error(err);
+                                            submitBtn.disabled = false;
+                                        });
+                                },
+                            );
+                        },
+                    );
+                </script>
+                {% endif %}
+                <div id="comments-list" hx-get="/hx/comments/{{ medium_id }}" hx-trigger="revealed"
+                    class="hx-placeholder"></div>
             </div>
         </div>
-        {% if is_logged_in %}
-        <div
-            id="listmodal-body"
-            hx-get="/hx/listmodal/{{ medium_id }}"
-            hx-trigger="load"
-        ></div>
-        {% endif %}
-    </body>
+        <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+            <div class="card py-3 px-3 h-100" style="overflow-x: auto">
+                {% if list_id.is_empty() %}
+                <h3 class="my-2 text-white text-center">{{ locale.t("medium-recommended") }}</h3>
+                <hr />
+                <div hx-get="/hx/reccomended/{{ medium_id }}" hx-trigger="load" class="hx-placeholder"></div>
+                {% else %}
+                <h5 class="text-white text-center mb-3">
+                    <i class="fa-solid fa-list me-1"></i>
+                    <a href="/l/{{ list_id }}" class="text-white text-decoration-none">{{ list_name }}</a>
+                </h5>
+                <div hx-get="/hx/listsidebar/{{ list_id }}/{{ medium_id }}" hx-trigger="load" class="hx-placeholder">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% if is_logged_in %}
+    <div id="listmodal-body" hx-get="/hx/listmodal/{{ medium_id }}" hx-trigger="load"></div>
+    {% endif %}
+</body>
+
 </html>
