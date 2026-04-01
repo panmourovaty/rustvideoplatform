@@ -309,9 +309,30 @@ async fn medium_in_list(
                     "url": format!("{}/u/{}", config.site_url, m_owner)
                 }
             }),
+            "object_3d" => serde_json::json!({
+                "@context": "https://schema.org",
+                "@type": "3DModel",
+                "name": m_name.clone(),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "uploadDate": upload_iso,
+                "author": {
+                    "@type": "Person",
+                    "name": owner_name.clone(),
+                    "url": format!("{}/u/{}", config.site_url, m_owner)
+                }
+            }),
             _ => serde_json::json!({}),
         };
         serde_json::to_string(&v).unwrap_or_default()
+    };
+
+    let medium_3d_original_ext = if m_type == "object_3d" {
+        let raw = std::fs::read_to_string(format!("source/{}/original_ext.txt", medium_id))
+            .unwrap_or_default();
+        let trimmed = raw.trim().to_string();
+        if trimmed.is_empty() { "glb".to_owned() } else { trimmed }
+    } else {
+        String::new()
     };
 
     let locale = resolve_locale_noauth(
@@ -336,6 +357,7 @@ async fn medium_in_list(
         medium_chapters_exist,
         medium_previews_exist,
         is_cmaf,
+        medium_3d_original_ext,
         schema_org_json,
         config,
         common_headers,

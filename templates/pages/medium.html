@@ -60,6 +60,12 @@
             property="og:image"
             content="https://{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
         />
+        {% else if medium_type == "object_3d" %}
+        <meta property="og:type" content="website" />
+        <meta
+            property="og:image"
+            content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg"
+        />
         {% endif %}
 
         <title>{{ medium_name }}</title>
@@ -83,6 +89,40 @@
             type="module"
             defer
         ></script>
+        {% endif %}
+        {% if medium_type == "object_3d" %}
+        <style>
+            #threejs-container {
+                width: 100%;
+                aspect-ratio: 16/9;
+                position: relative;
+                background: #0f0f1a;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            #threejs-canvas {
+                width: 100% !important;
+                height: 100% !important;
+                display: block;
+            }
+            #threejs-loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #aaa;
+                font-size: 1rem;
+                pointer-events: none;
+            }
+            #threejs-hint {
+                position: absolute;
+                bottom: 8px;
+                right: 12px;
+                color: rgba(255,255,255,0.45);
+                font-size: 0.75rem;
+                pointer-events: none;
+            }
+        </style>
         {% endif %} {% if medium_type == "audio" %}
         <style>
             media-player[data-started] media-poster {
@@ -280,6 +320,115 @@
                                 ></i>
                             </button>
                         </div>
+                        {% else if medium_type == "object_3d" %}
+                        <div id="threejs-container">
+                            <canvas id="threejs-canvas"></canvas>
+                            <div id="threejs-loading">Loading 3D model...</div>
+                            <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
+                        </div>
+                        <script type="importmap">
+                        {
+                          "imports": {
+                            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+                            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+                          }
+                        }
+                        </script>
+                        <script type="module">
+                        import * as THREE from 'three';
+                        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+                        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+                        const container = document.getElementById('threejs-container');
+                        const canvas = document.getElementById('threejs-canvas');
+
+                        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                        renderer.outputColorSpace = THREE.SRGBColorSpace;
+                        renderer.shadowMap.enabled = true;
+
+                        const scene = new THREE.Scene();
+                        scene.background = new THREE.Color(0x0f0f1a);
+
+                        const camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.001, 10000);
+                        camera.position.set(0, 0, 5);
+
+                        const controls = new OrbitControls(camera, canvas);
+                        controls.enableDamping = true;
+                        controls.dampingFactor = 0.05;
+                        controls.screenSpacePanning = true;
+
+                        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                        scene.add(ambientLight);
+                        const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+                        dirLight1.position.set(5, 10, 7.5);
+                        dirLight1.castShadow = true;
+                        scene.add(dirLight1);
+                        const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.4);
+                        dirLight2.position.set(-5, -3, -5);
+                        scene.add(dirLight2);
+
+                        function resizeRenderer() {
+                            const w = container.clientWidth;
+                            const h = container.clientHeight;
+                            renderer.setSize(w, h, false);
+                            camera.aspect = w / h;
+                            camera.updateProjectionMatrix();
+                        }
+                        resizeRenderer();
+
+                        const loader = new GLTFLoader();
+                        loader.load(
+                            '{{ config.source_server_url }}/source/{{ medium_id }}/model.glb',
+                            function (gltf) {
+                                const model = gltf.scene;
+                                scene.add(model);
+
+                                const box = new THREE.Box3().setFromObject(model);
+                                const center = box.getCenter(new THREE.Vector3());
+                                const size = box.getSize(new THREE.Vector3());
+                                const maxDim = Math.max(size.x, size.y, size.z);
+                                const fov = camera.fov * (Math.PI / 180);
+                                const dist = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * 1.8;
+
+                                camera.position.set(
+                                    center.x + dist * 0.6,
+                                    center.y + dist * 0.35,
+                                    center.z + dist * 0.8
+                                );
+                                camera.near = dist * 0.001;
+                                camera.far = dist * 100;
+                                camera.updateProjectionMatrix();
+                                controls.target.copy(center);
+                                controls.update();
+
+                                const loadingEl = document.getElementById('threejs-loading');
+                                if (loadingEl) loadingEl.style.display = 'none';
+                            },
+                            function (xhr) {
+                                if (xhr.total > 0) {
+                                    const pct = Math.round(xhr.loaded / xhr.total * 100);
+                                    const el = document.getElementById('threejs-loading');
+                                    if (el) el.textContent = 'Loading ' + pct + '%';
+                                }
+                            },
+                            function (error) {
+                                const el = document.getElementById('threejs-loading');
+                                if (el) el.textContent = 'Failed to load 3D model';
+                                console.error('GLTFLoader error:', error);
+                            }
+                        );
+
+                        function animate() {
+                            requestAnimationFrame(animate);
+                            controls.update();
+                            renderer.render(scene, camera);
+                        }
+                        animate();
+
+                        const resizeObserver = new ResizeObserver(resizeRenderer);
+                        resizeObserver.observe(container);
+                        </script>
                         {% endif %}
                     </div>
                     <!-- Info grid: title + channel/subscribe on left; engagement bar right-aligned on desktop -->
@@ -390,6 +539,17 @@
                                         href="{{ config.source_server_url }}/source/{{ medium_id }}/document.pdf"
                                         class="text-white text-decoration-none"
                                         download="{{ medium_id }}.pdf"
+                                        aria-label="Download {{ medium_name }}"
+                                        ><i
+                                            class="fa-solid fa-download fa-xl"
+                                            aria-hidden="true"
+                                        ></i
+                                    ></a>
+                                    {% else if medium_type == "object_3d" %}
+                                    <a
+                                        href="{{ config.source_server_url }}/source/{{ medium_id }}/model.{{ medium_3d_original_ext }}"
+                                        class="text-white text-decoration-none"
+                                        download="{{ medium_name }}.{{ medium_3d_original_ext }}"
                                         aria-label="Download {{ medium_name }}"
                                         ><i
                                             class="fa-solid fa-download fa-xl"
