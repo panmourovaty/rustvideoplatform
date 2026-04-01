@@ -459,3 +459,9 @@ settings-loading-auth = प्रमाणीकरण सेटिंग्स 
 # Units
 unit-views = व्यूज
 unit-items = आइटम
+
+# 3D मॉडल व्यूअर
+viewer-3d-loading = 3D मॉडल लोड हो रहा है...
+viewer-3d-hint = घुमाने के लिए खींचें · ज़ूम के लिए स्क्रॉल करें · पैन के लिए राइट-क्लिक खींचें
+viewer-3d-toggle-skybox = स्काईबॉक्स टॉगल करें
+viewer-3d-play-pause = एनिमेशन चलाएं / रोकें

@@ -189,13 +189,13 @@
                     {% else if medium_type == "object_3d" %}
                     <div id="threejs-container">
                         <canvas id="threejs-canvas"></canvas>
-                        <div id="threejs-loading">Loading 3D model...</div>
-                        <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
+                        <div id="threejs-loading">{{ locale.t("viewer-3d-loading") }}</div>
+                        <div id="threejs-hint">{{ locale.t("viewer-3d-hint") }}</div>
                         <div id="threejs-controls">
-                            <button id="threejs-skybox-btn" title="Toggle skybox">
+                            <button id="threejs-skybox-btn" title="{{ locale.t("viewer-3d-toggle-skybox") }}">
                                 <i class="fa-solid fa-cloud-sun"></i>
                             </button>
-                            <button id="threejs-anim-btn" title="Play / Pause animation" style="display:none">
+                            <button id="threejs-anim-btn" title="{{ locale.t("viewer-3d-play-pause") }}" style="display:none">
                                 <i class="fa-solid fa-pause" id="threejs-anim-icon"></i>
                             </button>
                         </div>

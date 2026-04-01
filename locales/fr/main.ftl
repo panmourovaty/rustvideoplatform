@@ -524,3 +524,9 @@ totp-setup-confirm = Confirmer
 # Units
 unit-views = vues
 unit-items = éléments
+
+# Visionneuse 3D
+viewer-3d-loading = Chargement du modèle 3D...
+viewer-3d-hint = Glisser pour pivoter · Défiler pour zoomer · Clic droit pour déplacer
+viewer-3d-toggle-skybox = Activer la skybox
+viewer-3d-play-pause = Lire / mettre en pause l'animation

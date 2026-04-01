@@ -468,3 +468,9 @@ settings-diagnostics-checking = בודק...
 # Units
 unit-views = צפיות
 unit-items = פריטים
+
+# מציג מודל תלת-ממדי
+viewer-3d-loading = טוען מודל תלת-ממדי...
+viewer-3d-hint = גרור לסיבוב · גלגל לזום · גרור ימני להזזה
+viewer-3d-toggle-skybox = הפעל/כבה רקע שמיים
+viewer-3d-play-pause = הפעל / השהה אנימציה

@@ -524,3 +524,9 @@ totp-setup-confirm = Bestätigen
 # Units
 unit-views = Aufrufe
 unit-items = Elemente
+
+# 3D-Modell-Viewer
+viewer-3d-loading = 3D-Modell wird geladen...
+viewer-3d-hint = Ziehen zum Drehen · Scrollen zum Zoomen · Rechtsklick-Ziehen zum Verschieben
+viewer-3d-toggle-skybox = Skybox umschalten
+viewer-3d-play-pause = Animation abspielen / pausieren

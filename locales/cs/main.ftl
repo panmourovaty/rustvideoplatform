@@ -524,3 +524,9 @@ totp-setup-confirm = Potvrdit
 # Units
 unit-views = zhlédnutí
 unit-items = položek
+
+# 3D model viewer
+viewer-3d-loading = Načítání 3D modelu...
+viewer-3d-hint = Tažením otočit · Kolečkem přiblížit · Pravým tlačítkem posunout
+viewer-3d-toggle-skybox = Přepnout skybox
+viewer-3d-play-pause = Přehrát / pozastavit animaci

@@ -522,3 +522,9 @@ totp-setup-confirm = 确认
 # Units
 unit-views = 次观看
 unit-items = 项内容
+
+# 3D模型查看器
+viewer-3d-loading = 正在加载3D模型...
+viewer-3d-hint = 拖动旋转 · 滚轮缩放 · 右键拖动平移
+viewer-3d-toggle-skybox = 切换天空盒
+viewer-3d-play-pause = 播放 / 暂停动画

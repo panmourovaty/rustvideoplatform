@@ -524,3 +524,9 @@ totp-setup-confirm = Confirm
 # Units
 unit-views = views
 unit-items = items
+
+# 3D model viewer
+viewer-3d-loading = Loading 3D model...
+viewer-3d-hint = Drag to rotate · Scroll to zoom · Right-drag to pan
+viewer-3d-toggle-skybox = Toggle skybox
+viewer-3d-play-pause = Play / Pause animation
