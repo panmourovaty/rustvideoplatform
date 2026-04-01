@@ -329,8 +329,8 @@
                         <script type="importmap">
                         {
                           "imports": {
-                            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-                            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+                            "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.min.js",
+                            "three/addons/": "https://cdn.jsdelivr.net/npm/three/examples/jsm/"
                           }
                         }
                         </script>
@@ -338,7 +338,7 @@
                         import * as THREE from 'three';
                         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
                         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-                        import WebGPURenderer from 'three/addons/renderers/WebGPURenderer.js';
+                        import WebGPURenderer from 'three/addons/capabilities/WebGPU.js';
 
                         (async () => {
                         const container = document.getElementById('threejs-container');
