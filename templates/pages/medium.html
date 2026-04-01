@@ -34,6 +34,15 @@
     {% else if medium_type == "object_3d" %}
     <meta property="og:type" content="website" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    <meta property="og:image:secure_url" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:description" content="{{ medium_name }} — 3D model by {{ medium_owner_name }} on {{ config.instancename }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ medium_name }}" />
+    <meta name="twitter:description" content="3D model by {{ medium_owner_name }} on {{ config.instancename }}" />
+    <meta name="twitter:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
     {% endif %}
 
     <title>{{ medium_name }}</title>

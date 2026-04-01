@@ -454,11 +454,11 @@ studio-textures-delete-success = Texture deleted.
 studio-textures-delete-failed = Delete failed.
 studio-textures-none = No textures uploaded yet.
 studio-textures-apply-heading = Apply Textures to GLB
-studio-textures-apply-description = This will run Blender in the background to embed the uploaded textures into the model file. The process may take a moment.
+studio-textures-apply-description = Queue a job for the processor to embed the uploaded textures into the model file using Blender. The GLB will be updated in the background — refresh the page after a minute to verify.
 studio-textures-apply-btn = Apply to GLB
-studio-textures-applying = Applying textures with Blender, please wait...
-studio-textures-apply-success = Textures applied and GLB updated!
-studio-textures-apply-failed = Failed to apply textures.
+studio-textures-applying = Queuing processing job...
+studio-textures-apply-success = Job queued! The processor will embed textures into the GLB shortly.
+studio-textures-apply-failed = Failed to queue processing job.
 
 # Studio edit - danger zone
 studio-danger-title = Danger Zone
