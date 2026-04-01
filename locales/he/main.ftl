@@ -165,7 +165,7 @@ studio-edit-tab-subtitles = כתוביות
 studio-edit-tab-thumbnail = תמונה ממוזערת
 studio-edit-tab-permissions = הרשאות
 studio-edit-tab-danger = אזור מסוכן
-studio-edit-tab-textures = Textures
+studio-edit-tab-textures = טקסטורות
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -422,6 +422,25 @@ studio-thumbnail-remove = הסר תמונה ממוזערת
 studio-thumbnail-file-label = קובץ תמונה
 studio-thumbnail-uploading = מעלה וממיר...
 studio-thumbnail-upload-success = התמונה הועלתה!
+
+# Studio edit - טקסטורות תלת-ממד
+studio-textures-title = טקסטורות מודל תלת-ממד
+studio-textures-instruction = העלה תמונות טקסטורה להטמעה במודל התלת-ממד. לאחר ההעלאה, לחץ על "החל על GLB" כדי לאפות את הטקסטורות לקובץ המודל באמצעות Blender. הטקסטורות מותאמות לחריצי חומרים לפי שם קובץ (למשל albedo,‏ normal,‏ roughness,‏ metallic).
+studio-textures-file-label = תמונת טקסטורה (PNG,‏ JPG,‏ WEBP,‏ BMP,‏ TGA)
+studio-textures-select-validation = אנא בחר תמונת טקסטורה.
+studio-textures-uploading = מעלה טקסטורה...
+studio-textures-upload-success = הטקסטורה הועלתה בהצלחה.
+studio-textures-upload-failed = ההעלאה נכשלה.
+studio-textures-delete-confirm = מחק טקסטורה
+studio-textures-delete-success = הטקסטורה נמחקה.
+studio-textures-delete-failed = המחיקה נכשלה.
+studio-textures-none = טרם הועלו טקסטורות.
+studio-textures-apply-heading = החל טקסטורות על GLB
+studio-textures-apply-description = מכניס עבודה לתור לעיבוד על ידי המעבד, אשר יטמיע את הטקסטורות שהועלו לקובץ המודל באמצעות Blender. ה-GLB יעודכן ברקע — רענן את הדף לאחר דקה לאימות.
+studio-textures-apply-btn = החל על GLB
+studio-textures-applying = מוסיף לתור...
+studio-textures-apply-success = העבודה נוספה לתור! המעבד יטמיע את הטקסטורות ב-GLB בקרוב.
+studio-textures-apply-failed = הוספת העבודה לתור נכשלה.
 
 # Studio edit - danger zone
 studio-danger-title = אזור מסוכן

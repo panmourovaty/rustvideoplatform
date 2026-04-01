@@ -165,7 +165,7 @@ studio-edit-tab-subtitles = Субтитры
 studio-edit-tab-thumbnail = Значок
 studio-edit-tab-permissions = Доступ
 studio-edit-tab-danger = Опасная зона
-studio-edit-tab-textures = Textures
+studio-edit-tab-textures = Текстуры
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -438,6 +438,25 @@ studio-thumbnail-upload-success = Значок загружен!
 studio-thumbnail-upload-failed = Ошибка загрузки.
 studio-thumbnail-remove-confirm = Удалить этот значок?
 studio-thumbnail-remove-success = Значок удален.
+
+# Studio edit - текстуры 3D
+studio-textures-title = Текстуры 3D-модели
+studio-textures-instruction = Загрузите изображения текстур для встраивания в 3D-модель. После загрузки нажмите «Применить к GLB», чтобы запечь текстуры в файл модели с помощью Blender. Текстуры сопоставляются со слотами материалов по имени файла (например, albedo, normal, roughness, metallic).
+studio-textures-file-label = Изображение текстуры (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Пожалуйста, выберите изображение текстуры.
+studio-textures-uploading = Загрузка текстуры...
+studio-textures-upload-success = Текстура успешно загружена.
+studio-textures-upload-failed = Ошибка загрузки.
+studio-textures-delete-confirm = Удалить текстуру
+studio-textures-delete-success = Текстура удалена.
+studio-textures-delete-failed = Ошибка удаления.
+studio-textures-none = Текстуры ещё не загружены.
+studio-textures-apply-heading = Применить текстуры к GLB
+studio-textures-apply-description = Ставит задачу в очередь для процессора, который встроит загруженные текстуры в файл модели с помощью Blender. GLB будет обновлён в фоновом режиме — обновите страницу через минуту для проверки.
+studio-textures-apply-btn = Применить к GLB
+studio-textures-applying = Постановка задачи в очередь...
+studio-textures-apply-success = Задача поставлена в очередь! Процессор скоро встроит текстуры в GLB.
+studio-textures-apply-failed = Не удалось поставить задачу в очередь.
 
 # Studio edit - danger zone
 studio-danger-title = Опасная зона

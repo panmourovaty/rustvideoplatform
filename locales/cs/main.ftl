@@ -167,7 +167,7 @@ studio-edit-tab-subtitles = Titulky
 studio-edit-tab-thumbnail = Náhledový obrázek
 studio-edit-tab-permissions = Oprávnění
 studio-edit-tab-danger = Nebezpečná zóna
-studio-edit-tab-textures = Textures
+studio-edit-tab-textures = Textury
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +440,25 @@ studio-thumbnail-upload-success = Náhledový obrázek nahrán a převeden!
 studio-thumbnail-upload-failed = Nahrání se nezdařilo.
 studio-thumbnail-remove-confirm = Odebrat vlastní náhledový obrázek?
 studio-thumbnail-remove-success = Náhledový obrázek odebrán.
+
+# Studio edit - 3D textury
+studio-textures-title = Textury 3D modelu
+studio-textures-instruction = Nahraj obrázky textur pro vložení do 3D modelu. Po nahrání klikni na „Použít na GLB" pro zapečení textur do souboru modelu pomocí Blenderu. Textury jsou přiřazeny k materiálovým slotům podle názvu souboru (např. albedo, normal, roughness, metallic).
+studio-textures-file-label = Obrázek textury (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Prosím vyber obrázek textury.
+studio-textures-uploading = Nahrávám texturu...
+studio-textures-upload-success = Textura úspěšně nahrána.
+studio-textures-upload-failed = Nahrání selhalo.
+studio-textures-delete-confirm = Smazat texturu
+studio-textures-delete-success = Textura smazána.
+studio-textures-delete-failed = Smazání selhalo.
+studio-textures-none = Zatím žádné textury.
+studio-textures-apply-heading = Použít textury na GLB
+studio-textures-apply-description = Zařadí úlohu pro procesor, aby vložil nahrané textury do souboru modelu pomocí Blenderu. GLB bude aktualizováno na pozadí — obnovte stránku po minutě pro ověření.
+studio-textures-apply-btn = Použít na GLB
+studio-textures-applying = Zařazuji úlohu...
+studio-textures-apply-success = Úloha zařazena! Procesor brzy vloží textury do GLB.
+studio-textures-apply-failed = Nepodařilo se zařadit úlohu.
 
 # Editace studia - nebezpečná zóna
 studio-danger-title = Nebezpečná zóna

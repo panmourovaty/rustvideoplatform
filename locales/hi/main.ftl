@@ -165,7 +165,7 @@ studio-edit-tab-subtitles = उपशीर्षक (Subtitles)
 studio-edit-tab-thumbnail = थंबनेल
 studio-edit-tab-permissions = अनुमतियाँ
 studio-edit-tab-danger = डेंजर ज़ोन
-studio-edit-tab-textures = Textures
+studio-edit-tab-textures = टेक्सचर
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -419,6 +419,25 @@ studio-thumbnail-remove = कस्टम थंबनेल हटाएं
 studio-thumbnail-file-label = इमेज फ़ाइल
 studio-thumbnail-uploading = अपलोड और कनवर्ट हो रहा है...
 studio-thumbnail-upload-success = थंबनेल अपलोड हो गया!
+
+# Studio edit - 3D टेक्सचर
+studio-textures-title = 3D मॉडल टेक्सचर
+studio-textures-instruction = 3D मॉडल में एम्बेड करने के लिए टेक्सचर इमेज अपलोड करें। अपलोड करने के बाद, Blender का उपयोग करके मॉडल फ़ाइल में टेक्सचर बेक करने के लिए "GLB पर लागू करें" पर क्लिक करें। टेक्सचर फ़ाइल नाम द्वारा सामग्री स्लॉट से मेल खाते हैं (जैसे albedo, normal, roughness, metallic)।
+studio-textures-file-label = टेक्सचर इमेज (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = कृपया एक टेक्सचर इमेज चुनें।
+studio-textures-uploading = टेक्सचर अपलोड हो रहा है...
+studio-textures-upload-success = टेक्सचर सफलतापूर्वक अपलोड किया गया।
+studio-textures-upload-failed = अपलोड विफल रहा।
+studio-textures-delete-confirm = टेक्सचर हटाएं
+studio-textures-delete-success = टेक्सचर हटा दिया गया।
+studio-textures-delete-failed = हटाना विफल रहा।
+studio-textures-none = अभी तक कोई टेक्सचर अपलोड नहीं किया गया।
+studio-textures-apply-heading = GLB पर टेक्सचर लागू करें
+studio-textures-apply-description = प्रोसेसर के लिए एक कार्य कतार में डालता है जो Blender का उपयोग करके अपलोड किए गए टेक्सचर को मॉडल फ़ाइल में एम्बेड करेगा। GLB पृष्ठभूमि में अपडेट होगा — सत्यापन के लिए एक मिनट बाद पृष्ठ रीफ्रेश करें।
+studio-textures-apply-btn = GLB पर लागू करें
+studio-textures-applying = प्रोसेसिंग कार्य कतार में डाला जा रहा है...
+studio-textures-apply-success = कार्य कतार में डाला गया! प्रोसेसर जल्द ही GLB में टेक्सचर एम्बेड करेगा।
+studio-textures-apply-failed = प्रोसेसिंग कार्य कतार में डालने में विफल।
 
 # Studio edit - danger zone
 studio-danger-title = डेंजर ज़ोन

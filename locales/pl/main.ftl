@@ -167,7 +167,7 @@ studio-edit-tab-subtitles = Napisy
 studio-edit-tab-thumbnail = Miniatura
 studio-edit-tab-permissions = Uprawnienia
 studio-edit-tab-danger = Strefa niebezpieczna
-studio-edit-tab-textures = Textures
+studio-edit-tab-textures = Tekstury
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +440,25 @@ studio-thumbnail-upload-success = Miniatura przesłana i przekonwertowana!
 studio-thumbnail-upload-failed = Przesyłanie nie powiodło się.
 studio-thumbnail-remove-confirm = Usunąć niestandardową miniaturę?
 studio-thumbnail-remove-success = Miniatura usunięta.
+
+# Studio edit - tekstury 3D
+studio-textures-title = Tekstury modelu 3D
+studio-textures-instruction = Prześlij obrazy tekstur do osadzenia w modelu 3D. Po przesłaniu kliknij „Zastosuj do GLB", aby wypiec tekstury do pliku modelu za pomocą Blendera. Tekstury są dopasowywane do slotów materiałów według nazwy pliku (np. albedo, normal, roughness, metallic).
+studio-textures-file-label = Obraz tekstury (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Proszę wybrać obraz tekstury.
+studio-textures-uploading = Przesyłanie tekstury...
+studio-textures-upload-success = Tekstura przesłana pomyślnie.
+studio-textures-upload-failed = Przesyłanie nie powiodło się.
+studio-textures-delete-confirm = Usuń teksturę
+studio-textures-delete-success = Tekstura usunięta.
+studio-textures-delete-failed = Usunięcie nie powiodło się.
+studio-textures-none = Brak przesłanych tekstur.
+studio-textures-apply-heading = Zastosuj tekstury do GLB
+studio-textures-apply-description = Kolejkuje zadanie dla procesora, aby osadził przesłane tekstury w pliku modelu za pomocą Blendera. GLB zostanie zaktualizowany w tle — odśwież stronę po minucie, aby zweryfikować.
+studio-textures-apply-btn = Zastosuj do GLB
+studio-textures-applying = Kolejkowanie zadania...
+studio-textures-apply-success = Zadanie w kolejce! Procesor wkrótce osadzi tekstury w GLB.
+studio-textures-apply-failed = Nie udało się kolejkować zadania.
 
 # Edycja studia - strefa niebezpieczna
 studio-danger-title = Strefa niebezpieczna
