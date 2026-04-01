@@ -1,0 +1,154 @@
+<div id="threejs-container">
+    <canvas id="threejs-canvas"></canvas>
+    <div id="threejs-loading">{{ locale.t("viewer-3d-loading") }}</div>
+    <div id="threejs-hint">{{ locale.t("viewer-3d-hint") }}</div>
+    <div id="threejs-controls">
+        <button id="threejs-skybox-btn" title="{{ locale.t("viewer-3d-toggle-skybox") }}">
+            <i class="fa-solid fa-cloud-sun"></i>
+        </button>
+        <button id="threejs-anim-btn" title="{{ locale.t("viewer-3d-play-pause") }}" style="display:none">
+            <i class="fa-solid fa-pause" id="threejs-anim-icon"></i>
+        </button>
+    </div>
+</div>
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@latest/build/three.module.js",
+        "three/webgpu": "https://unpkg.com/three@latest/build/three.webgpu.js",
+        "three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
+    }
+}
+</script>
+<script type="module">
+    import * as THREE from "three";
+    import { WebGPURenderer } from "three/webgpu";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    (async () => {
+        const container = document.getElementById('threejs-container');
+        const canvas = document.getElementById('threejs-canvas');
+
+        const renderer = new WebGPURenderer({
+            canvas,
+            antialias: true
+        });
+
+        await renderer.init();
+
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        const scene = new THREE.Scene();
+
+        // Match the card background color from CSS
+        const cardBg = getComputedStyle(document.documentElement)
+            .getPropertyValue('--bs-dark').trim() || '#121212';
+        scene.background = new THREE.Color(cardBg);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 10000);
+        camera.position.set(0, 0, 5);
+
+        const controls = new OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+
+        // Hemisphere light: warm sky above, cool bounce below
+        const hemiLight = new THREE.HemisphereLight(0xffeedd, 0x334455, 0.6);
+        scene.add(hemiLight);
+
+        // Key light (main, from upper-front-right)
+        const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
+        keyLight.position.set(5, 8, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        keyLight.shadow.camera.near = 0.1;
+        keyLight.shadow.camera.far = 200;
+        scene.add(keyLight);
+
+        // Fill light (dimmer, from upper-front-left)
+        const fillLight = new THREE.DirectionalLight(0xc8d8ff, 0.6);
+        fillLight.position.set(-4, 4, 3);
+        scene.add(fillLight);
+
+        // Rim / back light (from behind-above)
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        rimLight.position.set(0, 6, -8);
+        scene.add(rimLight);
+
+        function resizeRenderer() {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+
+        new ResizeObserver(resizeRenderer).observe(container);
+
+        // ── Skybox toggle ─────────────────────────────────────────
+        // PMREMGenerator requires a WebGLRenderer, so we use a plain
+        // colour swap that works with WebGPURenderer.
+        let skyboxEnabled = false;
+        const cardBgColor = new THREE.Color(cardBg);
+        const skyBgColor  = new THREE.Color(0x6e8fa8); // soft blue-grey studio
+
+        const skyboxBtn = document.getElementById('threejs-skybox-btn');
+        skyboxBtn.addEventListener('click', () => {
+            skyboxEnabled = !skyboxEnabled;
+            scene.background = skyboxEnabled ? skyBgColor : cardBgColor;
+            skyboxBtn.classList.toggle('active', skyboxEnabled);
+        });
+
+        // ── Animation ─────────────────────────────────────────────
+        let mixer = null;
+        let animPaused = false;
+        const clock = new THREE.Clock();
+        const animBtn  = document.getElementById('threejs-anim-btn');
+        const animIcon = document.getElementById('threejs-anim-icon');
+
+        animBtn.addEventListener('click', () => {
+            if (!mixer) return;
+            animPaused = !animPaused;
+            mixer.timeScale = animPaused ? 0 : 1;
+            animIcon.className = animPaused
+                ? 'fa-solid fa-play'
+                : 'fa-solid fa-pause';
+            animBtn.classList.toggle('active', animPaused);
+        });
+
+        new GLTFLoader().load('{{ config.source_server_url }}/source/{{ medium_id }}/model.glb', (gltf) => {
+            const model = gltf.scene;
+            scene.add(model);
+
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const dist = maxDim / (2 * Math.tan((camera.fov * Math.PI) / 360)) * 1.5;
+
+            camera.position.set(center.x, center.y + dist * 0.2, center.z + dist);
+            controls.target.copy(center);
+            controls.update();
+
+            if (gltf.animations && gltf.animations.length > 0) {
+                mixer = new THREE.AnimationMixer(model);
+                gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+                animBtn.style.display = '';
+            }
+
+            document.getElementById('threejs-loading')?.remove();
+        });
+
+        renderer.setAnimationLoop(() => {
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+            controls.update();
+            renderer.render(scene, camera);
+        });
+
+    })();
+</script>
