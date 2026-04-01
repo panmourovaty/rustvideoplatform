@@ -92,6 +92,36 @@
             font-size: 0.75rem;
             pointer-events: none;
         }
+
+        #threejs-controls {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            display: flex;
+            gap: 5px;
+        }
+
+        #threejs-controls button {
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            border: none;
+            border-radius: var(--bs-border-radius);
+            padding: 0.2rem 0.6rem;
+            cursor: pointer;
+            font-size: 0.78rem;
+            backdrop-filter: blur(6px);
+            transition: background 0.15s;
+            line-height: 1.6;
+        }
+
+        #threejs-controls button:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        #threejs-controls button.active {
+            background: rgba(255, 255, 255, 0.18);
+            outline: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
     {% endif %} {% if medium_type == "audio" %}
     <style>
@@ -227,6 +257,14 @@
                         <canvas id="threejs-canvas"></canvas>
                         <div id="threejs-loading">Loading 3D model...</div>
                         <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
+                        <div id="threejs-controls">
+                            <button id="threejs-skybox-btn" title="Toggle skybox">
+                                <i class="fa-solid fa-cloud-sun"></i>
+                            </button>
+                            <button id="threejs-anim-btn" title="Play / Pause animation" style="display:none">
+                                <i class="fa-solid fa-pause" id="threejs-anim-icon"></i>
+                            </button>
+                        </div>
                     </div>
                     <script type="importmap">
                     {
@@ -242,6 +280,7 @@
                         import { WebGPURenderer } from "three/webgpu";
                         import { OrbitControls } from "three/addons/controls/OrbitControls.js";
                         import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+                        import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
                         (async () => {
                             const container = document.getElementById('threejs-container');
@@ -306,8 +345,42 @@
 
                             new ResizeObserver(resizeRenderer).observe(container);
 
+                            // ── Skybox (RoomEnvironment) ──────────────────────────────
+                            const pmrem = new THREE.PMREMGenerator(renderer);
+                            const roomEnvTexture = pmrem.fromScene(new RoomEnvironment()).texture;
+                            let skyboxEnabled = false;
+
+                            const cardBgColor = new THREE.Color(cardBg);
+                            const skyboxBtn = document.getElementById('threejs-skybox-btn');
+                            skyboxBtn.addEventListener('click', () => {
+                                skyboxEnabled = !skyboxEnabled;
+                                if (skyboxEnabled) {
+                                    scene.background  = roomEnvTexture;
+                                    scene.environment = roomEnvTexture;
+                                    skyboxBtn.classList.add('active');
+                                } else {
+                                    scene.background  = cardBgColor;
+                                    scene.environment = null;
+                                    skyboxBtn.classList.remove('active');
+                                }
+                            });
+
+                            // ── Animation ─────────────────────────────────────────────
                             let mixer = null;
+                            let animPaused = false;
                             const clock = new THREE.Clock();
+                            const animBtn  = document.getElementById('threejs-anim-btn');
+                            const animIcon = document.getElementById('threejs-anim-icon');
+
+                            animBtn.addEventListener('click', () => {
+                                if (!mixer) return;
+                                animPaused = !animPaused;
+                                mixer.timeScale = animPaused ? 0 : 1;
+                                animIcon.className = animPaused
+                                    ? 'fa-solid fa-play'
+                                    : 'fa-solid fa-pause';
+                                animBtn.classList.toggle('active', animPaused);
+                            });
 
                             new GLTFLoader().load('{{ config.source_server_url }}/source/{{ medium_id }}/model.glb', (gltf) => {
                                 const model = gltf.scene;
@@ -326,6 +399,7 @@
                                 if (gltf.animations && gltf.animations.length > 0) {
                                     mixer = new THREE.AnimationMixer(model);
                                     gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+                                    animBtn.style.display = '';
                                 }
 
                                 document.getElementById('threejs-loading')?.remove();
