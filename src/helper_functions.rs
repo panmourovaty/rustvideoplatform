@@ -201,6 +201,18 @@ fn detect_medium_type_mime(mime: String) -> String {
         return "picture".to_owned();
     }
 
+    // --- 3D Objects ---
+    if mime_type.starts_with("model/")
+        || matches!(
+            mime_type.as_str(),
+            "application/x-3ds"
+                | "application/vnd.ms-pki.stl"
+                | "application/octet-stream+glb"
+        )
+    {
+        return "object_3d".to_owned();
+    }
+
     // --- Document: PDF ---
     if mime_type == "application/pdf" {
         return "document_pdf".to_owned();

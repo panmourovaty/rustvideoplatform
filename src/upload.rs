@@ -167,7 +167,22 @@ async fn hx_upload(
     }
 
     // Step 6: Save metadata to the database
-    let medium_type = detect_medium_type_mime(file_type.clone());
+    let mut medium_type = detect_medium_type_mime(file_type.clone());
+    // For generic MIME types, also check file extension for 3D model formats
+    if medium_type == "other" || file_type.contains("octet-stream") {
+        let ext = std::path::Path::new(&file_name)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        match ext.as_str() {
+            "glb" | "gltf" | "obj" | "fbx" | "stl" | "ply" | "dae"
+            | "usd" | "usda" | "usdc" | "usdz" | "3ds" | "blend" => {
+                medium_type = "object_3d".to_owned();
+            }
+            _ => {}
+        }
+    }
     let owner = user_info.unwrap().login;
 
     let insert_result = db.session.execute_unpaged(&db.insert_concept, (&medium_id, &file_name, &owner, &medium_type)).await;
