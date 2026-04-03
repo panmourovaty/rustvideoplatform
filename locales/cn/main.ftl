@@ -165,6 +165,7 @@ studio-edit-tab-subtitles = 字幕
 studio-edit-tab-thumbnail = 缩略图
 studio-edit-tab-permissions = 权限
 studio-edit-tab-danger = 危险区域
+studio-edit-tab-textures = 纹理
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -438,6 +439,25 @@ studio-thumbnail-upload-failed = 上传失败。
 studio-thumbnail-remove-confirm = 确认移除自定义缩略图？
 studio-thumbnail-remove-success = 缩略图已移除。
 
+# Studio edit - 3D纹理
+studio-textures-title = 3D模型纹理
+studio-textures-instruction = 上传纹理图像以嵌入3D模型。上传后，点击"应用到GLB"使用Blender将纹理烘焙到模型文件中。纹理根据文件名匹配材质槽（如 albedo、normal、roughness、metallic）。
+studio-textures-file-label = 纹理图像（PNG、JPG、WEBP、BMP、TGA）
+studio-textures-select-validation = 请选择纹理图像。
+studio-textures-uploading = 正在上传纹理...
+studio-textures-upload-success = 纹理上传成功。
+studio-textures-upload-failed = 上传失败。
+studio-textures-delete-confirm = 删除纹理
+studio-textures-delete-success = 纹理已删除。
+studio-textures-delete-failed = 删除失败。
+studio-textures-none = 尚未上传任何纹理。
+studio-textures-apply-heading = 将纹理应用到GLB
+studio-textures-apply-description = 为处理器排队，使用Blender将上传的纹理嵌入模型文件。GLB将在后台更新——请一分钟后刷新页面验证。
+studio-textures-apply-btn = 应用到GLB
+studio-textures-applying = 正在排队处理任务...
+studio-textures-apply-success = 任务已排队！处理器即将将纹理嵌入GLB。
+studio-textures-apply-failed = 排队处理任务失败。
+
 # Studio edit - danger zone
 studio-danger-title = 危险区域
 studio-danger-subtitle = 无法撤销的破坏性操作。
@@ -502,3 +522,9 @@ totp-setup-confirm = 确认
 # Units
 unit-views = 次观看
 unit-items = 项内容
+
+# 3D模型查看器
+viewer-3d-loading = 正在加载3D模型...
+viewer-3d-hint = 拖动旋转 · 滚轮缩放 · 右键拖动平移
+viewer-3d-toggle-skybox = 切换天空盒
+viewer-3d-play-pause = 播放 / 暂停动画

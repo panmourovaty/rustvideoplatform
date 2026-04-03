@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Untertitel
 studio-edit-tab-thumbnail = Vorschaubild
 studio-edit-tab-permissions = Berechtigungen
 studio-edit-tab-danger = Gefahrenzone
+studio-edit-tab-textures = Texturen
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +441,25 @@ studio-thumbnail-upload-failed = Upload fehlgeschlagen.
 studio-thumbnail-remove-confirm = Benutzerdefiniertes Vorschaubild entfernen?
 studio-thumbnail-remove-success = Vorschaubild entfernt.
 
+# Studio edit - 3D-Texturen
+studio-textures-title = 3D-Modell-Texturen
+studio-textures-instruction = Lade Texturbilder hoch, um sie in das 3D-Modell einzubetten. Klicke nach dem Hochladen auf „Auf GLB anwenden", um die Texturen mit Blender in die Modelldatei einzubrennen. Texturen werden Materialslots nach Dateinamen zugeordnet (z.B. albedo, normal, roughness, metallic).
+studio-textures-file-label = Texturbild (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Bitte wähle ein Texturbild aus.
+studio-textures-uploading = Textur wird hochgeladen...
+studio-textures-upload-success = Textur erfolgreich hochgeladen.
+studio-textures-upload-failed = Upload fehlgeschlagen.
+studio-textures-delete-confirm = Textur löschen
+studio-textures-delete-success = Textur gelöscht.
+studio-textures-delete-failed = Löschen fehlgeschlagen.
+studio-textures-none = Noch keine Texturen hochgeladen.
+studio-textures-apply-heading = Texturen auf GLB anwenden
+studio-textures-apply-description = Reiht einen Auftrag für den Prozessor ein, der die hochgeladenen Texturen mit Blender in die Modelldatei einbettet. Das GLB wird im Hintergrund aktualisiert — lade die Seite nach einer Minute neu, um es zu prüfen.
+studio-textures-apply-btn = Auf GLB anwenden
+studio-textures-applying = Verarbeitungsauftrag wird eingereiht...
+studio-textures-apply-success = Auftrag eingereiht! Der Prozessor bettet die Texturen bald in das GLB ein.
+studio-textures-apply-failed = Verarbeitungsauftrag konnte nicht eingereiht werden.
+
 # Studio-Bearbeitung - Gefahrenzone
 studio-danger-title = Gefahrenzone
 studio-danger-subtitle = Destruktive Aktionen, die nicht rückgängig gemacht werden können.
@@ -504,3 +524,9 @@ totp-setup-confirm = Bestätigen
 # Units
 unit-views = Aufrufe
 unit-items = Elemente
+
+# 3D-Modell-Viewer
+viewer-3d-loading = 3D-Modell wird geladen...
+viewer-3d-hint = Ziehen zum Drehen · Scrollen zum Zoomen · Rechtsklick-Ziehen zum Verschieben
+viewer-3d-toggle-skybox = Skybox umschalten
+viewer-3d-play-pause = Animation abspielen / pausieren

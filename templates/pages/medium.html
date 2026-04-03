@@ -34,6 +34,15 @@
     {% else if medium_type == "object_3d" %}
     <meta property="og:type" content="website" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    <meta property="og:image:secure_url" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:description" content="{{ medium_name }} — 3D model by {{ medium_owner_name }} on {{ config.instancename }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ medium_name }}" />
+    <meta name="twitter:description" content="3D model by {{ medium_owner_name }} on {{ config.instancename }}" />
+    <meta name="twitter:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
     {% endif %}
 
     <title>{{ medium_name }}</title>
@@ -48,43 +57,7 @@
     <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
     <script src="https://cdn.vidstack.io/player" type="module" defer></script>
     {% endif %}
-    {% if medium_type == "object_3d" %}
-    <style>
-        #threejs-container {
-            width: 100%;
-            aspect-ratio: 16/9;
-            position: relative;
-            background: #0f0f1a;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        #threejs-canvas {
-            width: 100% !important;
-            height: 100% !important;
-            display: block;
-        }
-
-        #threejs-loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #aaa;
-            font-size: 1rem;
-            pointer-events: none;
-        }
-
-        #threejs-hint {
-            position: absolute;
-            bottom: 8px;
-            right: 12px;
-            color: rgba(255, 255, 255, 0.45);
-            font-size: 0.75rem;
-            pointer-events: none;
-        }
-    </style>
-    {% endif %} {% if medium_type == "audio" %}
+    {% if medium_type == "audio" %}
     <style>
         media-player[data-started] media-poster {
             opacity: 1;
@@ -214,89 +187,7 @@
                         </button>
                     </div>
                     {% else if medium_type == "object_3d" %}
-                    <div id="threejs-container">
-                        <canvas id="threejs-canvas"></canvas>
-                        <div id="threejs-loading">Loading 3D model...</div>
-                        <div id="threejs-hint">Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan</div>
-                    </div>
-                    <script type="importmap">
-                    {
-                        "imports": {
-                            "three": "https://unpkg.com/three@latest/build/three.module.js",
-                            "three/webgpu": "https://unpkg.com/three@latest/build/three.webgpu.js",
-                            "three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
-                        }
-                    }
-                    </script>
-                    <script type="module">
-                        import * as THREE from "three";
-                        import { WebGPURenderer } from "three/webgpu";
-                        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-                        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
-                        (async () => {
-                            const container = document.getElementById('threejs-container');
-                            const canvas = document.getElementById('threejs-canvas');
-
-                            const renderer = new WebGPURenderer({
-                                canvas,
-                                antialias: true
-                            });
-
-                            await renderer.init();
-
-                            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                            renderer.shadowMap.enabled = true;
-
-                            const scene = new THREE.Scene();
-                            scene.background = new THREE.Color(0x0f0f0f);
-
-                            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 10000);
-                            camera.position.set(0, 0, 5);
-
-                            const controls = new OrbitControls(camera, canvas);
-                            controls.enableDamping = true;
-
-                            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-                            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                            dirLight.position.set(5, 10, 7.5);
-                            dirLight.castShadow = true;
-                            scene.add(dirLight);
-
-                            function resizeRenderer() {
-                                const w = container.clientWidth;
-                                const h = container.clientHeight;
-                                renderer.setSize(w, h, false);
-                                camera.aspect = w / h;
-                                camera.updateProjectionMatrix();
-                            }
-
-                            new ResizeObserver(resizeRenderer).observe(container);
-
-                            new GLTFLoader().load('{{ config.source_server_url }}/source/{{ medium_id }}/model.glb', (gltf) => {
-                                const model = gltf.scene;
-                                scene.add(model);
-
-                                const box = new THREE.Box3().setFromObject(model);
-                                const center = box.getCenter(new THREE.Vector3());
-                                const size = box.getSize(new THREE.Vector3());
-                                const maxDim = Math.max(size.x, size.y, size.z);
-                                const dist = maxDim / (2 * Math.tan((camera.fov * Math.PI) / 360)) * 1.5;
-
-                                camera.position.set(center.x, center.y + dist * 0.2, center.z + dist);
-                                controls.target.copy(center);
-                                controls.update();
-
-                                document.getElementById('threejs-loading')?.remove();
-                            });
-
-                            renderer.setAnimationLoop(() => {
-                                controls.update();
-                                renderer.render(scene, camera);
-                            });
-
-                        })();
-                    </script>
+                    {% include "component-viewer-3d.html" %}
                     {% endif %}
                 </div>
                 <div class="medium-info-grid mt-2">

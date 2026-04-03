@@ -1,0 +1,157 @@
+<div class="col-12 mx-3">
+    <h5><i class="fa-solid fa-palette"></i>&nbsp;{{ locale.t("studio-textures-title") }}</h5>
+    <p class="text-secondary">{{ locale.t("studio-textures-instruction") }}</p>
+
+    <div id="textures-list" class="mb-3"></div>
+
+    <div id="texture-upload-row" class="row g-2 align-items-end mb-2">
+        <div class="col-sm-7">
+            <label for="texture-file-input" class="form-label">{{ locale.t("studio-textures-file-label") }}</label>
+            <input type="file" class="form-control form-control-sm" id="texture-file-input" accept="image/png,image/jpeg,image/webp,image/bmp,image/tga,image/ktx2,.png,.jpg,.jpeg,.webp,.bmp,.tga,.ktx2" />
+        </div>
+        <div class="col-sm-3">
+            <button type="button" class="btn btn-primary btn-sm w-100" id="upload-texture-btn">
+                <i class="fa-solid fa-upload"></i>&nbsp;{{ locale.t("button-upload") }}
+            </button>
+        </div>
+    </div>
+    <div id="texture-upload-status" class="mb-3"></div>
+
+    <hr />
+    <h6>{{ locale.t("studio-textures-apply-heading") }}</h6>
+    <p class="text-secondary small">{{ locale.t("studio-textures-apply-description") }}</p>
+    <button type="button" class="btn btn-warning btn-sm" id="apply-textures-btn">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;{{ locale.t("studio-textures-apply-btn") }}
+    </button>
+    <div id="texture-apply-status" class="mt-2"></div>
+</div>
+<script>
+(function() {
+    var MEDIUM_ID = '{{ medium_id }}';
+    var MSG_SELECT = '{{ locale.t("studio-textures-select-validation") }}';
+    var MSG_UPLOADING = '{{ locale.t("studio-textures-uploading") }}';
+    var MSG_UPLOAD_SUCCESS = '{{ locale.t("studio-textures-upload-success") }}';
+    var MSG_UPLOAD_FAILED = '{{ locale.t("studio-textures-upload-failed") }}';
+    var MSG_DELETE_CONFIRM = '{{ locale.t("studio-textures-delete-confirm") }}';
+    var MSG_DELETE_SUCCESS = '{{ locale.t("studio-textures-delete-success") }}';
+    var MSG_DELETE_FAILED = '{{ locale.t("studio-textures-delete-failed") }}';
+    var MSG_APPLYING = '{{ locale.t("studio-textures-applying") }}';
+    var MSG_APPLY_SUCCESS = '{{ locale.t("studio-textures-apply-success") }}';
+    var MSG_APPLY_FAILED = '{{ locale.t("studio-textures-apply-failed") }}';
+    var MSG_NO_TEXTURES = '{{ locale.t("studio-textures-none") }}';
+
+    function showStatus(elId, type, msg) {
+        var el = document.getElementById(elId);
+        var icon = type === 'success' ? 'fa-check' : type === 'warning' ? 'fa-hourglass-half' : 'fa-xmark';
+        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        if (type !== 'warning') {
+            setTimeout(function() { el.innerHTML = ''; }, 5000);
+        }
+    }
+
+    function renderTextureList(textures) {
+        var el = document.getElementById('textures-list');
+        if (!textures || textures.length === 0) {
+            el.innerHTML = '<p class="text-secondary small">' + MSG_NO_TEXTURES + '</p>';
+            return;
+        }
+        var html = '<div class="list-group">';
+        textures.forEach(function(name) {
+            html += '<div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2" style="background:var(--bs-body-bg);color:inherit;border-color:#444">';
+            html += '<span><i class="fa-solid fa-image me-2 text-secondary"></i>' + escapeHtml(name) + '</span>';
+            html += '<button class="btn btn-sm btn-outline-danger delete-texture-btn" data-name="' + escapeHtml(name) + '">'
+                  + '<i class="fa-solid fa-trash"></i></button>';
+            html += '</div>';
+        });
+        html += '</div>';
+        el.innerHTML = html;
+
+        el.querySelectorAll('.delete-texture-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var name = this.getAttribute('data-name');
+                if (!confirm(MSG_DELETE_CONFIRM + ' ' + name + '?')) return;
+                fetch('/studio/edit/' + MEDIUM_ID + '/textures/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: name })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.ok) {
+                        showStatus('texture-upload-status', 'success', MSG_DELETE_SUCCESS);
+                        loadTextures();
+                    } else {
+                        showStatus('texture-upload-status', 'danger', data.error || MSG_DELETE_FAILED);
+                    }
+                })
+                .catch(function() { showStatus('texture-upload-status', 'danger', MSG_DELETE_FAILED); });
+            });
+        });
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function loadTextures() {
+        fetch('/studio/edit/' + MEDIUM_ID + '/textures.json')
+            .then(function(r) { return r.json(); })
+            .then(function(data) { renderTextureList(data.textures || []); })
+            .catch(function() {});
+    }
+
+    loadTextures();
+
+    document.getElementById('upload-texture-btn').addEventListener('click', function() {
+        var btn = this;
+        var fileInput = document.getElementById('texture-file-input');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showStatus('texture-upload-status', 'danger', MSG_SELECT);
+            return;
+        }
+        var formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        btn.disabled = true;
+        showStatus('texture-upload-status', 'warning', MSG_UPLOADING);
+        fetch('/studio/edit/' + MEDIUM_ID + '/textures', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            if (data.ok) {
+                fileInput.value = '';
+                showStatus('texture-upload-status', 'success', MSG_UPLOAD_SUCCESS);
+                loadTextures();
+            } else {
+                showStatus('texture-upload-status', 'danger', data.error || MSG_UPLOAD_FAILED);
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            showStatus('texture-upload-status', 'danger', MSG_UPLOAD_FAILED);
+        });
+    });
+
+    document.getElementById('apply-textures-btn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        showStatus('texture-apply-status', 'warning', MSG_APPLYING);
+        fetch('/studio/edit/' + MEDIUM_ID + '/textures/apply', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            if (data.ok) {
+                showStatus('texture-apply-status', 'success', MSG_APPLY_SUCCESS);
+            } else {
+                showStatus('texture-apply-status', 'danger', data.error || MSG_APPLY_FAILED);
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            showStatus('texture-apply-status', 'danger', MSG_APPLY_FAILED);
+        });
+    });
+})();
+</script>

@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Sous-titres
 studio-edit-tab-thumbnail = Miniature
 studio-edit-tab-permissions = Permissions
 studio-edit-tab-danger = Zone dangereuse
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +441,25 @@ studio-thumbnail-upload-failed = Échec du téléversement.
 studio-thumbnail-remove-confirm = Supprimer la miniature personnalisée ?
 studio-thumbnail-remove-success = Miniature supprimée.
 
+# Studio edit - textures 3D
+studio-textures-title = Textures du modèle 3D
+studio-textures-instruction = Téléversez des images de texture à intégrer dans le modèle 3D. Après le téléversement, cliquez sur « Appliquer au GLB » pour cuire les textures dans le fichier modèle avec Blender. Les textures sont associées aux emplacements de matériaux par nom de fichier (ex. albedo, normal, roughness, metallic).
+studio-textures-file-label = Image de texture (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Veuillez sélectionner une image de texture.
+studio-textures-uploading = Téléversement de la texture...
+studio-textures-upload-success = Texture téléversée avec succès.
+studio-textures-upload-failed = Échec du téléversement.
+studio-textures-delete-confirm = Supprimer la texture
+studio-textures-delete-success = Texture supprimée.
+studio-textures-delete-failed = Échec de la suppression.
+studio-textures-none = Aucune texture téléversée pour l'instant.
+studio-textures-apply-heading = Appliquer les textures au GLB
+studio-textures-apply-description = Met en file d'attente un travail pour que le processeur intègre les textures téléversées dans le fichier modèle avec Blender. Le GLB sera mis à jour en arrière-plan — actualisez la page après une minute pour vérifier.
+studio-textures-apply-btn = Appliquer au GLB
+studio-textures-applying = Mise en file d'attente...
+studio-textures-apply-success = Travail mis en file d'attente ! Le processeur intégrera bientôt les textures dans le GLB.
+studio-textures-apply-failed = Échec de la mise en file d'attente.
+
 # Édition studio - zone dangereuse
 studio-danger-title = Zone dangereuse
 studio-danger-subtitle = Actions destructives qui ne peuvent pas être annulées.
@@ -504,3 +524,9 @@ totp-setup-confirm = Confirmer
 # Units
 unit-views = vues
 unit-items = éléments
+
+# Visionneuse 3D
+viewer-3d-loading = Chargement du modèle 3D...
+viewer-3d-hint = Glisser pour pivoter · Défiler pour zoomer · Clic droit pour déplacer
+viewer-3d-toggle-skybox = Activer la skybox
+viewer-3d-play-pause = Lire / mettre en pause l'animation

@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Subtitles
 studio-edit-tab-thumbnail = Thumbnail
 studio-edit-tab-permissions = Permissions
 studio-edit-tab-danger = Danger Zone
+studio-edit-tab-textures = Textures
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +441,25 @@ studio-thumbnail-upload-failed = Upload failed.
 studio-thumbnail-remove-confirm = Remove custom thumbnail?
 studio-thumbnail-remove-success = Thumbnail removed.
 
+# Studio edit - 3D textures
+studio-textures-title = 3D Model Textures
+studio-textures-instruction = Upload texture images to embed into the 3D model. After uploading, click "Apply to GLB" to bake the textures into the model file using Blender. Textures are matched to material slots by filename (e.g. albedo, normal, roughness, metallic).
+studio-textures-file-label = Texture Image (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Please select a texture image.
+studio-textures-uploading = Uploading texture...
+studio-textures-upload-success = Texture uploaded successfully.
+studio-textures-upload-failed = Upload failed.
+studio-textures-delete-confirm = Delete texture
+studio-textures-delete-success = Texture deleted.
+studio-textures-delete-failed = Delete failed.
+studio-textures-none = No textures uploaded yet.
+studio-textures-apply-heading = Apply Textures to GLB
+studio-textures-apply-description = Queue a job for the processor to embed the uploaded textures into the model file using Blender. The GLB will be updated in the background — refresh the page after a minute to verify.
+studio-textures-apply-btn = Apply to GLB
+studio-textures-applying = Queuing processing job...
+studio-textures-apply-success = Job queued! The processor will embed textures into the GLB shortly.
+studio-textures-apply-failed = Failed to queue processing job.
+
 # Studio edit - danger zone
 studio-danger-title = Danger Zone
 studio-danger-subtitle = Destructive actions that cannot be undone.
@@ -504,3 +524,9 @@ totp-setup-confirm = Confirm
 # Units
 unit-views = views
 unit-items = items
+
+# 3D model viewer
+viewer-3d-loading = Loading 3D model...
+viewer-3d-hint = Drag to rotate · Scroll to zoom · Right-drag to pan
+viewer-3d-toggle-skybox = Toggle skybox
+viewer-3d-play-pause = Play / Pause animation

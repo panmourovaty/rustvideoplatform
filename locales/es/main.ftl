@@ -167,6 +167,7 @@ studio-edit-tab-subtitles = Subtítulos
 studio-edit-tab-thumbnail = Miniatura
 studio-edit-tab-permissions = Permisos
 studio-edit-tab-danger = Zona de peligro
+studio-edit-tab-textures = Texturas
 
 # --- Studio Edit – Description tab ---
 studio-edit-url-label = URL
@@ -440,6 +441,25 @@ studio-thumbnail-upload-failed = Error al subir.
 studio-thumbnail-remove-confirm = ¿Eliminar la miniatura personalizada?
 studio-thumbnail-remove-success = Miniatura eliminada.
 
+# Studio edit - texturas 3D
+studio-textures-title = Texturas del modelo 3D
+studio-textures-instruction = Sube imágenes de textura para incrustarlas en el modelo 3D. Después de subir, haz clic en "Aplicar al GLB" para hornear las texturas en el archivo del modelo usando Blender. Las texturas se asignan a las ranuras de materiales por nombre de archivo (p.ej. albedo, normal, roughness, metallic).
+studio-textures-file-label = Imagen de textura (PNG, JPG, WEBP, BMP, TGA)
+studio-textures-select-validation = Por favor selecciona una imagen de textura.
+studio-textures-uploading = Subiendo textura...
+studio-textures-upload-success = Textura subida correctamente.
+studio-textures-upload-failed = Error al subir.
+studio-textures-delete-confirm = Eliminar textura
+studio-textures-delete-success = Textura eliminada.
+studio-textures-delete-failed = Error al eliminar.
+studio-textures-none = Aún no hay texturas subidas.
+studio-textures-apply-heading = Aplicar texturas al GLB
+studio-textures-apply-description = Pone en cola un trabajo para que el procesador incruste las texturas subidas en el archivo del modelo usando Blender. El GLB se actualizará en segundo plano — actualiza la página después de un minuto para verificar.
+studio-textures-apply-btn = Aplicar al GLB
+studio-textures-applying = Poniendo en cola el trabajo...
+studio-textures-apply-success = ¡Trabajo en cola! El procesador incrustará las texturas en el GLB en breve.
+studio-textures-apply-failed = Error al poner en cola el trabajo.
+
 # Edición del estudio - zona de peligro
 studio-danger-title = Zona de peligro
 studio-danger-subtitle = Acciones destructivas que no se pueden deshacer.
@@ -504,3 +524,9 @@ totp-setup-confirm = Confirmar
 # Units
 unit-views = visualizaciones
 unit-items = elementos
+
+# Visor de modelo 3D
+viewer-3d-loading = Cargando modelo 3D...
+viewer-3d-hint = Arrastrar para rotar · Desplazar para zoom · Clic derecho para mover
+viewer-3d-toggle-skybox = Activar skybox
+viewer-3d-play-pause = Reproducir / pausar animación
