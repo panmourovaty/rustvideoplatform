@@ -17,7 +17,7 @@ fn user_uuid_from_login(login: &str) -> Uuid {
 /// Generate a random 20-byte TOTP secret and return (raw bytes, base32 string).
 fn generate_totp_secret() -> (Vec<u8>, String) {
     let bytes: Vec<u8> = (0..20).map(|_| rand::random::<u8>()).collect();
-    let b32 = base32::encode(base32::Alphabet::RFC4648 { padding: false }, &bytes);
+    let b32 = base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &bytes);
     (bytes, b32)
 }
 

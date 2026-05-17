@@ -170,4 +170,6 @@ fn main() {
             reduction
         );
     }
+
+    memory_serve::load_directory("assets/processed");
 }

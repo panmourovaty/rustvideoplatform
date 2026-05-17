@@ -21,23 +21,26 @@ h3-quinn = "0.0.10"
 quinn = "0.11"
 rustls-pemfile = "2"
 rustls = { version = "0.23", features = ["ring"] }
-memory-serve = "1"
+memory-serve = "2.1"
 serde = { version = "1.0", features = ["derive"] }
-scylla = "1.5"
-askama = { version = "0.15", features = ["serde_json"] }
+scylla = "1.6"
+askama = { version = "0.16", features = ["serde_json"] }
 serde_json = "*"
 minify-html-onepass = "0.18"
 chrono = "0.4"
 ahash = "*"
 argon2 = "0.5"
 rand = "0.10"
-meilisearch-sdk = "0.32"
+meilisearch-sdk = "0.33"
 redis = { version = "1.0", features = ["tokio-comp", "connection-manager"] }
 openssl = { version = "0.10", features = ["vendored"] }
 totp-rs = { version = "5", features = ["qr", "otpauth"] }
 webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
 uuid = { version = "1", features = ["v4", "v5", "serde"] }
 url = "2"
-base32 = "0.4"
+base32 = "0.5"
 fluent-bundle = "0.16"
 unic-langid = "0.9"
+
+[build-dependencies]
+memory-serve = "2.1"

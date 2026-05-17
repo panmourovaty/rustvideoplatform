@@ -25,7 +25,6 @@ use axum::{
     Extension, Json, Router,
 };
 use chrono::{DateTime, Datelike, Local, Timelike};
-use memory_serve::{load_assets, MemoryServe};
 use meilisearch_sdk::client::Client as MeilisearchClient;
 use redis::AsyncCommands;
 use serde::Deserialize;
@@ -43,8 +42,7 @@ use tower_http::services::ServeDir;
 use std::net::SocketAddr;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use quinn::{Endpoint, ServerConfig as QuinnServerConfig};
-use axum::http::{HeaderValue, Request};
-use axum::http::header::HeaderName;
+use axum::http::Request;
 
 type RedisConn = redis::aio::ConnectionManager;
 
@@ -251,7 +249,7 @@ async fn main() {
 
     let webauthn_ext = std::sync::Arc::new(std::sync::RwLock::new(webauthn_instance));
 
-    let memory_router = MemoryServe::new(load_assets!("assets/processed")).into_router();
+    let memory_router = memory_serve::load!().into_router();
 
     let has_tls = tls_cert.is_some();
     let app = Router::new()
