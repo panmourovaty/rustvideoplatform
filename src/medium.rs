@@ -4,6 +4,18 @@ struct CaptionEntry {
     is_ass: bool,
 }
 
+#[derive(Clone, Copy)]
+struct MediumVideoDimensions {
+    width: u32,
+    height: u32,
+}
+
+impl MediumVideoDimensions {
+    fn aspect_ratio(&self) -> String {
+        format!("{}/{}", self.width, self.height)
+    }
+}
+
 fn parse_caption_entry(entry: &str) -> CaptionEntry {
     let entry = entry.trim();
     let is_ass = entry.ends_with(".ass") || entry.ends_with(".ssa");
@@ -52,6 +64,31 @@ struct MediumTemplate {
     resolved_lang: String,
 }
 
+impl MediumTemplate {
+    fn medium_video_dimensions(&self) -> MediumVideoDimensions {
+        if self.medium_type == "video" && self.list_id.is_empty() {
+            medium_video_dimensions(&self.medium_id)
+        } else {
+            MediumVideoDimensions {
+                width: 1280,
+                height: 720,
+            }
+        }
+    }
+
+    fn medium_video_width(&self) -> u32 {
+        self.medium_video_dimensions().width
+    }
+
+    fn medium_video_height(&self) -> u32 {
+        self.medium_video_dimensions().height
+    }
+
+    fn medium_video_aspect_ratio(&self) -> String {
+        self.medium_video_dimensions().aspect_ratio()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct Medium {
     id: String,
@@ -79,8 +116,28 @@ async fn medium(
     let mediumid = mediumid.to_ascii_lowercase();
 
     // Fetch media row from ScyllaDB
-    let result = db.session.execute_unpaged(&db.get_media_by_id, (&mediumid,)).await;
-    let media_row = match result.ok().and_then(|r| r.into_rows_result().ok()).and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten()) {
+    let result = db
+        .session
+        .execute_unpaged(&db.get_media_by_id, (&mediumid,))
+        .await;
+    let media_row = match result
+        .ok()
+        .and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(
+                String,
+                String,
+                Option<String>,
+                i64,
+                String,
+                i64,
+                String,
+                String,
+                Option<String>,
+            )>()
+            .ok()
+            .flatten()
+        }) {
         Some(r) => r,
         None => {
             return Html(minifi_html(
@@ -89,18 +146,38 @@ async fn medium(
         }
     };
 
-    let (id, name, _description, upload, owner, views, media_type, visibility, restricted_to_group) = media_row;
+    let (id, name, _description, upload, owner, views, media_type, visibility, restricted_to_group) =
+        media_row;
 
     // Access control for restricted content
-    if !can_access_restricted(&db, &visibility, restricted_to_group.as_deref(), &owner, &user, redis.clone()).await {
+    if !can_access_restricted(
+        &db,
+        &visibility,
+        restricted_to_group.as_deref(),
+        &owner,
+        &user,
+        redis.clone(),
+    )
+    .await
+    {
         return Html(minifi_html(
             "<script>window.location.replace(\"/\");</script>".to_owned(),
         ));
     }
 
     // Fetch owner info from users table (separate query since no JOINs in Cassandra)
-    let user_result = db.session.execute_unpaged(&db.get_user_by_login, (&owner,)).await;
-    let (owner_name, owner_picture) = match user_result.ok().and_then(|r| r.into_rows_result().ok()).and_then(|rows| rows.maybe_first_row::<(String, Option<String>)>().ok().flatten()) {
+    let user_result = db
+        .session
+        .execute_unpaged(&db.get_user_by_login, (&owner,))
+        .await;
+    let (owner_name, owner_picture) = match user_result
+        .ok()
+        .and_then(|r| r.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(String, Option<String>)>()
+                .ok()
+                .flatten()
+        }) {
         Some(r) => r,
         None => (owner.clone(), None),
     };
@@ -146,6 +223,15 @@ async fn medium(
         is_cmaf = false;
     }
 
+    let medium_video_dimensions = if media_type == "video" {
+        medium_video_dimensions(&medium_id)
+    } else {
+        MediumVideoDimensions {
+            width: 1280,
+            height: 720,
+        }
+    };
+
     let medium_3d_original_ext = if media_type == "object_3d" {
         std::fs::read_to_string(format!("source/{}/original_ext.txt", medium_id))
             .unwrap_or_default()
@@ -173,6 +259,8 @@ async fn medium(
                 "uploadDate": upload_iso,
                 "contentUrl": format!("{}/m/{}/video-sm.mp4", config.site_url, medium_id),
                 "embedUrl": format!("{}/m/{}", config.site_url, medium_id),
+                "width": medium_video_dimensions.width,
+                "height": medium_video_dimensions.height,
                 "author": {
                     "@type": "Person",
                     "name": owner_name.clone(),
@@ -234,7 +322,9 @@ async fn medium(
     };
 
     let locale = resolve_locale_noauth(
-        common_headers.accept_language.as_deref(), &config.locale, &localization,
+        common_headers.accept_language.as_deref(),
+        &config.locale,
+        &localization,
     );
     let resolved_lang = locale.lang.clone();
     let sidebar = generate_sidebar(&config, "medium".to_owned(), locale.clone());
@@ -266,6 +356,183 @@ async fn medium(
         resolved_lang,
     };
     Html(minifi_html(template.render().unwrap()))
+}
+
+fn medium_video_dimensions(medium_id: &str) -> MediumVideoDimensions {
+    let m3u8_path = format!("source/{}/video/video.m3u8", medium_id);
+    let mpd_path = format!("source/{}/video/video.mpd", medium_id);
+
+    std::fs::read_to_string(&m3u8_path)
+        .ok()
+        .and_then(|content| medium_video_dimensions_from_hls(&content))
+        .or_else(|| {
+            std::fs::read_to_string(&mpd_path)
+                .ok()
+                .and_then(|content| medium_video_dimensions_from_mpd(&content))
+        })
+        .unwrap_or(MediumVideoDimensions {
+            width: 1280,
+            height: 720,
+        })
+}
+
+fn medium_video_dimensions_from_hls(content: &str) -> Option<MediumVideoDimensions> {
+    content
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("#EXT-X-STREAM-INF:"))
+        .filter_map(|attrs| {
+            attrs
+                .split(',')
+                .find_map(|attr| attr.trim().strip_prefix("RESOLUTION="))
+                .and_then(medium_video_dimensions_from_resolution)
+        })
+        .max_by_key(|dims| (u64::from(dims.width) * u64::from(dims.height), dims.width))
+}
+
+fn medium_video_dimensions_from_mpd(content: &str) -> Option<MediumVideoDimensions> {
+    let mut in_video_set = false;
+    let mut adaptation_dimensions: Option<MediumVideoDimensions> = None;
+    let mut best: Option<MediumVideoDimensions> = None;
+
+    for line in content.lines() {
+        let t = line.trim();
+        if t.starts_with("<AdaptationSet") {
+            in_video_set = t.contains(r#"contentType="video""#)
+                || t.contains(r#"contentType='video'"#)
+                || t.contains(r#"mimeType="video/"#)
+                || t.contains(r#"mimeType='video/"#);
+            adaptation_dimensions = medium_video_dimensions_from_xml_attrs(t);
+
+            if in_video_set {
+                best = medium_video_best_dimensions(best, adaptation_dimensions);
+            }
+        } else if t.starts_with("</AdaptationSet") {
+            in_video_set = false;
+            adaptation_dimensions = None;
+        } else if t.starts_with("<Representation") {
+            let is_video_rep = in_video_set
+                || t.contains(r#"mimeType="video/"#)
+                || t.contains(r#"mimeType='video/"#);
+            if is_video_rep {
+                let dimensions =
+                    medium_video_dimensions_from_xml_attrs(t).or(adaptation_dimensions);
+                best = medium_video_best_dimensions(best, dimensions);
+            }
+        }
+    }
+
+    best
+}
+
+fn medium_video_dimensions_from_resolution(value: &str) -> Option<MediumVideoDimensions> {
+    let (width, height) = value.split_once('x').or_else(|| value.split_once('X'))?;
+    medium_video_dimensions_from_numbers(width, height)
+}
+
+fn medium_video_dimensions_from_xml_attrs(element: &str) -> Option<MediumVideoDimensions> {
+    let width = medium_video_xml_attr(element, "width")?;
+    let height = medium_video_xml_attr(element, "height")?;
+    medium_video_dimensions_from_numbers(width, height)
+}
+
+fn medium_video_dimensions_from_numbers(
+    width: &str,
+    height: &str,
+) -> Option<MediumVideoDimensions> {
+    let width = width.trim().parse::<u32>().ok()?;
+    let height = height.trim().parse::<u32>().ok()?;
+
+    if width == 0 || height == 0 {
+        return None;
+    }
+
+    Some(MediumVideoDimensions { width, height })
+}
+
+fn medium_video_xml_attr<'a>(element: &'a str, attr: &str) -> Option<&'a str> {
+    medium_video_xml_quoted_attr(element, attr, '"')
+        .or_else(|| medium_video_xml_quoted_attr(element, attr, '\''))
+}
+
+fn medium_video_xml_quoted_attr<'a>(element: &'a str, attr: &str, quote: char) -> Option<&'a str> {
+    let pattern = format!("{}={}", attr, quote);
+    let mut offset = 0;
+
+    while let Some(relative_start) = element[offset..].find(&pattern) {
+        let start = offset + relative_start;
+        let is_attr_name_boundary = start == 0
+            || element[..start]
+                .chars()
+                .next_back()
+                .map_or(false, |c| c.is_whitespace() || c == '<');
+
+        if is_attr_name_boundary {
+            let value_start = start + pattern.len();
+            let value_end = value_start + element[value_start..].find(quote)?;
+            return Some(&element[value_start..value_end]);
+        }
+
+        offset = start + pattern.len();
+    }
+
+    None
+}
+
+fn medium_video_best_dimensions(
+    current: Option<MediumVideoDimensions>,
+    candidate: Option<MediumVideoDimensions>,
+) -> Option<MediumVideoDimensions> {
+    match (current, candidate) {
+        (None, candidate) => candidate,
+        (current, None) => current,
+        (Some(current), Some(candidate)) => {
+            let current_area = u64::from(current.width) * u64::from(current.height);
+            let candidate_area = u64::from(candidate.width) * u64::from(candidate.height);
+            if candidate_area > current_area {
+                Some(candidate)
+            } else {
+                Some(current)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod medium_video_dimension_tests {
+    use super::*;
+
+    #[test]
+    fn parses_largest_hls_resolution() {
+        let manifest = r#"
+#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=854x480
+video_480.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=2400000,RESOLUTION=1920x1080
+video_1080.m3u8
+"#;
+
+        let dims = medium_video_dimensions_from_hls(manifest).unwrap();
+        assert_eq!(dims.width, 1920);
+        assert_eq!(dims.height, 1080);
+    }
+
+    #[test]
+    fn parses_largest_mpd_video_representation() {
+        let manifest = r#"
+<MPD>
+  <Period>
+    <AdaptationSet contentType="video">
+      <Representation id="1" bandwidth="700000" width="640" height="360" />
+      <Representation id="2" bandwidth="3000000" width="2560" height="1440" />
+    </AdaptationSet>
+  </Period>
+</MPD>
+"#;
+
+        let dims = medium_video_dimensions_from_mpd(manifest).unwrap();
+        assert_eq!(dims.width, 2560);
+        assert_eq!(dims.height, 1440);
+    }
 }
 
 async fn medium_previews_prepare(Path(mediumid): Path<String>) -> Response<Body> {
@@ -327,8 +594,12 @@ async fn medium_description_prepare(
     Extension(db): Extension<ScyllaDb>,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
-    let result = db.session.execute_unpaged(&db.get_media_description, (&mediumid.to_ascii_lowercase(),)).await;
-    let description = result.ok()
+    let result = db
+        .session
+        .execute_unpaged(&db.get_media_description, (&mediumid.to_ascii_lowercase(),))
+        .await;
+    let description = result
+        .ok()
         .and_then(|r| r.into_rows_result().ok())
         .and_then(|rows| rows.maybe_first_row::<(Option<String>,)>().ok().flatten())
         .and_then(|r| r.0)

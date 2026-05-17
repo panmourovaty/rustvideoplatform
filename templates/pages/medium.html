@@ -14,8 +14,8 @@
     <meta property="og:video" content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4" />
     <meta property="og:video:secure_url" content="{{ config.site_url }}/m/{{ medium_id }}/video-sm.mp4" />
     <meta property="og:video:type" content="video/mp4" />
-    <meta property="og:video:width" content="1280" />
-    <meta property="og:video:height" content="720" />
+    <meta property="og:video:width" content="{{ self.medium_video_width() }}" />
+    <meta property="og:video:height" content="{{ self.medium_video_height() }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.jpg" />
     {% else if medium_type == "audio" %}
     <meta property="og:type" content="music.song" />
@@ -88,9 +88,9 @@
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
             <div class="card py-3 px-3 text-white" style="min-height: 85vh">
-                <div class="d-flex justify-content-center player-container">
+                <div class="d-flex justify-content-center player-container" {% if medium_type == "video" %}style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}"{% endif %}>
                     {% if medium_type == "video" %}
-                    <media-player view-type="video" aspect-ratio="16/9" load="eager" posterLoad="eager"
+                    <media-player view-type="video" aspect-ratio="{{ self.medium_video_aspect_ratio() }}" load="eager" posterLoad="eager"
                         stream-type="on-demand" preload="auto" autoplay keep-alive crossorigin playsinline>
                         <media-provider>
                             {% if is_cmaf %}
