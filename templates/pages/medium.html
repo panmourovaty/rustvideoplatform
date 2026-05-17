@@ -88,7 +88,7 @@
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
             <div class="card py-3 px-3 text-white" style="min-height: 85vh">
-                <div class="d-flex justify-content-center player-container" {% if medium_type == "video" %}style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}"{% endif %}>
+                <div class="d-flex justify-content-center player-container">
                     {% if medium_type == "video" %}
                     <media-player view-type="video" aspect-ratio="{{ self.medium_video_aspect_ratio() }}" load="eager" posterLoad="eager"
                         stream-type="on-demand" preload="auto" autoplay keep-alive crossorigin playsinline>
