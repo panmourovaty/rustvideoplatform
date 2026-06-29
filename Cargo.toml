@@ -23,7 +23,7 @@ rustls-pemfile = "2"
 rustls = { version = "0.23", features = ["ring"] }
 memory-serve = "2.1"
 serde = { version = "1.0", features = ["derive"] }
-scylla = "1.6"
+scylla = "1.7"
 askama = { version = "0.16", features = ["serde_json"] }
 serde_json = "*"
 minify-html-onepass = "0.18"

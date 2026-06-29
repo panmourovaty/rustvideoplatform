@@ -533,6 +533,34 @@ video_1080.m3u8
         assert_eq!(dims.width, 2560);
         assert_eq!(dims.height, 1440);
     }
+
+    #[test]
+    fn parses_stored_medium_description_as_json() {
+        let description = r#"{"ops":[{"insert":"A description\n"}]}"#;
+
+        assert_eq!(
+            parse_medium_description(description),
+            serde_json::json!({
+                "ops": [
+                    {
+                        "insert": "A description\n"
+                    }
+                ]
+            })
+        );
+    }
+
+    #[test]
+    fn returns_empty_delta_for_missing_or_invalid_description() {
+        assert_eq!(
+            parse_medium_description(""),
+            serde_json::json!({ "ops": [] })
+        );
+        assert_eq!(
+            parse_medium_description("not json"),
+            serde_json::json!({ "ops": [] })
+        );
+    }
 }
 
 async fn medium_previews_prepare(Path(mediumid): Path<String>) -> Response<Body> {
@@ -604,7 +632,11 @@ async fn medium_description_prepare(
         .and_then(|rows| rows.maybe_first_row::<(Option<String>,)>().ok().flatten())
         .and_then(|r| r.0)
         .unwrap_or_default();
-    Json(serde_json::Value::String(description))
+    Json(parse_medium_description(&description))
+}
+
+fn parse_medium_description(description: &str) -> serde_json::Value {
+    serde_json::from_str(description).unwrap_or_else(|_| serde_json::json!({ "ops": [] }))
 }
 
 #[derive(Template)]
