@@ -48,15 +48,17 @@
                             {% endif %}
                         </div>
                         {% if item.type == "video" %}
-                        <img
-                            data-showcase-src="{{ config.source_server_url }}/source/{{ item.id }}/showcase.avif"
-                            onmouseenter="if(!this.dataset.loaded){this.src=this.dataset.showcaseSrc;this.dataset.loaded='true';}"
-                            class="thumbnail-animated"
+                        <video
+                            data-hls-preview-src="{{ config.source_server_url }}/source/{{ item.id }}/video/video.m3u8"
+                            class="thumbnail-preview"
                             width="176"
                             height="99"
-                            loading="lazy"
-                            alt="thumb-{{ item.id }}"
-                        />
+                            muted
+                            loop
+                            playsinline
+                            preload="none"
+                            aria-hidden="true"
+                        ></video>
                         {% endif %}
                     </div>
                 </td>
