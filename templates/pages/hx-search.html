@@ -28,7 +28,7 @@
     </div>
 </a>
 {% if loop.index == 15 && has_more %}
-<form style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-post="/hx/search/{{ next_page }}" hx-trigger="revealed" hx-target="#inf-scroll-sr-{{ next_page }}" hx-swap="outerHTML" hx-on::after-request="this.remove()">
+<form style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-post="/hx/search/{{ next_page }}" hx-trigger="revealed" hx-target="#inf-scroll-sr-{{ next_page }}" hx-swap="outerHTML" data-remove-after-request>
     <input type="hidden" name="search" value="{{ search_term }}" />
     <input type="hidden" name="media_type" value="{{ media_type }}" />
     <input type="hidden" name="sort_by" value="{{ sort_by }}" />

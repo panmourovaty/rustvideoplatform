@@ -5,10 +5,16 @@
             <tr>
                 <td class="d-flex justify-content-center">
                     <div
-                        class="thumbnail-container"
+                        class="thumbnail-container rounded"
                         style="position: relative; width: 176px; height: 99px"
                     >
-                        <img src="{{ config.source_server_url }}/source/{{ item.id }}/thumbnail.avif" width="176" height="99" class="rounded" alt="thumb-{{ item.id }}">
+                        <img
+                            src="{{ config.source_server_url }}/source/{{ item.id }}/thumbnail.avif"
+                            width="176"
+                            height="99"
+                            class="rounded {% if item.type == "video" %}thumbnail-static{% endif %}"
+                            alt="thumb-{{ item.id }}"
+                        >
                         <div class="search-card-type-badge">
                             {% if item.type == "video" %}
                             <i class="fa-solid fa-video"></i>
@@ -30,6 +36,19 @@
                             <i class="fa-solid fa-file"></i>
                             {% endif %}
                         </div>
+                        {% if item.type == "video" %}
+                        <video
+                            data-hls-preview-src="{{ config.source_server_url }}/source/{{ item.id }}/video/video.m3u8"
+                            class="thumbnail-preview"
+                            width="176"
+                            height="99"
+                            muted
+                            loop
+                            playsinline
+                            preload="none"
+                            aria-hidden="true"
+                        ></video>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -43,7 +62,7 @@
     </a>
 </div>
 {% if loop.index == 15 && has_more %}
-<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-li-{{ page }}" hx-swap="outerHTML" hx-on::after-request="this.remove()"></div>
+<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-li-{{ page }}" hx-swap="outerHTML" data-remove-after-request></div>
 {% endif %}
 {% endfor %}
 {% if has_more %}

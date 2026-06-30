@@ -42,8 +42,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/description"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-align-left me-2"></i>{{ locale.t("studio-edit-tab-description") }}
                             </button>
                         </li>
@@ -53,8 +52,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/chapters"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-list-ol me-2"></i>{{ locale.t("studio-edit-tab-chapters") }}
                             </button>
                         </li>
@@ -63,8 +61,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/subtitles"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-closed-captioning me-2"></i>{{ locale.t("studio-edit-tab-subtitles") }}
                             </button>
                         </li>
@@ -74,8 +71,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/thumbnail"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-image me-2"></i>{{ locale.t("studio-edit-tab-thumbnail") }}
                             </button>
                         </li>
@@ -85,8 +81,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/textures"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-palette me-2"></i>{{ locale.t("studio-edit-tab-textures") }}
                             </button>
                         </li>
@@ -96,8 +91,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/permissions"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-lock me-2"></i>{{ locale.t("studio-edit-tab-permissions") }}
                             </button>
                         </li>
@@ -106,8 +100,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/danger"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover"
-                                    hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                    preload="mouseover">
                                 <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ locale.t("studio-edit-tab-danger") }}
                             </button>
                         </li>

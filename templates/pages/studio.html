@@ -31,8 +31,7 @@
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio"
                                 preload="mouseover"
-                                hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
-                                hx-on::before-request="if(window.isUploading){event.preventDefault();}">
+                                data-block-while-uploading>
                             <i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("studio-tab-media") }}
                         </button>
                     </li>
@@ -42,8 +41,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/upload"
-                                preload="mouseover"
-                                hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');">
+                                preload="mouseover">
                             <i class="fa-solid fa-upload me-2"></i>{{ locale.t("studio-tab-upload") }}
                         </button>
                     </li>
@@ -54,8 +52,7 @@
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/concepts"
                                 preload="mouseover"
-                                hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
-                                hx-on::before-request="if(window.isUploading){event.preventDefault();}">
+                                data-block-while-uploading>
                             <i class="fa-solid fa-wand-magic-sparkles me-2"></i>{{ locale.t("studio-tab-concepts") }}
                         </button>
                     </li>
@@ -66,8 +63,7 @@
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/lists"
                                 preload="mouseover"
-                                hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
-                                hx-on::before-request="if(window.isUploading){event.preventDefault();}">
+                                data-block-while-uploading>
                             <i class="fa-solid fa-list me-2"></i>{{ locale.t("studio-tab-lists") }}
                         </button>
                     </li>
@@ -78,8 +74,7 @@
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/groups"
                                 preload="mouseover"
-                                hx-on:click="if(window.isUploading){alert('Please wait for the upload to complete before switching tabs.');return;} document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active');"
-                                hx-on::before-request="if(window.isUploading){event.preventDefault();}">
+                                data-block-while-uploading>
                             <i class="fa-solid fa-users me-2"></i>{{ locale.t("studio-tab-groups") }}
                         </button>
                     </li>

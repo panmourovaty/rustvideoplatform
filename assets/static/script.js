@@ -142,6 +142,29 @@ document.addEventListener("visibilitychange", () => {
 document.addEventListener("pointerdown", addHlsPreviewTimeToLink, true);
 document.addEventListener("click", addHlsPreviewTimeToLink, true);
 
+document.addEventListener("click", (event) => {
+    const tab = event.target.closest?.(".nav-tabs .nav-link");
+    if (!tab) return;
+
+    if (tab.hasAttribute("data-block-while-uploading") && window.isUploading) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        alert("Please wait for the upload to complete before switching tabs.");
+        return;
+    }
+
+    const tabList = tab.closest(".nav-tabs");
+    tabList.querySelectorAll(".nav-link").forEach((item) => item.classList.remove("active"));
+    tab.classList.add("active");
+}, true);
+
+document.addEventListener("htmx:afterRequest", (event) => {
+    const trigger = event.detail?.elt;
+    if (trigger?.hasAttribute("data-remove-after-request")) {
+        trigger.remove();
+    }
+});
+
 function resumeMediaFromQuery() {
     const resumeTime = Number(new URLSearchParams(window.location.search).get("t"));
     if (!Number.isFinite(resumeTime) || resumeTime <= 0) return;

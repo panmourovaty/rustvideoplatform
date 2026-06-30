@@ -49,10 +49,10 @@
             <div class="card py-3 px-3 text-white">
                 <ul class="nav nav-tabs mb-3">
                     <li class="nav-item">
-                        <button class="nav-link active text-white" hx-get="/hx/usermedia/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("channel-tab-media") }}</button>
+                        <button class="nav-link active text-white" hx-get="/hx/usermedia/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover"><i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("channel-tab-media") }}</button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link text-white" hx-get="/hx/userlists/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover" hx-on:click="document.querySelectorAll('.nav-tabs .nav-link').forEach(t=>t.classList.remove('active'));this.classList.add('active')"><i class="fa-solid fa-list me-2"></i>{{ locale.t("channel-tab-lists") }}</button>
+                        <button class="nav-link text-white" hx-get="/hx/userlists/{{ user.login }}" hx-target="#tab-content" hx-swap="innerHTML" preload="mouseover"><i class="fa-solid fa-list me-2"></i>{{ locale.t("channel-tab-lists") }}</button>
                     </li>
                 </ul>
                 <div id="tab-content" class="row">

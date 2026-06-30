@@ -1,6 +1,6 @@
 {% include "pages/hx-mediumlist.html" %}
 {% if has_more %}
-<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-hist-{{ page }}" hx-swap="outerHTML" hx-on::after-request="this.remove()"></div>
+<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-hist-{{ page }}" hx-swap="outerHTML" data-remove-after-request></div>
 <div id="inf-scroll-hist-{{ page }}" class="col-12 my-4 inf-scroll-placeholder"></div>
 {% else %}
 <div class="col-12 text-center my-4">

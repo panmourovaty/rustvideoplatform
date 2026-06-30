@@ -19,7 +19,7 @@
     </div>
 </div>
 {% if loop.index == 15 && has_more %}
-<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-sl-{{ page }}" hx-swap="outerHTML" hx-on::after-request="this.remove()"></div>
+<div style="position:absolute;height:0;width:0;overflow:hidden;visibility:hidden;" hx-get="{{ next_url }}" hx-trigger="revealed" hx-target="#inf-scroll-sl-{{ page }}" hx-swap="outerHTML" data-remove-after-request></div>
 {% endif %}
 {% endfor %}
 {% if has_more %}

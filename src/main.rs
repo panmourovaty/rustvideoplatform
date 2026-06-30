@@ -640,7 +640,7 @@ async fn main() {
                 response.headers_mut().insert(
                     axum::http::header::CONTENT_SECURITY_POLICY,
                     axum::http::HeaderValue::from_static(
-                        "default-src 'self'; base-uri 'self'; object-src 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.light.min.js.map; worker-src 'self' blob:",
+                        "default-src 'self'; base-uri 'self'; object-src 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:",
                     ),
                 );
 
