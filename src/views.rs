@@ -4,8 +4,18 @@ async fn hx_new_view(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<String> {
-    // Increment counter in ScyllaDB
-    let _ = db.session.execute_unpaged(&db.increment_view_count, (&mediumid,)).await;
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return Html(String::new());
+    }
+
+    if db
+        .session
+        .execute_unpaged(&db.increment_view_count, (&mediumid,))
+        .await
+        .is_err()
+    {
+        return Html(String::new());
+    }
 
     // Record per-user view history (deduplicated with 1-hour Redis key)
     if let Some(user) = get_user_login(headers, &db, redis.clone()).await {
@@ -21,7 +31,6 @@ async fn hx_new_view(
         }
     }
 
-    // Also update the main media table views (read counter, update main)
     let views: i64 = db.session.execute_unpaged(&db.get_view_count, (&mediumid,))
         .await
         .ok()
@@ -32,6 +41,43 @@ async fn hx_new_view(
             _ => 0,
         })
         .unwrap_or(0);
+
+    let media_owner_and_upload = db
+        .session
+        .execute_unpaged(&db.get_media_by_id, (&mediumid,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(
+                String,
+                String,
+                Option<String>,
+                i64,
+                String,
+                i64,
+                String,
+                String,
+                Option<String>,
+            )>()
+            .ok()
+            .flatten()
+        })
+        .map(|row| (row.4, row.3));
+
+    if let Some((owner, upload)) = media_owner_and_upload {
+        let (main_update, owner_update) = tokio::join!(
+            db.session
+                .execute_unpaged(&db.update_media_views, (views, &mediumid)),
+            db.session.execute_unpaged(
+                &db.update_media_by_owner_views,
+                (views, &owner, upload, &mediumid)
+            )
+        );
+        if main_update.is_err() || owner_update.is_err() {
+            eprintln!("WARNING: failed to synchronize view count for media {mediumid}");
+        }
+    }
 
     Html(views.to_string())
 }

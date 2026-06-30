@@ -4,6 +4,9 @@ async fn studio_thumbnail_get(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::json!({ "exists": false }));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::json!({ "exists": false }));
@@ -33,6 +36,12 @@ async fn studio_thumbnail_upload(
     Path(mediumid): Path<String>,
     mut multipart: Multipart,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -88,7 +97,7 @@ async fn studio_thumbnail_upload(
     let source_dir = format!("source/{}", mediumid);
     let _ = tokio::fs::create_dir_all(&source_dir).await;
 
-    if let Err(_) = tokio::fs::write(&temp_path, &image_content).await {
+    if tokio::fs::write(&temp_path, &image_content).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -199,6 +208,12 @@ async fn studio_thumbnail_delete(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()

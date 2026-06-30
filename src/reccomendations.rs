@@ -8,6 +8,9 @@ async fn hx_recommended(
     Path(mediumid): Path<String>,
 ) -> Result<Html<Vec<u8>>, axum::response::Response> {
     let mediumid = mediumid.to_ascii_lowercase();
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return Err(StatusCode::NOT_FOUND.into_response());
+    }
     let common_headers = extract_common_headers(&headers);
     let user = get_user_login(headers, &db, redis).await;
     let visibility_filter = build_visibility_filter(&db, &user).await;
@@ -42,7 +45,6 @@ async fn hx_recommended(
     );
     let template = HXMediumListTemplate {
         current_medium_id: mediumid,
-        list_id: String::new(),
         media,
         config,
         locale,

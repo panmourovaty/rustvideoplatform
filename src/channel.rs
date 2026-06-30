@@ -7,11 +7,10 @@ struct UserChannel {
     subscribed: Option<i64>,
 }
 #[derive(Template)]
-#[template(path = "pages/channel.html", escape = "none")]
+#[template(path = "pages/channel.html")]
 struct ChannelTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     user: UserChannel,
     schema_org_json: String,
     locale: RequestLocale,
@@ -81,21 +80,20 @@ async fn channel(
         });
         if let Some(ref pic) = user.channel_picture {
             main_entity["image"] = serde_json::Value::String(
-                format!("{}/source/{}/picture.avif", config.source_server_url, pic)
+                format!("{}/source/{}/picture.avif", config.site_url, pic)
             );
         }
-        serde_json::to_string(&serde_json::json!({
+        json_for_html_script(&serde_json::json!({
             "@context": "https://schema.org",
             "@type": "ProfilePage",
             "name": format!("{} - {}", user.name, config.instancename),
             "url": &profile_url,
             "mainEntity": main_entity
-        })).unwrap_or_default()
+        }))
     };
     let template = ChannelTemplate {
         sidebar,
         config,
-        common_headers,
         user,
         schema_org_json,
         locale,
@@ -135,6 +133,9 @@ async fn hx_usermedia_inner(
     userid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let user = get_user_login(headers.clone(), &db, redis.clone()).await;
     let offset = (page * 40) as usize;
 

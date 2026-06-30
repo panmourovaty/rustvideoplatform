@@ -1,19 +1,22 @@
 fn minifi_html(html: String) -> Vec<u8> {
-    let cfg = minify_html_onepass::Cfg {
-        minify_css: true,
-        minify_js: true,
-        ..Default::default()
+    let config = minify_html_onepass::Cfg {
+        minify_css: false,
+        minify_js: false,
     };
-
-    minify_html_onepass::copy(html.as_bytes(), &cfg).unwrap()
+    match minify_html_onepass::copy(html.as_bytes(), &config) {
+        Ok(minified) => minified,
+        Err(_) => html.into_bytes(),
+    }
 }
 
 fn read_lines_to_vec(filepath: &str) -> Vec<String> {
-    let file = std::fs::File::open(filepath).unwrap();
+    let Ok(file) = std::fs::File::open(filepath) else {
+        return Vec::new();
+    };
     let reader = std::io::BufReader::new(file);
     let lines: Vec<String> = reader
         .lines()
-        .filter_map(|line| line.ok())
+        .map_while(Result::ok)
         .collect();
 
     lines
@@ -29,6 +32,52 @@ fn generate_secure_string() -> String {
             CHARSET[idx] as char
         })
         .collect()
+}
+
+fn is_valid_resource_id(value: &str) -> bool {
+    (3..=64).contains(&value.len())
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'-' | b'_'))
+}
+
+fn normalize_resource_id(value: &str) -> Option<String> {
+    let normalized = value.trim().to_ascii_lowercase();
+    is_valid_resource_id(&normalized).then_some(normalized)
+}
+
+fn is_valid_subtitle_label(value: &str) -> bool {
+    let value = value.trim();
+    !value.is_empty()
+        && value.len() <= 100
+        && value
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | ' '))
+}
+
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
+fn sanitize_search_highlight(value: &str) -> String {
+    escape_html(value)
+        .replace("&lt;mark&gt;", "<mark>")
+        .replace("&lt;/mark&gt;", "</mark>")
+}
+
+fn json_for_html_script(value: &serde_json::Value) -> String {
+    serde_json::to_string(value)
+        .unwrap_or_default()
+        .replace('<', "\\u003c")
+        .replace('>', "\\u003e")
+        .replace('&', "\\u0026")
+        .replace('\u{2028}', "\\u2028")
+        .replace('\u{2029}', "\\u2029")
 }
 
 async fn prettyunixtime(unix_time: i64) -> String {
@@ -55,28 +104,12 @@ fn get_header_value(
 
 #[derive(Serialize, Deserialize)]
 struct CommonHeaders {
-    host: String,
-    user_agent: Option<String>,
     accept_language: Option<String>,
-    cookie: Option<String>,
 }
 fn extract_common_headers(headers: &HeaderMap) -> CommonHeaders {
-    let host = headers
-        .get(HOST)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("localhost")
-        .to_string();
-
-    let user_agent = get_header_value(headers, USER_AGENT);
     let accept_language = get_header_value(headers, ACCEPT_LANGUAGE);
-    let cookie = get_header_value(headers, COOKIE);
 
-    CommonHeaders {
-        host,
-        user_agent,
-        accept_language,
-        cookie,
-    }
+    CommonHeaders { accept_language }
 }
 
 fn build_session_cookie(token: &str, config: &Config) -> String {
@@ -84,10 +117,73 @@ fn build_session_cookie(token: &str, config: &Config) -> String {
         Some(d) => format!("; Domain={}", d),
         None => String::new(),
     };
+    let secure = if url::Url::parse(&config.site_url)
+        .ok()
+        .is_some_and(|url| url.scheme() == "https")
+    {
+        "; Secure"
+    } else {
+        ""
+    };
+    let max_age = config
+        .session_ttl_seconds
+        .unwrap_or(DEFAULT_SESSION_TTL_SECONDS);
     format!(
-        "session={}; Path=/; HttpOnly; SameSite=Lax{}",
-        token, domain_part
+        "session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}{}{}",
+        token, max_age, secure, domain_part
     )
+}
+
+fn clear_session_cookie(config: &Config) -> String {
+    let domain_part = config
+        .custom_session_domain
+        .as_ref()
+        .map(|domain| format!("; Domain={domain}"))
+        .unwrap_or_default();
+    let secure = if url::Url::parse(&config.site_url)
+        .ok()
+        .is_some_and(|url| url.scheme() == "https")
+    {
+        "; Secure"
+    } else {
+        ""
+    };
+    format!(
+        "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0{}{}",
+        secure, domain_part
+    )
+}
+
+async fn create_authenticated_session(
+    redis: &mut RedisConn,
+    login: &str,
+    config: &Config,
+) -> Result<String, redis::RedisError> {
+    let token = generate_secure_string();
+    let ttl = config
+        .session_ttl_seconds
+        .unwrap_or(DEFAULT_SESSION_TTL_SECONDS);
+    redis
+        .set_ex::<_, _, ()>(format!("session:{token}"), login, ttl)
+        .await?;
+    Ok(token)
+}
+
+async fn rate_limit_exceeded(
+    redis: &mut RedisConn,
+    key: &str,
+    limit: u64,
+    window_seconds: i64,
+) -> bool {
+    let count: Result<u64, _> = redis.incr(key, 1u8).await;
+    let Ok(count) = count else {
+        return false;
+    };
+
+    if count == 1 {
+        let _: Result<bool, _> = redis.expire(key, window_seconds).await;
+    }
+    count > limit
 }
 
 /// Parse cookies from ALL Cookie header entries (HTTP/2 may split them
@@ -133,6 +229,160 @@ async fn get_user_login(
         name: row.0.unwrap_or_default(),
         profile_picture: row.1,
     })
+}
+
+async fn can_access_media_request(
+    headers: &HeaderMap,
+    db: &ScyllaDb,
+    redis: RedisConn,
+    medium_id: &str,
+) -> bool {
+    if !is_valid_resource_id(medium_id) {
+        return false;
+    }
+    let row = db
+        .session
+        .execute_unpaged(&db.get_media_basic, (medium_id,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(
+                String,
+                String,
+                String,
+                String,
+                Option<String>,
+                String,
+            )>()
+            .ok()
+            .flatten()
+        });
+    let Some((_id, _name, owner, visibility, restricted_to_group, _media_type)) = row else {
+        return false;
+    };
+    if visibility == "public" {
+        return true;
+    }
+
+    let user = get_user_login(headers.clone(), db, redis.clone()).await;
+    can_access_restricted(
+        db,
+        &visibility,
+        restricted_to_group.as_deref(),
+        &owner,
+        &user,
+        redis,
+    )
+    .await
+}
+
+async fn is_public_profile_asset(db: &ScyllaDb, medium_id: &str, relative_path: &str) -> bool {
+    let requested_file = relative_path
+        .strip_prefix(medium_id)
+        .and_then(|path| path.strip_prefix('/'))
+        .unwrap_or_default();
+    if !matches!(
+        requested_file,
+        "thumbnail-small.avif" | "thumbnail-sm.avif" | "thumbnail.avif" | "picture.avif"
+    ) {
+        return false;
+    }
+
+    let medium = db
+        .session
+        .execute_unpaged(&db.get_media_basic, (medium_id,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(
+                String,
+                String,
+                String,
+                String,
+                Option<String>,
+                String,
+            )>()
+            .ok()
+            .flatten()
+        });
+    let Some((_id, _name, owner, visibility, _restricted_group, media_type)) = medium else {
+        return false;
+    };
+    if visibility != "hidden" || media_type != "picture" {
+        return false;
+    }
+
+    let profile_picture = db
+        .session
+        .execute_unpaged(&db.get_user_profile_picture, (&owner,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(Option<String>,)>()
+                .ok()
+                .flatten()
+        })
+        .and_then(|row| row.0);
+    if profile_picture.as_deref() == Some(medium_id) {
+        return true;
+    }
+
+    db.session
+        .execute_unpaged(&db.get_user_channel_picture, (&owner,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(Option<String>,)>()
+                .ok()
+                .flatten()
+        })
+        .and_then(|row| row.0)
+        .as_deref()
+        == Some(medium_id)
+}
+
+async fn can_access_list_request(
+    headers: &HeaderMap,
+    db: &ScyllaDb,
+    redis: RedisConn,
+    list_id: &str,
+) -> bool {
+    let row = db
+        .session
+        .execute_unpaged(&db.get_list_by_id, (list_id,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(
+                String,
+                String,
+                String,
+                String,
+                Option<String>,
+                i64,
+            )>()
+            .ok()
+            .flatten()
+        });
+    let Some((_id, _name, owner, visibility, restricted_to_group, _created)) = row else {
+        return false;
+    };
+
+    let user = get_user_login(headers.clone(), db, redis.clone()).await;
+    can_access_restricted(
+        db,
+        &visibility,
+        restricted_to_group.as_deref(),
+        &owner,
+        &user,
+        redis,
+    )
+    .await
 }
 
 async fn is_logged(user: Option<User>) -> bool {
@@ -311,9 +561,38 @@ async fn move_dir(src: &str, dest: &str) -> io::Result<()> {
 
 const SYSTEM_GROUP_ALL_REGISTERED: &str = "__all_registered__";
 const SYSTEM_GROUP_SUBSCRIBERS: &str = "__subscribers__";
+const MAX_PAGE: i64 = 10_000;
+
+fn valid_page(page: i64) -> bool {
+    (0..=MAX_PAGE).contains(&page)
+}
+
+fn page_offset(page: usize, per_page: usize) -> Option<usize> {
+    (page <= MAX_PAGE as usize)
+        .then(|| page.checked_mul(per_page))
+        .flatten()
+}
 
 fn is_system_group(group_id: &str) -> bool {
     group_id == SYSTEM_GROUP_ALL_REGISTERED || group_id == SYSTEM_GROUP_SUBSCRIBERS
+}
+
+async fn is_owned_or_system_group(db: &ScyllaDb, owner: &str, group_id: &str) -> bool {
+    if is_system_group(group_id) {
+        return true;
+    }
+
+    db.session
+        .execute_unpaged(&db.get_group_by_id, (group_id,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| {
+            rows.maybe_first_row::<(String, String, String)>()
+                .ok()
+                .flatten()
+        })
+        .is_some_and(|(_id, _name, group_owner)| group_owner == owner)
 }
 
 fn system_groups_for_owner(owner: &str) -> Vec<UserGroup> {
@@ -340,48 +619,25 @@ async fn is_subscribed(db: &ScyllaDb, subscriber: &str, target: &str) -> bool {
         .unwrap_or(false)
 }
 
-async fn is_group_member(db: &ScyllaDb, group_id: &str, user_login: &str, mut redis: RedisConn) -> bool {
-    let redis_key = format!("group:{}:members", group_id);
-
-    // Check if membership set is cached in Redis
-    let key_exists: bool = redis.exists(&redis_key).await.unwrap_or(false);
-
-    if key_exists {
-        return redis.sismember(&redis_key, user_login).await.unwrap_or(false);
-    }
-
-    // Cache miss - load all members from DB and cache in Redis
-    let members: Vec<String> = db.session.execute_unpaged(&db.get_group_members, (group_id,))
+async fn is_group_member(db: &ScyllaDb, group_id: &str, user_login: &str) -> bool {
+    db.session
+        .execute_unpaged(&db.is_group_member, (group_id, user_login))
         .await
         .ok()
-        .and_then(|r| r.into_rows_result().ok())
-        .map(|rows| {
-            rows.rows::<(String,)>()
-                .unwrap()
-                .filter_map(|r| r.ok())
-                .map(|r| r.0)
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let is_member = members.contains(&user_login.to_owned());
-
-    if !members.is_empty() {
-        let _: Result<(), _> = redis.sadd(&redis_key, &members).await;
-        let _: Result<(), _> = redis.expire(&redis_key, 3600).await;
-    }
-
-    is_member
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .is_some()
 }
 
-async fn can_access_restricted(db: &ScyllaDb, visibility: &str, restricted_to_group: Option<&str>, owner: &str, user: &Option<User>, redis: RedisConn) -> bool {
+async fn can_access_restricted(db: &ScyllaDb, visibility: &str, restricted_to_group: Option<&str>, owner: &str, user: &Option<User>, _redis: RedisConn) -> bool {
+    if user.as_ref().is_some_and(|candidate| candidate.login == owner) {
+        return true;
+    }
+
     match visibility {
         "public" => true,
         "restricted" => {
             if let Some(u) = user {
-                if u.login == owner {
-                    return true;
-                }
                 if let Some(group_id) = restricted_to_group {
                     if group_id == SYSTEM_GROUP_ALL_REGISTERED {
                         return true; // user is logged in
@@ -389,12 +645,12 @@ async fn can_access_restricted(db: &ScyllaDb, visibility: &str, restricted_to_gr
                     if group_id == SYSTEM_GROUP_SUBSCRIBERS {
                         return is_subscribed(db, &u.login, owner).await;
                     }
-                    return is_group_member(db, group_id, &u.login, redis).await;
+                    return is_group_member(db, group_id, &u.login).await;
                 }
             }
             false
         }
-        _ => false // "hidden" and unknown - not shown in feeds, only accessible via direct link
+        _ => false,
     }
 }
 

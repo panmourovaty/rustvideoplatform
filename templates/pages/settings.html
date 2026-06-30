@@ -18,7 +18,7 @@
 
 <body hx-ext="preload">
     {% set page_title = locale.t("settings-page-title") %}
-    {{ sidebar }}
+    {{ sidebar|safe }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">

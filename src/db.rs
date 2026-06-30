@@ -1,6 +1,6 @@
-use scylla::statement::prepared::PreparedStatement;
 use scylla::client::session::Session;
 use scylla::client::session_builder::SessionBuilder;
+use scylla::statement::prepared::PreparedStatement;
 use std::sync::Arc;
 
 /// Wrapper around a ScyllaDB session with pre-prepared statements for all queries.
@@ -33,9 +33,12 @@ pub struct ScyllaDb {
     pub insert_media: PreparedStatement,
     pub update_media_name_desc: PreparedStatement,
     pub update_media_permissions: PreparedStatement,
+    pub update_media_views: PreparedStatement,
+    pub update_media_by_owner_name_desc: PreparedStatement,
+    pub update_media_by_owner_permissions: PreparedStatement,
+    pub update_media_by_owner_views: PreparedStatement,
     pub delete_media: PreparedStatement,
     pub get_media_by_owner: PreparedStatement,
-    pub get_media_by_owner_pictures: PreparedStatement,
     pub insert_media_by_owner: PreparedStatement,
     pub delete_media_by_owner: PreparedStatement,
     pub get_media_description: PreparedStatement,
@@ -46,7 +49,6 @@ pub struct ScyllaDb {
 
     // --- Comments ---
     pub get_comments: PreparedStatement,
-    pub get_comment_text: PreparedStatement,
     pub insert_comment: PreparedStatement,
 
     // --- Media Likes ---
@@ -73,15 +75,14 @@ pub struct ScyllaDb {
     pub delete_concept: PreparedStatement,
     pub delete_concept_by_owner: PreparedStatement,
     pub delete_unprocessed_concept: PreparedStatement,
-    pub mark_concept_processed: PreparedStatement,
-    pub mark_concept_processed_by_owner: PreparedStatement,
-    pub get_unprocessed_concepts: PreparedStatement,
 
     // --- Lists ---
     pub get_list_by_id: PreparedStatement,
     pub get_list_owner: PreparedStatement,
     pub insert_list: PreparedStatement,
     pub insert_list_by_owner: PreparedStatement,
+    pub update_list_permissions: PreparedStatement,
+    pub update_list_by_owner_permissions: PreparedStatement,
     pub delete_list: PreparedStatement,
     pub delete_list_by_owner: PreparedStatement,
     pub get_lists_by_owner: PreparedStatement,
@@ -111,6 +112,7 @@ pub struct ScyllaDb {
     pub delete_group_member: PreparedStatement,
     pub delete_group_by_member: PreparedStatement,
     pub get_group_members: PreparedStatement,
+    pub is_group_member: PreparedStatement,
     pub get_groups_for_user: PreparedStatement,
     pub check_user_exists: PreparedStatement,
 
@@ -133,7 +135,10 @@ pub struct ScyllaDb {
 }
 
 impl ScyllaDb {
-    pub async fn connect(nodes: &[String], keyspace: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn connect(
+        nodes: &[String],
+        keyspace: &str,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let session = SessionBuilder::new()
             .known_nodes(nodes)
             .use_keyspace(keyspace, false)
@@ -167,9 +172,12 @@ impl ScyllaDb {
             insert_media: session.prepare("INSERT INTO media (id, name, description, upload, owner, views, type, public, visibility, restricted_to_group) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)").await?,
             update_media_name_desc: session.prepare("UPDATE media SET name = ?, description = ? WHERE id = ?").await?,
             update_media_permissions: session.prepare("UPDATE media SET public = ?, visibility = ?, restricted_to_group = ? WHERE id = ?").await?,
+            update_media_views: session.prepare("UPDATE media SET views = ? WHERE id = ?").await?,
+            update_media_by_owner_name_desc: session.prepare("UPDATE media_by_owner SET name = ?, description = ? WHERE owner = ? AND upload = ? AND id = ?").await?,
+            update_media_by_owner_permissions: session.prepare("UPDATE media_by_owner SET public = ?, visibility = ?, restricted_to_group = ? WHERE owner = ? AND upload = ? AND id = ?").await?,
+            update_media_by_owner_views: session.prepare("UPDATE media_by_owner SET views = ? WHERE owner = ? AND upload = ? AND id = ?").await?,
             delete_media: session.prepare("DELETE FROM media WHERE id = ?").await?,
             get_media_by_owner: session.prepare("SELECT id, name, description, views, type, upload, visibility, restricted_to_group FROM media_by_owner WHERE owner = ? LIMIT ? ").await?,
-            get_media_by_owner_pictures: session.prepare("SELECT id, name, visibility FROM media_by_owner WHERE owner = ? LIMIT 1000").await?,
             insert_media_by_owner: session.prepare("INSERT INTO media_by_owner (owner, upload, id, name, description, views, type, public, visibility, restricted_to_group) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").await?,
             delete_media_by_owner: session.prepare("DELETE FROM media_by_owner WHERE owner = ? AND upload = ? AND id = ?").await?,
             get_media_description: session.prepare("SELECT description FROM media WHERE id = ?").await?,
@@ -180,7 +188,6 @@ impl ScyllaDb {
 
             // --- Comments ---
             get_comments: session.prepare("SELECT id, user, text, time FROM comments WHERE media = ? ORDER BY time DESC, id DESC LIMIT ?").await?,
-            get_comment_text: session.prepare("SELECT text FROM comments WHERE media = ? AND time = ? AND id = ?").await?,
             insert_comment: session.prepare("INSERT INTO comments (media, time, id, user, text) VALUES (?, ?, ?, ?, ?)").await?,
 
             // --- Media Likes ---
@@ -207,15 +214,14 @@ impl ScyllaDb {
             delete_concept: session.prepare("DELETE FROM media_concepts WHERE id = ?").await?,
             delete_concept_by_owner: session.prepare("DELETE FROM media_concepts_by_owner WHERE owner = ? AND id = ?").await?,
             delete_unprocessed_concept: session.prepare("DELETE FROM unprocessed_concepts WHERE partition = 0 AND id = ?").await?,
-            mark_concept_processed: session.prepare("UPDATE media_concepts SET processed = true WHERE id = ?").await?,
-            mark_concept_processed_by_owner: session.prepare("UPDATE media_concepts_by_owner SET processed = true WHERE owner = ? AND id = ?").await?,
-            get_unprocessed_concepts: session.prepare("SELECT id, type FROM unprocessed_concepts WHERE partition = 0").await?,
 
             // --- Lists ---
             get_list_by_id: session.prepare("SELECT id, name, owner, visibility, restricted_to_group, created FROM lists WHERE id = ?").await?,
             get_list_owner: session.prepare("SELECT owner FROM lists WHERE id = ?").await?,
             insert_list: session.prepare("INSERT INTO lists (id, name, owner, public, visibility, restricted_to_group, created) VALUES (?, ?, ?, ?, ?, ?, ?)").await?,
             insert_list_by_owner: session.prepare("INSERT INTO lists_by_owner (owner, created, id, name, public, visibility, restricted_to_group) VALUES (?, ?, ?, ?, ?, ?, ?)").await?,
+            update_list_permissions: session.prepare("UPDATE lists SET public = ?, visibility = ?, restricted_to_group = ? WHERE id = ?").await?,
+            update_list_by_owner_permissions: session.prepare("UPDATE lists_by_owner SET public = ?, visibility = ?, restricted_to_group = ? WHERE owner = ? AND created = ? AND id = ?").await?,
             delete_list: session.prepare("DELETE FROM lists WHERE id = ?").await?,
             delete_list_by_owner: session.prepare("DELETE FROM lists_by_owner WHERE owner = ? AND created = ? AND id = ?").await?,
             get_lists_by_owner: session.prepare("SELECT id, name, visibility, restricted_to_group, created FROM lists_by_owner WHERE owner = ? LIMIT ?").await?,
@@ -245,6 +251,7 @@ impl ScyllaDb {
             delete_group_member: session.prepare("DELETE FROM user_group_members WHERE group_id = ? AND user_login = ?").await?,
             delete_group_by_member: session.prepare("DELETE FROM user_groups_by_member WHERE user_login = ? AND group_id = ?").await?,
             get_group_members: session.prepare("SELECT user_login FROM user_group_members WHERE group_id = ?").await?,
+            is_group_member: session.prepare("SELECT user_login FROM user_group_members WHERE group_id = ? AND user_login = ?").await?,
             get_groups_for_user: session.prepare("SELECT group_id FROM user_groups_by_member WHERE user_login = ?").await?,
             check_user_exists: session.prepare("SELECT login FROM users WHERE login = ?").await?,
 

@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/history.html", escape = "none")]
+#[template(path = "pages/history.html")]
 struct HistoryTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     locale: RequestLocale,
     resolved_lang: String,
 }
@@ -22,7 +21,6 @@ async fn history(
     let template = HistoryTemplate {
         sidebar,
         config,
-        common_headers,
         locale,
         resolved_lang,
     };
@@ -30,7 +28,7 @@ async fn history(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-history-items.html", escape = "none")]
+#[template(path = "pages/hx-history-items.html")]
 struct HXHistoryItemsTemplate {
     media: Vec<Medium>,
     current_medium_id: String,
@@ -70,6 +68,9 @@ async fn hx_history_inner(
     redis: RedisConn,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let common_headers = extract_common_headers(&headers);
     let user = match get_user_login(headers.clone(), &db, redis.clone()).await {
         Some(user) => user,
@@ -107,7 +108,19 @@ async fn hx_history_inner(
             .and_then(|r| r.into_rows_result().ok())
             .and_then(|rows| rows.maybe_first_row::<(String, String, String, String, Option<String>, String)>().ok().flatten());
 
-        if let Some((id, name, owner, _visibility, _restricted_to_group, media_type)) = media_row {
+        if let Some((id, name, owner, visibility, restricted_to_group, media_type)) = media_row {
+            if !can_access_restricted(
+                &db,
+                &visibility,
+                restricted_to_group.as_deref(),
+                &owner,
+                &Some(user.clone()),
+                redis.clone(),
+            )
+            .await
+            {
+                continue;
+            }
             // Get view count
             let views: i64 = db.session.execute_unpaged(&db.get_view_count, (&id,))
                 .await.ok().and_then(|r| r.into_rows_result().ok())

@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/trending.html", escape = "none")]
+#[template(path = "pages/trending.html")]
 struct TrendingTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     schema_org_json: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -13,7 +12,7 @@ async fn trending(
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let schema_org_json = serde_json::to_string(&serde_json::json!({
+    let schema_org_json = json_for_html_script(&serde_json::json!({
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "name": format!("Trending - {}", config.instancename),
@@ -24,7 +23,7 @@ async fn trending(
             "name": &config.instancename,
             "url": &config.site_url
         }
-    })).unwrap_or_default();
+    }));
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_locale_noauth(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
@@ -34,7 +33,6 @@ async fn trending(
     let template = TrendingTemplate {
         sidebar,
         config,
-        common_headers,
         schema_org_json,
         locale,
         resolved_lang,
@@ -44,21 +42,23 @@ async fn trending(
 
 async fn hx_trending(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_trending_inner(config, redis, localization, headers, 0).await
+    hx_trending_inner(config, db, redis, localization, headers, 0).await
 }
 
 async fn hx_trending_page(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
     Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(page): Path<i64>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_trending_inner(config, redis, localization, headers, page).await
+    hx_trending_inner(config, db, redis, localization, headers, page).await
 }
 
 /// Try to load a page of trending media from the Redis cache.
@@ -123,22 +123,61 @@ async fn try_trending_from_cache(redis: &mut RedisConn, offset: i64) -> Option<V
 
 async fn hx_trending_inner(
     config: Config,
+    db: ScyllaDb,
     mut redis: RedisConn,
     localization: Arc<LocalizationService>,
     headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let offset = page * 30;
 
     // Try Redis cache first (pre-computed by the indexer)
-    let mut media = match try_trending_from_cache(&mut redis, offset).await {
-        Some(cached) => cached,
-        None => {
-            // Cache not available — trending is cache-driven, so return empty.
-            // The indexer will populate the cache.
-            Vec::new()
+    // Trending is cache-driven; the indexer populates this cache.
+    let mut media: Vec<Medium> = try_trending_from_cache(&mut redis, offset)
+        .await
+        .unwrap_or_default();
+    let user = get_user_login(headers.clone(), &db, redis.clone()).await;
+    let mut accessible_media = Vec::with_capacity(media.len());
+    for item in media {
+        let visibility = db
+            .session
+            .execute_unpaged(&db.get_media_basic, (&item.id,))
+            .await
+            .ok()
+            .and_then(|result| result.into_rows_result().ok())
+            .and_then(|rows| {
+                rows.maybe_first_row::<(
+                    String,
+                    String,
+                    String,
+                    String,
+                    Option<String>,
+                    String,
+                )>()
+                .ok()
+                .flatten()
+            });
+        let Some((_id, _name, owner, visibility, restricted_group, _media_type)) = visibility
+        else {
+            continue;
+        };
+        if can_access_restricted(
+            &db,
+            &visibility,
+            restricted_group.as_deref(),
+            &owner,
+            &user,
+            redis.clone(),
+        )
+        .await
+        {
+            accessible_media.push(item);
         }
-    };
+    }
+    media = accessible_media;
 
     let has_more = media.len() == 31;
     if has_more {

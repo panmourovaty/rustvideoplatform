@@ -65,6 +65,12 @@
         return btoa(String.fromCharCode(...new Uint8Array(a)))
             .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
     }
+    function showWebAuthnRegistrationError(resultEl, message) {
+        const error = document.createElement('b');
+        error.className = 'text-danger';
+        error.textContent = message;
+        resultEl.replaceChildren(error);
+    }
 
     async function startWebAuthnRegistration() {
         const name = document.getElementById('webauthn-cred-name').value;
@@ -78,7 +84,7 @@
             });
             const startData = await startResp.json();
             if (!startResp.ok || startData.error) {
-                resultEl.innerHTML = '<b class="text-danger">' + (startData.error || 'Failed to start') + '</b>';
+                showWebAuthnRegistrationError(resultEl, startData.error || 'Failed to start');
                 return;
             }
             const token = startData.token;
@@ -118,10 +124,10 @@
                 resultEl.innerHTML = '<b class="text-success">Security key registered!</b>';
                 setTimeout(() => htmx.ajax('GET', '/hx/settings/2fa', {target:'#tab-content', swap:'innerHTML'}), 1200);
             } else {
-                resultEl.innerHTML = '<b class="text-danger">' + (finishData.error || 'Registration failed') + '</b>';
+                showWebAuthnRegistrationError(resultEl, finishData.error || 'Registration failed');
             }
         } catch(e) {
-            resultEl.innerHTML = '<b class="text-danger">Error: ' + e.message + '</b>';
+            showWebAuthnRegistrationError(resultEl, 'Error: ' + e.message);
         }
     }
     </script>

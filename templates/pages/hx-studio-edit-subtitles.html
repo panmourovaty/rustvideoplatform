@@ -191,7 +191,12 @@
     function showSubStatus(type, msg) {
         var el = document.getElementById('subtitles-status');
         var icon = type === 'success' ? 'fa-check' : 'fa-xmark';
-        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        var span = document.createElement('span');
+        span.className = 'text-' + type;
+        var iconEl = document.createElement('i');
+        iconEl.className = 'fa-solid ' + icon;
+        span.append(iconEl, ' ' + msg);
+        el.replaceChildren(span);
         setTimeout(function() { el.innerHTML = ''; }, 4000);
     }
 
@@ -218,7 +223,12 @@
     function showTranslateStatus(type, msg) {
         var el = document.getElementById('translate-status');
         var icon = type === 'success' ? 'fa-check' : (type === 'warning' ? 'fa-spinner fa-spin' : 'fa-xmark');
-        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        var span = document.createElement('span');
+        span.className = 'text-' + type;
+        var iconEl = document.createElement('i');
+        iconEl.className = 'fa-solid ' + icon;
+        span.append(iconEl, ' ' + msg);
+        el.replaceChildren(span);
         if (type !== 'warning') {
             setTimeout(function() { el.innerHTML = ''; }, 6000);
         }
@@ -322,7 +332,12 @@
     function showFontStatus(type, msg) {
         var el = document.getElementById('font-status');
         var icon = type === 'success' ? 'fa-check' : 'fa-xmark';
-        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        var span = document.createElement('span');
+        span.className = 'text-' + type;
+        var iconEl = document.createElement('i');
+        iconEl.className = 'fa-solid ' + icon;
+        span.append(iconEl, ' ' + msg);
+        el.replaceChildren(span);
         setTimeout(function() { el.innerHTML = ''; }, 4000);
     }
 

@@ -1,27 +1,23 @@
 services:
  rustapp:
-   image: panmourovaty/rustvideoplatform
+   build:
+     context: ..
+     dockerfile: Dockerfile
    ports:
     - "8080:8080"
    volumes:
      - ./source:/source
      - ./upload:/upload
      - ./config.json:/config.json
+   environment:
+     - MEILISEARCH_KEY=${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY}
    restart: always
    depends_on:
      - scylladb
      - meilisearch
      - indexer
- source:
-   image: nginx:alpine
-   ports:
-    - "8880:8880"
-   volumes:
-     - ./source:/source
-     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-   restart: always
  processor:
-   image: panmourovaty/rustvideoplatform-processor
+   image: panmourovaty/rustvideoplatform-processor@${RUSTVIDEO_PROCESSOR_DIGEST:?set RUSTVIDEO_PROCESSOR_DIGEST to a sha256 digest}
    volumes:
      - ./upload:/upload
      - ./processor-config.json:/config.json
@@ -33,7 +29,7 @@ services:
      - whisper
      - translatellama
  indexer:
-   image: panmourovaty/rustvideoplatform-indexer
+   image: panmourovaty/rustvideoplatform-indexer@${RUSTVIDEO_INDEXER_DIGEST:?set RUSTVIDEO_INDEXER_DIGEST to a sha256 digest}
    volumes:
      - ./source:/source
      - ./indexer-config.json:/config.json
@@ -43,31 +39,29 @@ services:
      - meilisearch
      - dragonfly
  dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.39.0
     volumes:
       - ./dragonfly:/data
  scylladb:
-    image: scylladb/scylla:latest
-    ports:
-      - "9042:9042"
+    image: scylladb/scylla:2026.1.6
     volumes:
       - ./scylladb:/var/lib/scylla
       - ./scylla.yaml:/etc/scylla/scylla.yaml
-    command: --smp 1 --memory 750M --overprovisioned 1 --developer-mode 1
+    command: --smp 1 --memory 750M --overprovisioned 1
     restart: always
  meilisearch:
-   image: getmeili/meilisearch:latest
+   image: getmeili/meilisearch:v1.45.1
    environment:
      - http_proxy
      - https_proxy
-     - MEILI_MASTER_KEY=SECRET_PASSWORD
+     - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY}
      - MEILI_NO_ANALYTICS=true
      - MEILI_ENV=production
      - MEILI_LOG_LEVEL
      - MEILI_DB_PATH=/data.ms
      - MEILI_EXPERIMENTAL_ALLOWED_IP_NETWORKS=any
  whisper:
-   image: ghcr.io/ggml-org/whisper.cpp:main-vulkan
+   image: ghcr.io/ggml-org/whisper.cpp:main-vulkan-27101c01dcac1676e2b6422256233cd0f1f9ae28
    container_name: whisper
    volumes:
      - ./models:/models
@@ -78,25 +72,21 @@ services:
    stdin_open: true
    tty: true
  translatellama:
-   image: ghcr.io/ggml-org/llama.cpp:server-vulkan
+   image: ghcr.io/ggml-org/llama.cpp:server-vulkan-b9085
    container_name: translatellama
    volumes:
      - ./models:/models
    command: ["--host", "0.0.0.0", "--port", "8083", "-m", "/models/YOUR_TRANSLATION_MODEL", "--alias", "translation", "--no-webui"]
-   ports:
-     - "8083:8083"
    devices:
      - /dev/dri:/dev/dri
    stdin_open: true
    tty: true
  embedllama:
-   image: ghcr.io/ggml-org/llama.cpp:server-vulkan
+   image: ghcr.io/ggml-org/llama.cpp:server-vulkan-b9085
    container_name: embedllama
    volumes:
      - ./models:/models
    command: ["--host", "0.0.0.0", "--port", "8084", "-m", "/models/YOUR_QWEN3_EMBEDDING_MODEL", "--alias", "embedding", "--embedding", "--pooling", "cls", "--no-webui"]
-   ports:
-     - "8084:8084"
    devices:
      - /dev/dri:/dev/dri
    stdin_open: true

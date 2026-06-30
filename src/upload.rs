@@ -1,5 +1,5 @@
 #[derive(Template)]
-#[template(path = "pages/hx-studio-upload.html", escape = "none")]
+#[template(path = "pages/hx-studio-upload.html")]
 struct HXStudioUploadTemplate {
     locale: RequestLocale,
 }
@@ -45,7 +45,6 @@ async fn upload(
     let template = StudioTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "upload".to_owned(),
         locale,
         resolved_lang,
@@ -69,13 +68,13 @@ async fn hx_upload(
 
     // Step 2: Setup directories
     let upload_dir = std::path::Path::new("upload");
-    if let Err(e) = tokio::fs::create_dir_all(upload_dir).await {
+    if tokio::fs::create_dir_all(upload_dir).await.is_err() {
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            Html(format!(
-                "<div class=\"alert alert-danger\">Failed to create upload directory: {}</div>",
-                e
-            )),
+            Html(
+                "<div class=\"alert alert-danger\">Failed to create upload directory</div>"
+                    .to_owned(),
+            ),
         ));
     }
     let medium_id = generate_medium_id();
@@ -89,13 +88,12 @@ async fn hx_upload(
                 Html("<div class=\"alert alert-danger\">No file was provided</div>".to_owned()),
             ));
         }
-        Err(e) => {
+        Err(_) => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Html(format!(
-                    "<div class=\"alert alert-danger\">Upload error: {}</div>",
-                    e
-                )),
+                Html(
+                    "<div class=\"alert alert-danger\">Invalid upload request</div>".to_owned(),
+                ),
             ));
         }
     };
@@ -110,13 +108,13 @@ async fn hx_upload(
     let file_path = upload_dir.join(&medium_id);
     let mut file = match tokio::fs::File::create(&file_path).await {
         Ok(f) => f,
-        Err(e) => {
+        Err(_) => {
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Html(format!(
-                    "<div class=\"alert alert-danger\">Failed to create file: {}</div>",
-                    e
-                )),
+                Html(
+                    "<div class=\"alert alert-danger\">Failed to create upload file</div>"
+                        .to_owned(),
+                ),
             ));
         }
     };
@@ -128,41 +126,39 @@ async fn hx_upload(
         match field.chunk().await {
             Ok(Some(chunk)) => {
                 file_size += chunk.len();
-                if let Err(e) = file.write_all(&chunk).await {
+                if file.write_all(&chunk).await.is_err() {
                     // Clean up partial file on write error
                     let _ = tokio::fs::remove_file(&file_path).await;
                     return Err((
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Html(format!(
-                            "<div class=\"alert alert-danger\">Write error: {}</div>",
-                            e
-                        )),
+                        Html(
+                            "<div class=\"alert alert-danger\">Failed to write upload</div>"
+                                .to_owned(),
+                        ),
                     ));
                 }
             }
             Ok(None) => break,
-            Err(e) => {
+            Err(_) => {
                 // Clean up partial file on read error
                 let _ = tokio::fs::remove_file(&file_path).await;
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    Html(format!(
-                        "<div class=\"alert alert-danger\">Upload interrupted: {}</div>",
-                        e
-                    )),
+                    Html(
+                        "<div class=\"alert alert-danger\">Upload interrupted</div>".to_owned(),
+                    ),
                 ));
             }
         }
     }
 
-    if let Err(e) = file.flush().await {
+    if file.flush().await.is_err() {
         let _ = tokio::fs::remove_file(&file_path).await;
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            Html(format!(
-                "<div class=\"alert alert-danger\">Failed to finalize file: {}</div>",
-                e
-            )),
+            Html(
+                "<div class=\"alert alert-danger\">Failed to finalize file</div>".to_owned(),
+            ),
         ));
     }
 
@@ -190,15 +186,47 @@ async fn hx_upload(
         let _ = tokio::fs::remove_file(&file_path).await;
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            Html(format!(
-                "<div class=\"alert alert-danger\">Database error: {}</div>",
-                insert_result.unwrap_err()
-            )),
+            Html("<div class=\"alert alert-danger\">Failed to save upload</div>".to_owned()),
         ));
     }
 
-    let _ = db.session.execute_unpaged(&db.insert_concept_by_owner, (&owner, &medium_id, &file_name, &medium_type)).await;
-    let _ = db.session.execute_unpaged(&db.insert_unprocessed_concept, (&medium_id, &medium_type)).await;
+    let owner_insert = db
+        .session
+        .execute_unpaged(
+            &db.insert_concept_by_owner,
+            (&owner, &medium_id, &file_name, &medium_type),
+        )
+        .await;
+    let queue_insert = if owner_insert.is_ok() {
+        db.session
+            .execute_unpaged(&db.insert_unprocessed_concept, (&medium_id, &medium_type))
+            .await
+    } else {
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_concept, (&medium_id,))
+            .await;
+        let _ = tokio::fs::remove_file(&file_path).await;
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<div class=\"alert alert-danger\">Failed to save upload</div>".to_owned()),
+        ));
+    };
+    if queue_insert.is_err() {
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_concept, (&medium_id,))
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_concept_by_owner, (&owner, &medium_id))
+            .await;
+        let _ = tokio::fs::remove_file(&file_path).await;
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<div class=\"alert alert-danger\">Failed to queue upload</div>".to_owned()),
+        ));
+    }
 
     // Step 7: Format success response
     let formatted_file_size = format_file_size(file_size);
@@ -214,7 +242,7 @@ async fn hx_upload(
                 <i class="fa-solid fa-arrow-right"></i> View Concepts
             </a>
         </div>"#,
-        file_name, formatted_file_size, medium_type
+        escape_html(&file_name), formatted_file_size, escape_html(&medium_type)
     );
 
     Ok(Html(response_html))

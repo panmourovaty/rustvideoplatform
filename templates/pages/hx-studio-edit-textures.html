@@ -27,23 +27,28 @@
 </div>
 <script>
 (function() {
-    var MEDIUM_ID = '{{ medium_id }}';
-    var MSG_SELECT = '{{ locale.t("studio-textures-select-validation") }}';
-    var MSG_UPLOADING = '{{ locale.t("studio-textures-uploading") }}';
-    var MSG_UPLOAD_SUCCESS = '{{ locale.t("studio-textures-upload-success") }}';
-    var MSG_UPLOAD_FAILED = '{{ locale.t("studio-textures-upload-failed") }}';
-    var MSG_DELETE_CONFIRM = '{{ locale.t("studio-textures-delete-confirm") }}';
-    var MSG_DELETE_SUCCESS = '{{ locale.t("studio-textures-delete-success") }}';
-    var MSG_DELETE_FAILED = '{{ locale.t("studio-textures-delete-failed") }}';
-    var MSG_APPLYING = '{{ locale.t("studio-textures-applying") }}';
-    var MSG_APPLY_SUCCESS = '{{ locale.t("studio-textures-apply-success") }}';
-    var MSG_APPLY_FAILED = '{{ locale.t("studio-textures-apply-failed") }}';
-    var MSG_NO_TEXTURES = '{{ locale.t("studio-textures-none") }}';
+    var MEDIUM_ID = {{ medium_id|json|safe }};
+    var MSG_SELECT = {{ locale.t("studio-textures-select-validation")|json|safe }};
+    var MSG_UPLOADING = {{ locale.t("studio-textures-uploading")|json|safe }};
+    var MSG_UPLOAD_SUCCESS = {{ locale.t("studio-textures-upload-success")|json|safe }};
+    var MSG_UPLOAD_FAILED = {{ locale.t("studio-textures-upload-failed")|json|safe }};
+    var MSG_DELETE_CONFIRM = {{ locale.t("studio-textures-delete-confirm")|json|safe }};
+    var MSG_DELETE_SUCCESS = {{ locale.t("studio-textures-delete-success")|json|safe }};
+    var MSG_DELETE_FAILED = {{ locale.t("studio-textures-delete-failed")|json|safe }};
+    var MSG_APPLYING = {{ locale.t("studio-textures-applying")|json|safe }};
+    var MSG_APPLY_SUCCESS = {{ locale.t("studio-textures-apply-success")|json|safe }};
+    var MSG_APPLY_FAILED = {{ locale.t("studio-textures-apply-failed")|json|safe }};
+    var MSG_NO_TEXTURES = {{ locale.t("studio-textures-none")|json|safe }};
 
     function showStatus(elId, type, msg) {
         var el = document.getElementById(elId);
         var icon = type === 'success' ? 'fa-check' : type === 'warning' ? 'fa-hourglass-half' : 'fa-xmark';
-        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        var span = document.createElement('span');
+        span.className = 'text-' + type;
+        var iconEl = document.createElement('i');
+        iconEl.className = 'fa-solid ' + icon;
+        span.append(iconEl, ' ' + msg);
+        el.replaceChildren(span);
         if (type !== 'warning') {
             setTimeout(function() { el.innerHTML = ''; }, 5000);
         }
@@ -52,7 +57,10 @@
     function renderTextureList(textures) {
         var el = document.getElementById('textures-list');
         if (!textures || textures.length === 0) {
-            el.innerHTML = '<p class="text-secondary small">' + MSG_NO_TEXTURES + '</p>';
+            var empty = document.createElement('p');
+            empty.className = 'text-secondary small';
+            empty.textContent = MSG_NO_TEXTURES;
+            el.replaceChildren(empty);
             return;
         }
         var html = '<div class="list-group">';

@@ -50,7 +50,6 @@ async fn studio_groups(
     let template = StudioTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "groups".to_owned(),
         locale,
         resolved_lang,
@@ -59,14 +58,14 @@ async fn studio_groups(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-groups.html", escape = "none")]
+#[template(path = "pages/hx-studio-groups.html")]
 struct HXStudioGroupsTemplate {
     groups: Vec<UserGroupWithCount>,
     locale: RequestLocale,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-groups-list.html", escape = "none")]
+#[template(path = "pages/hx-groups-list.html")]
 struct HXGroupsListTemplate {
     groups: Vec<UserGroupWithCount>,
     locale: RequestLocale,
@@ -151,6 +150,10 @@ async fn hx_create_group(
         return Html("".as_bytes().to_vec());
     }
     let user_info = user_info.unwrap();
+    let group_name = form.name.trim();
+    if group_name.is_empty() || group_name.len() > 100 {
+        return Html(Vec::new());
+    }
 
     let group_id = generate_medium_id();
     let created = std::time::SystemTime::now()
@@ -158,15 +161,32 @@ async fn hx_create_group(
         .unwrap()
         .as_secs() as i64;
 
-    // Insert into user_groups (id, name, owner, created)
-    let _ = db.session
-        .execute_unpaged(&db.insert_group, (&group_id, &form.name, &user_info.login, created))
-        .await;
-
-    // Insert into user_groups_by_owner (owner, created, id, name)
-    let _ = db.session
-        .execute_unpaged(&db.insert_group_by_owner, (&user_info.login, created, &group_id, &form.name))
-        .await;
+    if db
+        .session
+        .execute_unpaged(
+            &db.insert_group,
+            (&group_id, group_name, &user_info.login, created),
+        )
+        .await
+        .is_err()
+    {
+        return Html(Vec::new());
+    }
+    if db
+        .session
+        .execute_unpaged(
+            &db.insert_group_by_owner,
+            (&user_info.login, created, &group_id, group_name),
+        )
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_group, (&group_id,))
+            .await;
+        return Html(Vec::new());
+    }
 
     // Return updated groups list
     let groups = fetch_groups_with_counts(&db, &user_info.login).await;
@@ -202,7 +222,7 @@ async fn hx_delete_group(
         .ok().and_then(|r| r.into_rows_result().ok())
         .and_then(|rows| rows.maybe_first_row::<(String, String, String)>().ok().flatten());
 
-    let (_id, _name, owner) = match group_info {
+    let (_id, group_name, owner) = match group_info {
         Some(row) => row,
         None => return Html("".as_bytes().to_vec()),
     };
@@ -212,66 +232,241 @@ async fn hx_delete_group(
     }
 
     // Clear group references from media
-    let media_rows: Vec<(String, String, i64)> = db.session
+    let media_rows = db.session
         .execute_unpaged(&db.get_media_by_group, (&groupid,)).await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(media_rows) = media_rows else {
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    };
 
-    for (media_id, _media_owner, _upload) in &media_rows {
-        // update_media_permissions: (public, visibility, restricted_to_group, id)
-        let _ = db.session
+    let mut reference_update_failed = false;
+    for (media_id, media_owner, upload) in &media_rows {
+        let main_update = db.session
             .execute_unpaged(&db.update_media_permissions, (false, "hidden", None::<&str>, media_id))
             .await;
+        let owner_update = db.session
+            .execute_unpaged(
+                &db.update_media_by_owner_permissions,
+                (
+                    false,
+                    "hidden",
+                    None::<&str>,
+                    media_owner,
+                    upload,
+                    media_id,
+                ),
+            )
+            .await;
+        if main_update.is_err() || owner_update.is_err() {
+            if main_update.is_ok() {
+                let _ = db
+                    .session
+                    .execute_unpaged(
+                        &db.update_media_permissions,
+                        (false, "restricted", Some(&groupid), media_id),
+                    )
+                    .await;
+            }
+            if owner_update.is_ok() {
+                let _ = db
+                    .session
+                    .execute_unpaged(
+                        &db.update_media_by_owner_permissions,
+                        (
+                            false,
+                            "restricted",
+                            Some(&groupid),
+                            media_owner,
+                            upload,
+                            media_id,
+                        ),
+                    )
+                    .await;
+            }
+            eprintln!("WARNING: failed to clear deleted group from media {media_id}");
+            reference_update_failed = true;
+        }
     }
 
     // Clear group references from lists
-    let list_rows: Vec<(String, String, i64)> = db.session
+    let list_rows = db.session
         .execute_unpaged(&db.get_lists_by_group, (&groupid,)).await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(list_rows) = list_rows else {
+        restore_group_references(&db, &groupid, &media_rows, &[]).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    };
 
-    for (list_id, _list_owner, _created) in &list_rows {
-        let _ = db.session
-            .query_unpaged("UPDATE lists SET visibility = 'hidden', restricted_to_group = null WHERE id = ?", (list_id,))
+    for (list_id, list_owner, created) in &list_rows {
+        let main_update = db.session
+            .execute_unpaged(
+                &db.update_list_permissions,
+                (false, "hidden", None::<&str>, list_id),
+            )
             .await;
+        let owner_update = db.session
+            .execute_unpaged(
+                &db.update_list_by_owner_permissions,
+                (
+                    false,
+                    "hidden",
+                    None::<&str>,
+                    list_owner,
+                    created,
+                    list_id,
+                ),
+            )
+            .await;
+        if main_update.is_err() || owner_update.is_err() {
+            if main_update.is_ok() {
+                let _ = db
+                    .session
+                    .execute_unpaged(
+                        &db.update_list_permissions,
+                        (false, "restricted", Some(&groupid), list_id),
+                    )
+                    .await;
+            }
+            if owner_update.is_ok() {
+                let _ = db
+                    .session
+                    .execute_unpaged(
+                        &db.update_list_by_owner_permissions,
+                        (
+                            false,
+                            "restricted",
+                            Some(&groupid),
+                            list_owner,
+                            created,
+                            list_id,
+                        ),
+                    )
+                    .await;
+            }
+            eprintln!("WARNING: failed to clear deleted group from list {list_id}");
+            reference_update_failed = true;
+        }
+    }
+    if reference_update_failed {
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
     }
 
     // Delete all members
-    let members: Vec<(String,)> = db.session
+    let members = db.session
         .execute_unpaged(&db.get_group_members, (&groupid,)).await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(String,)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(String,)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(members) = members else {
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    };
 
     for (member_login,) in &members {
-        let _ = db.session
+        if db.session
             .execute_unpaged(&db.delete_group_member, (&groupid, member_login))
-            .await;
-        let _ = db.session
+            .await
+            .is_err()
+        {
+            restore_group_members(&db, &groupid, &members).await;
+            restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+            return Html(
+                "<b class=\"text-danger\">Failed to delete group.</b>"
+                    .as_bytes()
+                    .to_vec(),
+            );
+        }
+        if db.session
             .execute_unpaged(&db.delete_group_by_member, (member_login, &groupid))
-            .await;
+            .await
+            .is_err()
+        {
+            restore_group_members(&db, &groupid, &members).await;
+            restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+            return Html(
+                "<b class=\"text-danger\">Failed to delete group.</b>"
+                    .as_bytes()
+                    .to_vec(),
+            );
+        }
     }
 
     // Find created timestamp from get_groups_by_owner to delete from by_owner table
-    let owner_groups: Vec<(String, String, i64)> = db.session
+    let owner_groups = db.session
         .execute_unpaged(&db.get_groups_by_owner, (&user_info.login,)).await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(owner_groups) = owner_groups else {
+        restore_group_members(&db, &groupid, &members).await;
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    };
 
-    if let Some((_, _, created)) = owner_groups.iter().find(|(id, _, _)| id == &groupid) {
-        // delete_group_by_owner: (owner, created, id)
-        let _ = db.session
-            .execute_unpaged(&db.delete_group_by_owner, (&user_info.login, *created, &groupid))
-            .await;
+    let Some((_, _, created)) = owner_groups.iter().find(|(id, _, _)| id == &groupid) else {
+        restore_group_members(&db, &groupid, &members).await;
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    };
+    if db.session
+        .execute_unpaged(&db.delete_group_by_owner, (&user_info.login, *created, &groupid))
+        .await
+        .is_err()
+    {
+        restore_group_members(&db, &groupid, &members).await;
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
     }
 
-    // Delete group from main table
-    let _ = db.session
+    if db.session
         .execute_unpaged(&db.delete_group, (&groupid,))
-        .await;
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_group_by_owner,
+                (&user_info.login, *created, &groupid, &group_name),
+            )
+            .await;
+        restore_group_members(&db, &groupid, &members).await;
+        restore_group_references(&db, &groupid, &media_rows, &list_rows).await;
+        return Html(
+            "<b class=\"text-danger\">Failed to delete group.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    }
 
     // Invalidate Redis group membership cache
     let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;
@@ -285,8 +480,75 @@ async fn hx_delete_group(
     Html(minifi_html(template.render().unwrap()))
 }
 
+async fn restore_group_members(db: &ScyllaDb, group_id: &str, members: &[(String,)]) {
+    for (member_login,) in members {
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_group_member, (group_id, member_login))
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_group_by_member, (member_login, group_id))
+            .await;
+    }
+}
+
+async fn restore_group_references(
+    db: &ScyllaDb,
+    group_id: &str,
+    media: &[(String, String, i64)],
+    lists: &[(String, String, i64)],
+) {
+    for (media_id, owner, upload) in media {
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_media_permissions,
+                (false, "restricted", Some(group_id), media_id),
+            )
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_media_by_owner_permissions,
+                (
+                    false,
+                    "restricted",
+                    Some(group_id),
+                    owner,
+                    upload,
+                    media_id,
+                ),
+            )
+            .await;
+    }
+    for (list_id, owner, created) in lists {
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_list_permissions,
+                (false, "restricted", Some(group_id), list_id),
+            )
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_list_by_owner_permissions,
+                (
+                    false,
+                    "restricted",
+                    Some(group_id),
+                    owner,
+                    created,
+                    list_id,
+                ),
+            )
+            .await;
+    }
+}
+
 #[derive(Template)]
-#[template(path = "pages/hx-group-members.html", escape = "none")]
+#[template(path = "pages/hx-group-members.html")]
 struct HXGroupMembersTemplate {
     group: UserGroup,
     members: Vec<GroupMember>,
@@ -338,6 +600,9 @@ async fn hx_group_members(
     };
 
     let is_owner = group.owner == user_info.login;
+    if !is_owner {
+        return Html("".as_bytes().to_vec());
+    }
 
     // Get members: (user_login)
     let member_rows: Vec<(String,)> = db.session
@@ -404,13 +669,23 @@ async fn hx_add_group_member(
         .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten());
 
     if user_exists.is_some() {
-        // Insert member (Cassandra INSERT is an upsert)
-        let _ = db.session
+        let member_insert = db.session
             .execute_unpaged(&db.insert_group_member, (&groupid, &form.user_login))
             .await;
-        let _ = db.session
+        if member_insert.is_err() {
+            return Html(Vec::new());
+        }
+        if db.session
             .execute_unpaged(&db.insert_group_by_member, (&form.user_login, &groupid))
-            .await;
+            .await
+            .is_err()
+        {
+            let _ = db
+                .session
+                .execute_unpaged(&db.delete_group_member, (&groupid, &form.user_login))
+                .await;
+            return Html(Vec::new());
+        }
 
         // Invalidate Redis group membership cache
         let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;
@@ -473,13 +748,23 @@ async fn hx_remove_group_member(
         return Html("".as_bytes().to_vec());
     }
 
-    // Delete member from both tables
-    let _ = db.session
+    let member_delete = db.session
         .execute_unpaged(&db.delete_group_member, (&groupid, &login))
         .await;
-    let _ = db.session
+    if member_delete.is_err() {
+        return Html(Vec::new());
+    }
+    if db.session
         .execute_unpaged(&db.delete_group_by_member, (&login, &groupid))
-        .await;
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_group_member, (&groupid, &login))
+            .await;
+        return Html(Vec::new());
+    }
 
     // Invalidate Redis group membership cache
     let _: Result<(), _> = redis.clone().del(format!("group:{}:members", groupid)).await;

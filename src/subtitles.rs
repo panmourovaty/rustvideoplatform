@@ -32,6 +32,9 @@ async fn studio_subtitles_get(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::Value::Array(vec![]));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::Value::Array(vec![]));
@@ -78,6 +81,12 @@ async fn studio_subtitles_add(
     Path(mediumid): Path<String>,
     mut multipart: Multipart,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -138,18 +147,14 @@ async fn studio_subtitles_add(
             .unwrap();
     }
 
-    let sanitized_label: String = label
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_' || *c == ' ')
-        .collect();
-
-    if sanitized_label.is_empty() {
+    if !is_valid_subtitle_label(&label) {
         return Response::builder()
             .status(StatusCode::BAD_REQUEST)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
             .body(Body::from("{\"error\":\"invalid label\"}"))
             .unwrap();
     }
+    let sanitized_label = label.trim().to_owned();
 
     if file_content.is_empty() {
         return Response::builder()
@@ -212,7 +217,7 @@ async fn studio_subtitles_add(
     existing.retain(|e| e.as_str() != sanitized_label && !e.starts_with(&label_prefix));
     existing.push(new_list_entry);
 
-    if let Err(_) = tokio::fs::write(&subtitle_path, &final_content).await {
+    if tokio::fs::write(&subtitle_path, &final_content).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -221,7 +226,7 @@ async fn studio_subtitles_add(
     }
 
     let list_content = existing.join("\n") + "\n";
-    if let Err(_) = tokio::fs::write(&list_path, list_content).await {
+    if tokio::fs::write(&list_path, list_content).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -241,6 +246,9 @@ async fn studio_subtitle_font_get(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::json!({ "exists": false }));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::json!({ "exists": false }));
@@ -270,6 +278,12 @@ async fn studio_subtitle_font_upload(
     Path(mediumid): Path<String>,
     mut multipart: Multipart,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -317,43 +331,26 @@ async fn studio_subtitle_font_upload(
     }
 
     let woff2_content = if is_ttf {
-        use tokio::io::AsyncWriteExt;
+        let temp_input =
+            std::env::temp_dir().join(format!("rustvp-font-{}.ttf", generate_secure_string()));
+        let temp_output = temp_input.with_extension("woff2");
+        if tokio::fs::write(&temp_input, &font_content).await.is_err() {
+            return Response::builder()
+                .status(StatusCode::UNPROCESSABLE_ENTITY)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from("{\"error\":\"TTF to WOFF2 conversion failed\"}"))
+                .unwrap();
+        }
 
-        let mut child = match tokio::process::Command::new("woff2_compress")
-            .arg("/dev/stdin")
-            .stdin(std::process::Stdio::piped())
+        let status = tokio::process::Command::new("woff2_compress")
+            .arg(&temp_input)
+            .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
-            .spawn()
-        {
-            Ok(child) => child,
-            Err(_) => {
-                return Response::builder()
-                    .status(StatusCode::UNPROCESSABLE_ENTITY)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from("{\"error\":\"TTF to WOFF2 conversion failed\"}"))
-                    .unwrap();
-            }
-        };
-
-        if let Some(mut stdin) = child.stdin.take() {
-            if stdin.write_all(&font_content).await.is_err() {
-                return Response::builder()
-                    .status(StatusCode::UNPROCESSABLE_ENTITY)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from("{\"error\":\"TTF to WOFF2 conversion failed\"}"))
-                    .unwrap();
-            }
-        } else {
-            return Response::builder()
-                .status(StatusCode::UNPROCESSABLE_ENTITY)
-                .header(axum::http::header::CONTENT_TYPE, "application/json")
-                .body(Body::from("{\"error\":\"TTF to WOFF2 conversion failed\"}"))
-                .unwrap();
-        }
-
-        let status = child.wait().await;
+            .status()
+            .await;
         if !matches!(status, Ok(status) if status.success()) {
+            let _ = tokio::fs::remove_file(&temp_input).await;
             return Response::builder()
                 .status(StatusCode::UNPROCESSABLE_ENTITY)
                 .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -361,12 +358,10 @@ async fn studio_subtitle_font_upload(
                 .unwrap();
         }
 
-        let mut converted_path = std::env::temp_dir();
-        converted_path.push(format!("stdin.woff2"));
-
-        let converted = match tokio::fs::read(&converted_path).await {
+        let converted = match tokio::fs::read(&temp_output).await {
             Ok(content) => content,
             Err(_) => {
+                let _ = tokio::fs::remove_file(&temp_input).await;
                 return Response::builder()
                     .status(StatusCode::UNPROCESSABLE_ENTITY)
                     .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -375,7 +370,8 @@ async fn studio_subtitle_font_upload(
             }
         };
 
-        let _ = tokio::fs::remove_file(&converted_path).await;
+        let _ = tokio::fs::remove_file(&temp_input).await;
+        let _ = tokio::fs::remove_file(&temp_output).await;
         converted
     } else {
         font_content
@@ -385,7 +381,7 @@ async fn studio_subtitle_font_upload(
     let _ = tokio::fs::create_dir_all(&captions_dir).await;
 
     let font_path = format!("{}/font.woff2", captions_dir);
-    if let Err(_) = tokio::fs::write(&font_path, &woff2_content).await {
+    if tokio::fs::write(&font_path, &woff2_content).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -405,6 +401,12 @@ async fn studio_subtitle_font_delete(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -447,6 +449,9 @@ async fn studio_subtitles_translate_status(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::json!({ "in_progress": false }));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::json!({ "in_progress": false }));
@@ -492,6 +497,12 @@ async fn studio_subtitles_translate(
     Path(mediumid): Path<String>,
     Json(form): Json<SubtitleTranslateForm>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -522,7 +533,13 @@ async fn studio_subtitles_translate(
     let source_label = form.source_label.trim().to_string();
     let target_language = form.target_language.trim().to_lowercase();
 
-    if source_label.is_empty() || target_language.is_empty() {
+    if !is_valid_subtitle_label(&source_label)
+        || target_language.is_empty()
+        || target_language.len() > 32
+        || !target_language
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
         return Response::builder()
             .status(StatusCode::BAD_REQUEST)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -560,8 +577,15 @@ async fn studio_subtitles_translate(
     let upload_dir = std::path::Path::new("upload");
     let _ = tokio::fs::create_dir_all(upload_dir).await;
     let meta_path = upload_dir.join(&concept_id);
+    let pending_meta_path = upload_dir.join(format!(
+        "{concept_id}.pending-{}",
+        generate_secure_string()
+    ));
 
-    if let Err(_) = tokio::fs::write(&meta_path, metadata.to_string()).await {
+    if tokio::fs::write(&pending_meta_path, metadata.to_string())
+        .await
+        .is_err()
+    {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -569,10 +593,34 @@ async fn studio_subtitles_translate(
             .unwrap();
     }
 
-    // Upsert concept: delete any existing translation job for this medium, then insert new one
-    let _ = db.session.execute_unpaged(&db.delete_concept, (&concept_id,)).await;
-    let _ = db.session.execute_unpaged(&db.delete_concept_by_owner, (&user_info.login, &concept_id)).await;
-    let _ = db.session.execute_unpaged(&db.delete_unprocessed_concept, (&concept_id,)).await;
+    // Replace any existing translation job for this medium.
+    let cleanup = tokio::join!(
+        db.session
+            .execute_unpaged(&db.delete_concept, (&concept_id,)),
+        db.session
+            .execute_unpaged(&db.delete_concept_by_owner, (&user_info.login, &concept_id)),
+        db.session
+            .execute_unpaged(&db.delete_unprocessed_concept, (&concept_id,))
+    );
+    if cleanup.0.is_err() || cleanup.1.is_err() || cleanup.2.is_err() {
+        let _ = tokio::fs::remove_file(&pending_meta_path).await;
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to replace translation job\"}"))
+            .unwrap();
+    }
+    if tokio::fs::rename(&pending_meta_path, &meta_path)
+        .await
+        .is_err()
+    {
+        let _ = tokio::fs::remove_file(&pending_meta_path).await;
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to create translation job\"}"))
+            .unwrap();
+    }
 
     let concept_name = format!("Translate {} -> {}", source_label, target_language);
     let concept_type = "vtt_translate";
@@ -583,6 +631,7 @@ async fn studio_subtitles_translate(
     ).await;
 
     if insert_result.is_err() {
+        let _ = tokio::fs::remove_file(&meta_path).await;
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -590,15 +639,45 @@ async fn studio_subtitles_translate(
             .unwrap();
     }
 
-    let _ = db.session.execute_unpaged(
-        &db.insert_concept_by_owner,
-        (&user_info.login, &concept_id, &concept_name, concept_type),
-    ).await;
+    if db
+        .session
+        .execute_unpaged(
+            &db.insert_concept_by_owner,
+            (&user_info.login, &concept_id, &concept_name, concept_type),
+        )
+        .await
+        .is_err()
+    {
+        let _ = db.session.execute_unpaged(&db.delete_concept, (&concept_id,)).await;
+        let _ = tokio::fs::remove_file(&meta_path).await;
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to queue translation job\"}"))
+            .unwrap();
+    }
 
-    let _ = db.session.execute_unpaged(
-        &db.insert_unprocessed_concept,
-        (&concept_id, concept_type),
-    ).await;
+    if db
+        .session
+        .execute_unpaged(&db.insert_unprocessed_concept, (&concept_id, concept_type))
+        .await
+        .is_err()
+    {
+        let _ = db.session.execute_unpaged(&db.delete_concept, (&concept_id,)).await;
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.delete_concept_by_owner,
+                (&user_info.login, &concept_id),
+            )
+            .await;
+        let _ = tokio::fs::remove_file(&meta_path).await;
+        return Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body(Body::from("{\"error\":\"failed to queue translation job\"}"))
+            .unwrap();
+    }
 
     Response::builder()
         .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -618,6 +697,12 @@ async fn studio_subtitles_delete(
     Path(mediumid): Path<String>,
     Json(form): Json<SubtitleDeleteForm>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -646,7 +731,7 @@ async fn studio_subtitles_delete(
     }
 
     let label = form.label.trim().to_string();
-    if label.is_empty() {
+    if !is_valid_subtitle_label(&label) {
         return Response::builder()
             .status(StatusCode::BAD_REQUEST)
             .header(axum::http::header::CONTENT_TYPE, "application/json")

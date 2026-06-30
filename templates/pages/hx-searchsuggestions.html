@@ -13,7 +13,7 @@
         </div>
         {% endif %}
         <div class="overflow-hidden">
-            <div class="text-white text-truncate fw-semibold">{{ user.highlighted_name }}</div>
+            <div class="text-white text-truncate fw-semibold">{{ user.highlighted_name|safe }}</div>
             <div class="text-secondary small">@{{ user.login }}</div>
         </div>
     </li>
@@ -32,7 +32,7 @@
             <i class="fa-solid fa-list fa-xs text-white"></i>
         </div>
         <div class="overflow-hidden">
-            <div class="text-white text-truncate fw-semibold">{{ list.highlighted_name }}</div>
+            <div class="text-white text-truncate fw-semibold">{{ list.highlighted_name|safe }}</div>
             <div class="text-secondary small">{{ list.owner }} &middot; {{ list.item_count }} items</div>
         </div>
     </li>

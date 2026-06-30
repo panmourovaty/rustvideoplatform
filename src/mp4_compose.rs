@@ -18,8 +18,8 @@ fn hls_variant_for_quality(master_path: &str, lowest: bool) -> String {
 
     for line in content.lines() {
         let line = line.trim();
-        if line.starts_with("#EXT-X-STREAM-INF:") {
-            pending_bw = line["#EXT-X-STREAM-INF:".len()..]
+        if let Some(stream_info) = line.strip_prefix("#EXT-X-STREAM-INF:") {
+            pending_bw = stream_info
                 .split(',')
                 .find_map(|attr| attr.trim().strip_prefix("BANDWIDTH=")?.parse::<u64>().ok());
         } else if !line.is_empty() && !line.starts_with('#') {
@@ -31,7 +31,7 @@ fn hls_variant_for_quality(master_path: &str, lowest: bool) -> String {
                 };
                 let is_better = best
                     .as_ref()
-                    .map_or(true, |(b, _)| if lowest { bw < *b } else { bw > *b });
+                    .is_none_or(|(b, _)| if lowest { bw < *b } else { bw > *b });
                 if is_better {
                     best = Some((bw, uri));
                 }
@@ -61,7 +61,7 @@ fn mpd_lowest_video_stream_idx(mpd_path: &str) -> usize {
             in_video_set = false;
         } else if in_video_set && t.starts_with("<Representation") {
             if let Some(bw) = xml_attr(t, "bandwidth").and_then(|v| v.parse::<u64>().ok()) {
-                if best.map_or(true, |(b, _)| bw < b) {
+                if best.is_none_or(|(b, _)| bw < b) {
                     best = Some((bw, stream_idx));
                 }
                 stream_idx += 1;
@@ -86,6 +86,9 @@ async fn stream_video_as_mp4(
     medium_id: &str,
     lowest_quality: bool,
 ) -> Response<Body> {
+    if !is_valid_resource_id(medium_id) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
     let medium_row = db.session.execute_unpaged(&db.get_media_basic, (medium_id,))
         .await
         .ok()
@@ -109,10 +112,10 @@ async fn stream_video_as_mp4(
             .unwrap();
     }
 
-    let user = get_user_login(headers, &db, redis.clone()).await;
+    let user = get_user_login(headers, db, redis.clone()).await;
 
     if !can_access_restricted(
-        &db,
+        db,
         &visibility,
         restricted_to_group.as_deref(),
         &owner,

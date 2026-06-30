@@ -47,7 +47,7 @@
 
     <title>{{ medium_name }}</title>
 
-    <script type="application/ld+json">{{ schema_org_json }}</script>
+    <script type="application/ld+json">{{ schema_org_json|safe }}</script>
 
     {% include "component-dependencies.html" %}
     {% include "component-dependencies-quill.html" %}
@@ -84,7 +84,7 @@
 </head>
 
 <body hx-ext="preload">
-    {{ sidebar }} {% include "component-navbar.html" %}
+    {{ sidebar|safe }} {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
             <div class="card py-3 px-3 text-white" style="min-height: 85vh">
@@ -274,7 +274,7 @@
                 </div>
                 <hr />
                 <div class="my-1">
-                    <b class="text-secondary" hx-get="/hx/new_view/{{ medium_id }}" hx-trigger="load delay:5s">{{
+                    <b class="text-secondary" hx-post="/hx/new_view/{{ medium_id }}" hx-trigger="load delay:5s">{{
                         medium_views }}</b><b class="text-secondary">
                         {{ locale.t("mediumcard-views") }}, uploaded: {{ medium_upload }}</b>
                     <div id="description_wrapper" class="mt-3 description-wrapper description-collapsed">

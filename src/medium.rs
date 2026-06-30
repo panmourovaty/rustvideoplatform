@@ -35,7 +35,7 @@ fn parse_caption_entry(entry: &str) -> CaptionEntry {
 }
 
 #[derive(Template)]
-#[template(path = "pages/medium.html", escape = "none")]
+#[template(path = "pages/medium.html")]
 struct MediumTemplate {
     sidebar: String,
     medium_id: String,
@@ -56,7 +56,6 @@ struct MediumTemplate {
     medium_3d_original_ext: String,
     schema_org_json: String,
     config: Config,
-    common_headers: CommonHeaders,
     is_logged_in: bool,
     list_id: String,
     list_name: String,
@@ -110,6 +109,9 @@ async fn medium(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
+    if !is_valid_resource_id(&mediumid.to_ascii_lowercase()) {
+        return Html(Vec::new());
+    }
     let user = get_user_login(headers.clone(), &db, redis.clone()).await;
     let is_logged_in = user.is_some();
 
@@ -202,26 +204,12 @@ async fn medium(
     let medium_custom_font =
         std::path::Path::new(&format!("source/{}/captions/font.woff2", medium_id)).exists();
 
-    let medium_chapters_exist: bool;
-    if std::path::Path::new(&format!("source/{}/chapters.vtt", medium_id)).exists() {
-        medium_chapters_exist = true;
-    } else {
-        medium_chapters_exist = false;
-    }
-
-    let medium_previews_exist: bool;
-    if std::path::Path::new(&format!("source/{}/previews/previews.vtt", medium_id)).exists() {
-        medium_previews_exist = true;
-    } else {
-        medium_previews_exist = false;
-    }
-
-    let is_cmaf: bool;
-    if std::path::Path::new(&format!("source/{}/video/video.m3u8", medium_id)).exists() {
-        is_cmaf = true;
-    } else {
-        is_cmaf = false;
-    }
+    let medium_chapters_exist =
+        std::path::Path::new(&format!("source/{}/chapters.vtt", medium_id)).exists();
+    let medium_previews_exist =
+        std::path::Path::new(&format!("source/{}/previews/previews.vtt", medium_id)).exists();
+    let is_cmaf =
+        std::path::Path::new(&format!("source/{}/video/video.m3u8", medium_id)).exists();
 
     let medium_video_dimensions = if media_type == "video" {
         medium_video_dimensions(&medium_id)
@@ -255,7 +243,7 @@ async fn medium(
                 "@context": "https://schema.org",
                 "@type": "VideoObject",
                 "name": name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "contentUrl": format!("{}/m/{}/video-sm.mp4", config.site_url, medium_id),
                 "embedUrl": format!("{}/m/{}", config.site_url, medium_id),
@@ -271,9 +259,9 @@ async fn medium(
                 "@context": "https://schema.org",
                 "@type": "AudioObject",
                 "name": name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
-                "contentUrl": format!("{}/source/{}/audio.ogg", config.source_server_url, medium_id),
+                "contentUrl": format!("{}/source/{}/audio.ogg", config.site_url, medium_id),
                 "author": {
                     "@type": "Person",
                     "name": owner_name.clone(),
@@ -284,7 +272,7 @@ async fn medium(
                 "@context": "https://schema.org",
                 "@type": "ImageObject",
                 "name": name.clone(),
-                "contentUrl": format!("{}/source/{}/picture.avif", config.source_server_url, medium_id),
+                "contentUrl": format!("{}/source/{}/picture.avif", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -296,7 +284,7 @@ async fn medium(
                 "@context": "https://schema.org",
                 "@type": "DigitalDocument",
                 "name": name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -308,7 +296,7 @@ async fn medium(
                 "@context": "https://schema.org",
                 "@type": "3DModel",
                 "name": name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -318,7 +306,7 @@ async fn medium(
             }),
             _ => serde_json::json!({}),
         };
-        serde_json::to_string(&v).unwrap_or_default()
+        json_for_html_script(&v)
     };
 
     let locale = resolve_locale_noauth(
@@ -348,7 +336,6 @@ async fn medium(
         medium_3d_original_ext,
         schema_org_json,
         config,
-        common_headers,
         is_logged_in,
         list_id: String::new(),
         list_name: String::new(),
@@ -464,7 +451,7 @@ fn medium_video_xml_quoted_attr<'a>(element: &'a str, attr: &str, quote: char) -
             || element[..start]
                 .chars()
                 .next_back()
-                .map_or(false, |c| c.is_whitespace() || c == '<');
+                .is_some_and(|c| c.is_whitespace() || c == '<');
 
         if is_attr_name_boundary {
             let value_start = start + pattern.len();
@@ -563,7 +550,15 @@ video_1080.m3u8
     }
 }
 
-async fn medium_previews_prepare(Path(mediumid): Path<String>) -> Response<Body> {
+async fn medium_previews_prepare(
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
+    Path(mediumid): Path<String>,
+) -> Response<Body> {
+    if !can_access_media_request(&headers, &db, redis, &mediumid).await {
+        return StatusCode::NOT_FOUND.into_response();
+    }
     let source_file_path = format!("source/{}/previews/previews.vtt", mediumid);
 
     match tokio::fs::read_to_string(&source_file_path).await {
@@ -620,11 +615,17 @@ fn fix_vtt_urls(vtt_content: &str, mediumid: &str) -> String {
 
 async fn medium_description_prepare(
     Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
+    headers: HeaderMap,
     Path(mediumid): Path<String>,
-) -> Json<serde_json::Value> {
+) -> Response {
+    let mediumid = mediumid.to_ascii_lowercase();
+    if !can_access_media_request(&headers, &db, redis, &mediumid).await {
+        return StatusCode::NOT_FOUND.into_response();
+    }
     let result = db
         .session
-        .execute_unpaged(&db.get_media_description, (&mediumid.to_ascii_lowercase(),))
+        .execute_unpaged(&db.get_media_description, (&mediumid,))
         .await;
     let description = result
         .ok()
@@ -632,7 +633,7 @@ async fn medium_description_prepare(
         .and_then(|rows| rows.maybe_first_row::<(Option<String>,)>().ok().flatten())
         .and_then(|r| r.0)
         .unwrap_or_default();
-    Json(parse_medium_description(&description))
+    Json(parse_medium_description(&description)).into_response()
 }
 
 fn parse_medium_description(description: &str) -> serde_json::Value {
@@ -640,7 +641,7 @@ fn parse_medium_description(description: &str) -> serde_json::Value {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-mediumcard.html", escape = "none")]
+#[template(path = "pages/hx-mediumcard.html")]
 struct HXMediumCardTemplate {
     media: Vec<Medium>,
     config: Config,
@@ -651,10 +652,9 @@ struct HXMediumCardTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-mediumlist.html", escape = "none")]
+#[template(path = "pages/hx-mediumlist.html")]
 struct HXMediumListTemplate {
     current_medium_id: String,
-    list_id: String,
     media: Vec<Medium>,
     config: Config,
     locale: RequestLocale,

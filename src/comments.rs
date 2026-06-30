@@ -14,13 +14,12 @@ struct CommentsQuery {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-comments.html", escape = "none")]
+#[template(path = "pages/hx-comments.html")]
 struct HXCommentsTemplate {
     comments: Vec<Comment>,
     medium_id: String,
     next_page: Option<i64>,
     config: Config,
-    locale: RequestLocale,
 }
 
 const COMMENTS_PER_PAGE: i64 = 20;
@@ -28,12 +27,18 @@ const COMMENTS_PER_PAGE: i64 = 20;
 async fn hx_comments(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
-    Extension(localization): Extension<Arc<LocalizationService>>,
+    Extension(redis): Extension<RedisConn>,
     headers: HeaderMap,
     Path(mediumid): Path<String>,
     axum::extract::Query(query): axum::extract::Query<CommentsQuery>,
 ) -> axum::response::Html<Vec<u8>> {
+    if !can_access_media_request(&headers, &db, redis, &mediumid).await {
+        return Html(Vec::new());
+    }
     let page = query.page.unwrap_or(0);
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     // ScyllaDB doesn't support OFFSET, so fetch enough rows to cover page+1 pages and skip in app code.
     let fetch_limit = (page + 1) * COMMENTS_PER_PAGE + 1;
 
@@ -50,15 +55,22 @@ async fn hx_comments(
 
     let has_more = page_rows.len() as i64 > COMMENTS_PER_PAGE;
 
-    // Batch-fetch user info for each commenter
+    // Fetch each distinct commenter's profile at most once per page.
     let mut comments = Vec::new();
+    let mut user_cache: AHashMap<String, (String, Option<String>)> = AHashMap::new();
     for (id, user, text, time) in page_rows.into_iter().take(COMMENTS_PER_PAGE as usize) {
-        let (user_name, user_picture) = db.session.execute_unpaged(&db.get_user_by_login, (&user,))
-            .await
-            .ok()
-            .and_then(|r| r.into_rows_result().ok())
-            .and_then(|rows| rows.maybe_first_row::<(String, Option<String>)>().ok().flatten())
-            .unwrap_or_else(|| (user.clone(), None));
+        let (user_name, user_picture) = if let Some(cached) = user_cache.get(&user) {
+            cached.clone()
+        } else {
+            let fetched = db.session.execute_unpaged(&db.get_user_by_login, (&user,))
+                .await
+                .ok()
+                .and_then(|r| r.into_rows_result().ok())
+                .and_then(|rows| rows.maybe_first_row::<(String, Option<String>)>().ok().flatten())
+                .unwrap_or_else(|| (user.clone(), None));
+            user_cache.insert(user.clone(), fetched.clone());
+            fetched
+        };
 
         let text_value: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
 
@@ -74,16 +86,11 @@ async fn hx_comments(
 
     let next_page = if has_more { Some(page + 1) } else { None };
 
-    let common_headers = extract_common_headers(&headers);
-    let locale = resolve_locale_noauth(
-        common_headers.accept_language.as_deref(), &config.locale, &localization,
-    );
     let template = HXCommentsTemplate {
         comments,
         medium_id: mediumid,
         next_page,
         config,
-        locale,
     };
     Html(minifi_html(template.render().unwrap()))
 }
@@ -103,7 +110,7 @@ async fn comment_delta(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-comment-single.html", escape = "none")]
+#[template(path = "pages/hx-comment-single.html")]
 struct HXCommentSingleTemplate {
     comment: Comment,
     config: Config,
@@ -117,13 +124,16 @@ async fn hx_add_comment(
     Path(mediumid): Path<String>,
     Form(form): Form<CommentForm>,
 ) -> impl IntoResponse {
-    let user = get_user_login(headers, &db, redis.clone()).await;
+    let user = get_user_login(headers.clone(), &db, redis.clone()).await;
 
     if user.is_none() {
         return (StatusCode::UNAUTHORIZED, Html(Vec::new()));
     }
 
     let user = user.unwrap();
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return (StatusCode::FORBIDDEN, Html(Vec::new()));
+    }
 
     let delta: serde_json::Value =
         serde_json::from_str(&form.text).unwrap_or_default();
@@ -135,12 +145,17 @@ async fn hx_add_comment(
         .unwrap()
         .as_millis() as i64;
 
-    // Insert comment into ScyllaDB
-    let _ = db.session.execute_unpaged(
-        &db.insert_comment,
-        (&mediumid, now, comment_id, &user.login, &delta_string),
-    )
-    .await;
+    if db
+        .session
+        .execute_unpaged(
+            &db.insert_comment,
+            (&mediumid, now, comment_id, &user.login, &delta_string),
+        )
+        .await
+        .is_err()
+    {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Html(Vec::new()));
+    }
 
     // Fetch user info separately
     let (user_name, user_picture) = db.session.execute_unpaged(&db.get_user_by_login, (&user.login,))

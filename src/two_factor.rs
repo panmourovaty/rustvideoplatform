@@ -95,6 +95,21 @@ async fn hx_login_2fa_totp(
         _ => err_html!("Session expired. Please log in again."),
     };
 
+    let attempt_key = format!("ratelimit:totp:{}", form.pending_token);
+    if rate_limit_exceeded(
+        &mut redis,
+        &attempt_key,
+        TOTP_ATTEMPT_LIMIT,
+        LOGIN_ATTEMPT_WINDOW_SECONDS,
+    )
+    .await
+    {
+        let _: Result<(), _> = redis
+            .del(format!("pending_2fa:{}", form.pending_token))
+            .await;
+        err_html!("Too many attempts. Please log in again.");
+    }
+
     // Fetch TOTP secret
     let totp_secret: Option<String> = db.session
         .execute_unpaged(&db.get_user_totp_secret, (&login,))
@@ -123,16 +138,24 @@ async fn hx_login_2fa_totp(
         err_html!("Invalid code. Please try again.");
     }
 
+    let consumed_login: Option<String> = redis::cmd("GETDEL")
+        .arg(format!("pending_2fa:{}", form.pending_token))
+        .query_async(&mut redis)
+        .await
+        .ok();
+    if consumed_login.as_deref() != Some(login.as_str()) {
+        err_html!("Session expired. Please log in again.");
+    }
+
     // Create real session
-    let session_token = generate_secure_string();
-    let _: () = redis
-        .set(format!("session:{}", session_token), &login)
-        .await
-        .unwrap();
-    let _: () = redis
-        .del(format!("pending_2fa:{}", form.pending_token))
-        .await
-        .unwrap_or(());
+    let session_token = match create_authenticated_session(&mut redis, &login, &config).await {
+        Ok(token) => token,
+        Err(_) => err_html!("Server error. Please try again."),
+    };
+    let _: Result<(), _> = redis.del(&attempt_key).await;
+    let _: Result<(), _> = redis
+        .del(format!("ratelimit:login:{}", login.to_ascii_lowercase()))
+        .await;
 
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -146,11 +169,10 @@ async fn hx_login_2fa_totp(
 // ── TOTP settings ────────────────────────────────────────────────────────────
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-2fa-totp-setup.html", escape = "none")]
+#[template(path = "pages/hx-settings-2fa-totp-setup.html")]
 struct HXSettings2FATotpSetupTemplate {
     qr_base64: String,
     secret_base32: String,
-    totp_url: String,
     setup_token: String,
     locale: RequestLocale,
 }
@@ -188,25 +210,26 @@ async fn hx_settings_2fa_totp_setup(
             ))
         }
     };
-    let totp_url = totp.get_url();
-
     // Store pending setup (5-minute TTL)
     let setup_token = generate_secure_string();
-    let _: () = redis
+    let setup_result: Result<(), _> = redis
         .set_ex(
             format!("totp_setup:{}", setup_token),
             format!("{}:{}", user_info.login, secret_base32),
             300u64,
         )
-        .await
-        .unwrap_or(());
+        .await;
+    if setup_result.is_err() {
+        return Html(minifi_html(
+            "<b class=\"text-danger\">Failed to create TOTP setup session.</b>".to_owned(),
+        ));
+    }
 
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(Some(&user_info), &common_headers, &db, &localization, &config).await;
     let template = HXSettings2FATotpSetupTemplate {
         qr_base64,
         secret_base32,
-        totp_url,
         setup_token,
         locale,
     };
@@ -281,6 +304,17 @@ async fn hx_settings_2fa_totp_verify_setup(
         ));
     }
 
+    let consumed_setup: Option<String> = redis::cmd("GETDEL")
+        .arg(format!("totp_setup:{}", form.setup_token))
+        .query_async(&mut redis)
+        .await
+        .ok();
+    if consumed_setup.as_deref() != Some(setup_data.as_str()) {
+        return Html(minifi_html(
+            "<b class=\"text-danger\">Setup session expired. Please try again.</b>".to_owned(),
+        ));
+    }
+
     let result = db.session
         .execute_unpaged(&db.update_user_totp, (&secret_base32, &user_info.login))
         .await;
@@ -290,11 +324,6 @@ async fn hx_settings_2fa_totp_verify_setup(
             "<b class=\"text-danger\">Failed to save TOTP configuration.</b>".to_owned(),
         ));
     }
-
-    let _: () = redis
-        .del(format!("totp_setup:{}", form.setup_token))
-        .await
-        .unwrap_or(());
 
     Html(minifi_html(
         "<b class=\"text-success\">TOTP authenticator enabled!</b>\
@@ -338,11 +367,10 @@ async fn hx_settings_2fa_totp_disable(
 struct WebauthnCredInfo {
     id: String,
     name: String,
-    created: i64,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-2fa.html", escape = "none")]
+#[template(path = "pages/hx-settings-2fa.html")]
 struct HXSettings2FATemplate {
     totp_enabled: bool,
     webauthn_creds: Vec<WebauthnCredInfo>,
@@ -385,7 +413,7 @@ async fn hx_settings_2fa(
             .map(|rows| rows.rows::<(String, String, String, i64)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
             .unwrap_or_default()
             .into_iter()
-            .map(|(id, name, _passkey_json, created)| WebauthnCredInfo { id, name, created })
+            .map(|(id, name, _passkey_json, _created)| WebauthnCredInfo { id, name })
             .collect();
 
     let webauthn_available = webauthn_lock.read().map(|g| g.is_some()).unwrap_or(false);
@@ -435,7 +463,15 @@ async fn hx_webauthn_register_start(
     let user_uuid = user_uuid_from_login(&user_info.login);
     let cred_name = req
         .credential_name
+        .map(|name| name.trim().to_owned())
+        .filter(|name| !name.is_empty())
         .unwrap_or_else(|| "Security Key".to_owned());
+    if cred_name.len() > 100 {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "Credential name is too long"}),
+        );
+    }
 
     // Acquire lock, do sync webauthn work, drop lock – no awaits while held
     let webauthn_result = {
@@ -467,16 +503,29 @@ async fn hx_webauthn_register_start(
 
     // Awaits after lock is dropped
     let token = generate_secure_string();
-    let state_json = serde_json::to_string(&reg_state).unwrap_or_default();
+    let state_json = match serde_json::to_string(&reg_state) {
+        Ok(state) => state,
+        Err(_) => {
+            return json_resp(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({"error": "Failed to create registration state"}),
+            )
+        }
+    };
     let meta = serde_json::json!({
         "login": user_info.login,
         "cred_name": cred_name,
         "state": state_json,
     });
-    let _: () = redis
+    let store_result: Result<(), _> = redis
         .set_ex(format!("webauthn_reg:{}", token), meta.to_string(), 300u64)
-        .await
-        .unwrap_or(());
+        .await;
+    if store_result.is_err() {
+        return json_resp(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::json!({"error": "Failed to create registration session"}),
+        );
+    }
 
     json_resp(
         StatusCode::OK,
@@ -507,7 +556,11 @@ async fn hx_webauthn_register_finish(
         }
     };
 
-    let meta_str: Option<String> = redis.get(format!("webauthn_reg:{}", token)).await.ok();
+    let meta_str: Option<String> = redis::cmd("GETDEL")
+        .arg(format!("webauthn_reg:{}", token))
+        .query_async(&mut redis)
+        .await
+        .ok();
     let meta_str = match meta_str {
         Some(s) => s,
         None => {
@@ -565,23 +618,35 @@ async fn hx_webauthn_register_finish(
     };
 
     let record_id = generate_secure_string();
-    let passkey_json = serde_json::to_string(&passkey).unwrap_or_default();
+    let passkey_json = match serde_json::to_string(&passkey) {
+        Ok(passkey) => passkey,
+        Err(_) => {
+            return json_resp(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({"error": "Failed to save credential"}),
+            )
+        }
+    };
     let created = chrono::Utc::now().timestamp_millis();
 
     // Write to both tables
     let result1 = db.session
         .execute_unpaged(&db.insert_webauthn_cred, (&record_id, &user_info.login, &cred_name, &passkey_json, created))
         .await;
+    if result1.is_err() {
+        return json_resp(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::json!({"error": "Failed to save credential"}),
+        );
+    }
     let result2 = db.session
         .execute_unpaged(&db.insert_webauthn_cred_by_user, (&user_info.login, created, &record_id, &cred_name, &passkey_json))
         .await;
-
-    let _: () = redis
-        .del(format!("webauthn_reg:{}", token))
-        .await
-        .unwrap_or(());
-
-    if result1.is_err() || result2.is_err() {
+    if result2.is_err() {
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_webauthn_cred, (&record_id,))
+            .await;
         return json_resp(
             StatusCode::INTERNAL_SERVER_ERROR,
             serde_json::json!({"error": "Failed to save credential"}),
@@ -622,7 +687,7 @@ async fn hx_settings_2fa_webauthn_delete(
         }
     };
 
-    let (_id, cred_user_login, _cred_name, _passkey_json, created) = cred;
+    let (_id, cred_user_login, cred_name, passkey_json, created) = cred;
 
     // Verify ownership
     if cred_user_login != user_info.login {
@@ -631,13 +696,37 @@ async fn hx_settings_2fa_webauthn_delete(
         ));
     }
 
-    // Delete from both tables
-    let _ = db.session
+    if db.session
         .execute_unpaged(&db.delete_webauthn_cred, (&cred_id,))
-        .await;
-    let _ = db.session
+        .await
+        .is_err()
+    {
+        return Html(minifi_html(
+            "<b class=\"text-danger\">Failed to remove security key.</b>".to_owned(),
+        ));
+    }
+    if db.session
         .execute_unpaged(&db.delete_webauthn_cred_by_user, (&cred_user_login, created, &cred_id))
-        .await;
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_webauthn_cred,
+                (
+                    &cred_id,
+                    &cred_user_login,
+                    &cred_name,
+                    &passkey_json,
+                    created,
+                ),
+            )
+            .await;
+        return Html(minifi_html(
+            "<b class=\"text-danger\">Failed to remove security key.</b>".to_owned(),
+        ));
+    }
 
     Html(minifi_html(
         "<b class=\"text-success\">Security key removed.</b>\
@@ -688,15 +777,28 @@ async fn hx_webauthn_auth_start(
     };
 
     let token = generate_secure_string();
-    let state_json = serde_json::to_string(&auth_state).unwrap_or_default();
+    let state_json = match serde_json::to_string(&auth_state) {
+        Ok(state) => state,
+        Err(_) => {
+            return json_resp(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({"error": "Failed to create authentication state"}),
+            )
+        }
+    };
     let meta = serde_json::json!({
         "login": req.username,
         "state": state_json,
     });
-    let _: () = redis
+    let store_result: Result<(), _> = redis
         .set_ex(format!("webauthn_auth:{}", token), meta.to_string(), 300u64)
-        .await
-        .unwrap_or(());
+        .await;
+    if store_result.is_err() {
+        return json_resp(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::json!({"error": "Failed to create authentication session"}),
+        );
+    }
 
     json_resp(
         StatusCode::OK,
@@ -727,7 +829,11 @@ async fn hx_webauthn_auth_finish(
         None => json_err!(StatusCode::BAD_REQUEST, "Missing token"),
     };
 
-    let meta_str: Option<String> = redis.get(format!("webauthn_auth:{}", token)).await.ok();
+    let meta_str: Option<String> = redis::cmd("GETDEL")
+        .arg(format!("webauthn_auth:{}", token))
+        .query_async(&mut redis)
+        .await
+        .ok();
     let meta_str = match meta_str {
         Some(s) => s,
         None => json_err!(StatusCode::BAD_REQUEST, "Authentication session expired"),
@@ -761,28 +867,42 @@ async fn hx_webauthn_auth_finish(
         Err((status, msg)) => return json_resp(status, serde_json::json!({"error": msg})),
     };
 
-    // Update passkey counter
+    let mut counter_update_failed = false;
     let passkeys_with_ids = load_passkeys(&db, &login).await;
     for (record_id, mut pk) in passkeys_with_ids {
         if pk.update_credential(&auth_result) == Some(true) {
-            let passkey_json = serde_json::to_string(&pk).unwrap_or_default();
-            let _ = db.session
+            let Ok(passkey_json) = serde_json::to_string(&pk) else {
+                counter_update_failed = true;
+                continue;
+            };
+            if db
+                .session
                 .execute_unpaged(&db.update_webauthn_passkey, (&passkey_json, &record_id))
-                .await;
+                .await
+                .is_err()
+            {
+                counter_update_failed = true;
+            }
         }
     }
 
-    let _: () = redis
-        .del(format!("webauthn_auth:{}", token))
-        .await
-        .unwrap_or(());
+    if counter_update_failed {
+        return json_resp(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::json!({"error": "Failed to update credential"}),
+        );
+    }
 
     // Create session and set cookie
-    let session_token = generate_secure_string();
-    let _: () = redis
-        .set(format!("session:{}", session_token), &login)
-        .await
-        .unwrap();
+    let session_token = match create_authenticated_session(&mut redis, &login, &config).await {
+        Ok(token) => token,
+        Err(_) => {
+            return json_resp(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({"error": "Failed to create session"}),
+            )
+        }
+    };
 
     let mut response = (StatusCode::OK, axum::Json(serde_json::json!({"success": true})))
         .into_response();

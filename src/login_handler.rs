@@ -1,8 +1,7 @@
 #[derive(Template)]
-#[template(path = "pages/login.html", escape = "none")]
+#[template(path = "pages/login.html")]
 struct LoginTemplate {
     config: Config,
-    common_headers: CommonHeaders,
     locale: RequestLocale,
     resolved_lang: String,
 }
@@ -16,7 +15,11 @@ async fn login(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let template = LoginTemplate { config, common_headers, locale, resolved_lang };
+    let template = LoginTemplate {
+        config,
+        locale,
+        resolved_lang,
+    };
     Html(minifi_html(template.render().unwrap()))
 }
 
@@ -39,6 +42,22 @@ async fn hx_login(
     Extension(mut redis): Extension<RedisConn>,
     Form(form): Form<LoginForm>,
 ) -> impl IntoResponse {
+    let rate_key = format!("ratelimit:login:{}", form.login.to_ascii_lowercase());
+    if rate_limit_exceeded(
+        &mut redis,
+        &rate_key,
+        LOGIN_ATTEMPT_LIMIT,
+        LOGIN_ATTEMPT_WINDOW_SECONDS,
+    )
+    .await
+    {
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            HeaderMap::new(),
+            "<b class=\"text-danger\">Too many login attempts. Try again later.</b>".to_owned(),
+        );
+    }
+
     let password_hash_result = db.session.execute_unpaged(&db.get_user_password, (&form.login,)).await;
 
     let password_hash = match password_hash_result
@@ -81,14 +100,20 @@ async fn hx_login(
         if totp_enabled {
             // Create a short-lived pending session and ask for TOTP code
             let pending_token = generate_secure_string();
-            let _: () = redis
+            let pending_result: Result<(), _> = redis
                 .set_ex(
                     format!("pending_2fa:{}", pending_token),
                     &form.login,
                     300u64,
                 )
-                .await
-                .unwrap_or(());
+                .await;
+            if pending_result.is_err() {
+                return (
+                    StatusCode::OK,
+                    HeaderMap::new(),
+                    "<b class=\"text-danger\">Server error, please try again</b>".to_owned(),
+                );
+            }
 
             let response_body = "<p class=\"mt-2\">Enter your authenticator code:</p>\
                 <form hx-post=\"/hx/login/2fa/totp\" hx-target=\"#logininfo\" hx-swap=\"innerHTML\">\
@@ -103,40 +128,46 @@ async fn hx_login(
             return (StatusCode::OK, HeaderMap::new(), response_body);
         }
 
-        let session_cookie_value = generate_secure_string();
-        if redis
-            .set::<_, _, ()>(format!("session:{}", session_cookie_value), &form.login)
-            .await
-            .is_err()
-        {
-            return (
-                StatusCode::OK,
-                HeaderMap::new(),
-                "<b class=\"text-danger\">Server error, please try again</b>".to_owned(),
-            );
-        }
+        let session_cookie_value =
+            match create_authenticated_session(&mut redis, &form.login, &config).await {
+                Ok(token) => token,
+                Err(_) => {
+                    return (
+                        StatusCode::OK,
+                        HeaderMap::new(),
+                        "<b class=\"text-danger\">Server error, please try again</b>".to_owned(),
+                    );
+                }
+            };
+        let _: Result<(), _> = redis.del(&rate_key).await;
 
         let mut response_headers = HeaderMap::new();
         response_headers.insert("Set-Cookie", build_session_cookie(&session_cookie_value, &config).parse().unwrap());
         response_headers.insert("HX-Redirect", "/".parse().unwrap());
-        return (StatusCode::OK, response_headers, String::new());
+        (StatusCode::OK, response_headers, String::new())
     } else {
         let response_headers = HeaderMap::new();
         let response_body = "<b class=\"text-danger\">Wrong user name or password</b>".to_owned();
 
-        return (StatusCode::OK, response_headers, response_body);
+        (StatusCode::OK, response_headers, response_body)
     }
 }
 
 async fn hx_logout(
     headers: HeaderMap,
+    Extension(config): Extension<Config>,
     Extension(mut redis): Extension<RedisConn>,
-) -> axum::response::Html<String> {
+) -> impl IntoResponse {
     if let Some(session_cookie) = parse_all_cookies(&headers).get("session").cloned() {
         let _: () = redis
             .del(format!("session:{}", session_cookie))
             .await
             .unwrap_or(());
     }
-    Html("<h1>LOGOUT SUCESS</h1><script>window.location.replace(\"/\");</script>".to_owned())
+    let mut response_headers = HeaderMap::new();
+    if let Ok(cookie) = clear_session_cookie(&config).parse() {
+        response_headers.insert(axum::http::header::SET_COOKIE, cookie);
+    }
+    response_headers.insert("HX-Redirect", axum::http::HeaderValue::from_static("/"));
+    (StatusCode::OK, response_headers, String::new())
 }

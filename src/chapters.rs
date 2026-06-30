@@ -10,6 +10,9 @@ async fn studio_chapters_get(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::Value::Array(vec![]));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::Value::Array(vec![]));
@@ -44,6 +47,12 @@ async fn studio_chapters_save(
     Path(mediumid): Path<String>,
     Json(chapters): Json<Vec<ChapterData>>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -108,7 +117,7 @@ fn parse_webvtt_chapters(content: &str) -> Vec<ChapterData> {
 
     // Skip until WEBVTT header
     let mut found_header = false;
-    while let Some(line) = lines.next() {
+    for line in lines.by_ref() {
         if line.trim().starts_with("WEBVTT") {
             found_header = true;
             break;
@@ -121,7 +130,7 @@ fn parse_webvtt_chapters(content: &str) -> Vec<ChapterData> {
     loop {
         // Find next timestamp line, skipping empty lines and cue identifiers
         let mut timestamp_line = None;
-        while let Some(line) = lines.next() {
+        for line in lines.by_ref() {
             let trimmed = line.trim();
             if trimmed.contains("-->") {
                 timestamp_line = Some(trimmed.to_string());

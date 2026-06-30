@@ -22,17 +22,22 @@
 </div>
 <script>
 (function() {
-    var MSG_SELECT = '{{ locale.t("studio-thumbnail-select-validation") }}';
-    var MSG_UPLOADING = '{{ locale.t("studio-thumbnail-uploading") }}';
-    var MSG_UPLOAD_SUCCESS = '{{ locale.t("studio-thumbnail-upload-success") }}';
-    var MSG_UPLOAD_FAILED = '{{ locale.t("studio-thumbnail-upload-failed") }}';
-    var MSG_REMOVE_CONFIRM = '{{ locale.t("studio-thumbnail-remove-confirm") }}';
-    var MSG_REMOVE_SUCCESS = '{{ locale.t("studio-thumbnail-remove-success") }}';
+    var MSG_SELECT = {{ locale.t("studio-thumbnail-select-validation")|json|safe }};
+    var MSG_UPLOADING = {{ locale.t("studio-thumbnail-uploading")|json|safe }};
+    var MSG_UPLOAD_SUCCESS = {{ locale.t("studio-thumbnail-upload-success")|json|safe }};
+    var MSG_UPLOAD_FAILED = {{ locale.t("studio-thumbnail-upload-failed")|json|safe }};
+    var MSG_REMOVE_CONFIRM = {{ locale.t("studio-thumbnail-remove-confirm")|json|safe }};
+    var MSG_REMOVE_SUCCESS = {{ locale.t("studio-thumbnail-remove-success")|json|safe }};
 
     function showThumbStatus(type, msg) {
         var el = document.getElementById('thumbnail-status');
         var icon = type === 'success' ? 'fa-check' : 'fa-xmark';
-        el.innerHTML = '<span class="text-' + type + '"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+        var span = document.createElement('span');
+        span.className = 'text-' + type;
+        var iconEl = document.createElement('i');
+        iconEl.className = 'fa-solid ' + icon;
+        span.append(iconEl, ' ' + msg);
+        el.replaceChildren(span);
         setTimeout(function() { el.innerHTML = ''; }, 4000);
     }
 

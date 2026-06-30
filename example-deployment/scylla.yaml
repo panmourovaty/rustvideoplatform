@@ -17,9 +17,8 @@ seed_provider:
 # (The schema CQL sets replication per-keyspace; this is the cluster default.)
 endpoint_snitch: SimpleSnitch
 
-# Developer mode relaxes production checks (clock sync, disk I/O, etc.)
-# Remove for production deployments.
-developer_mode: true
+# Keep production safety checks enabled.
+developer_mode: false
 
 # Data directories
 data_file_directories:

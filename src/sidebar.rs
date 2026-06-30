@@ -1,5 +1,5 @@
 #[derive(Template)]
-#[template(path = "pages/component-sidebar.html", escape = "none")]
+#[template(path = "pages/component-sidebar.html")]
 struct SidebarComponentTemplate {
     config: Config,
     active_item: String,
@@ -15,7 +15,7 @@ fn generate_sidebar(config: &Config, active_item: String, locale: RequestLocale)
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-sidebar.html", escape = "none")]
+#[template(path = "pages/hx-sidebar.html")]
 struct HXSidebarTemplate {
     active_item: String,
     locale: RequestLocale,

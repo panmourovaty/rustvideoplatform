@@ -238,8 +238,8 @@ impl LocalizationService {
 
     /// Resolve the language for a single request.
     ///
-    /// * `user_preferred`  – value from DB: `"browser"` means use browser
-    ///                        detection, any other value is a language code.
+    /// * `user_preferred` – value from DB: `"browser"` means use browser
+    ///   detection, any other value is a language code.
     /// * `accept_language` – raw `Accept-Language` header (may be `None`).
     /// * `config_fallback` – server-wide locale from `config.json`.
     pub fn resolve_language(

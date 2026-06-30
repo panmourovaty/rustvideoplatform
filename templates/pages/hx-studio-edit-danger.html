@@ -7,12 +7,14 @@
                 <strong>{{ locale.t("studio-danger-delete-label") }}</strong>
                 <p class="text-secondary mb-0 mt-1">{{ locale.t("studio-danger-delete-description") }} "{{ medium_name }}"</p>
             </div>
+            <form method="post" action="/hx/studio/delete/{{ medium_id }}" onsubmit="return confirm('Are you sure you want to delete this media? This action cannot be undone. All comments and list entries will also be removed.');">
             <button
+                type="submit"
                 class="btn btn-outline-danger ms-3"
-                onclick="if(confirm('Are you sure you want to delete &quot;{{ medium_name }}&quot;? This action cannot be undone. All comments and list entries will also be removed.')) { window.location.href='/hx/studio/delete/{{ medium_id }}'; }"
             >
                 <i class="fa-solid fa-trash"></i>&nbsp;{{ locale.t("studio-danger-delete-button") }}
             </button>
+            </form>
         </div>
     </div>
 </div>

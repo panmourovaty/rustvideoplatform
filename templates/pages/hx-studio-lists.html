@@ -5,7 +5,7 @@
             <a href="/l/{{ list.id }}" class="text-decoration-none" preload="mouseover">
                 <b class="text-white"><i class="fa-solid fa-list me-2"></i>{{ list.name }}</b>
             </a>
-            <span hx-get="/hx/deletelist/{{ list.id }}" hx-confirm="Are you sure you want to delete this list?" class="text-secondary" style="cursor:pointer;" title="Delete list"><i class="fa-solid fa-trash text-danger"></i></span>
+            <span hx-post="/hx/deletelist/{{ list.id }}" hx-confirm="Are you sure you want to delete this list?" class="text-secondary" style="cursor:pointer;" title="Delete list"><i class="fa-solid fa-trash text-danger"></i></span>
         </div>
         <p class="text-secondary mb-0">{{ list.item_count.unwrap_or(0) }} items
             {% if list.visibility == "public" %}

@@ -14,12 +14,12 @@
     <meta property="og:description" content="{{ config.description }}" />
     <meta property="og:image" content="{{ config.source_server_url }}/source/favicon.svg" />
     <meta property="og:site_name" content="{{ config.instancename }}" />
-    <script type="application/ld+json">{{ schema_org_json }}</script>
+    <script type="application/ld+json">{{ schema_org_json|safe }}</script>
 </head>
 
 <body hx-ext="preload">
     {% set page_title = locale.t("search-page-title") %}
-    {{ sidebar }}
+    {{ sidebar|safe }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12">

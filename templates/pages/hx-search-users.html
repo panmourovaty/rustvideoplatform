@@ -14,7 +14,7 @@
         {% endif %}
     </div>
     <div class="search-card-info">
-        <h5 class="search-card-title">{{ hit.highlighted_name }}</h5>
+        <h5 class="search-card-title">{{ hit.highlighted_name|safe }}</h5>
         <div class="search-card-meta">
             <span class="search-card-owner"><i class="fa-solid fa-at me-1"></i>{{ hit.login }}</span>
         </div>

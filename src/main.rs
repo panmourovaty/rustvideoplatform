@@ -15,9 +15,10 @@ use argon2::password_hash::PasswordHash;
 use askama::Template;
 use axum::{
     body::Body,
-    extract::{DefaultBodyLimit, Form, Multipart, Path},
+    extract::{DefaultBodyLimit, Form, Multipart, OriginalUri, Path},
     http::header::HeaderMap,
-    http::header::{ACCEPT_LANGUAGE, COOKIE, HOST, USER_AGENT},
+    http::header::{ACCEPT_LANGUAGE, ORIGIN, REFERER},
+    http::{Method, Request},
     middleware::Next,
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
@@ -30,8 +31,8 @@ use redis::AsyncCommands;
 use serde::Deserialize;
 use serde::Serialize;
 mod db;
-use db::ScyllaDb;
 use axum_server::tls_rustls::RustlsConfig;
+use db::ScyllaDb;
 use std::io::BufRead;
 use std::sync::Arc;
 use tokio::{fs, io, io::AsyncWriteExt};
@@ -39,12 +40,16 @@ use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
 
 // HTTP/3 / QUIC
-use std::net::SocketAddr;
-use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use quinn::{Endpoint, ServerConfig as QuinnServerConfig};
-use axum::http::Request;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use std::net::SocketAddr;
 
 type RedisConn = redis::aio::ConnectionManager;
+
+const DEFAULT_SESSION_TTL_SECONDS: u64 = 24 * 60 * 60;
+const LOGIN_ATTEMPT_LIMIT: u64 = 10;
+const LOGIN_ATTEMPT_WINDOW_SECONDS: i64 = 15 * 60;
+const TOTP_ATTEMPT_LIMIT: u64 = 8;
 
 #[derive(Deserialize, Clone)]
 struct MeilisearchEmbedderConfig {
@@ -67,6 +72,7 @@ struct Config {
     meilisearch_embedder: Option<MeilisearchEmbedderConfig>,
     site_url: String,
     source_server_url: String,
+    session_ttl_seconds: Option<u64>,
 
     /// WebAuthn Relying Party ID (e.g. "example.com"). Required to enable WebAuthn/passkey login.
     webauthn_rp_id: Option<String>,
@@ -97,18 +103,76 @@ struct Config {
     enable_http3: Option<bool>,
 }
 
-fn request_authority<B>(req: &Request<B>) -> Option<String> {
-    req.headers()
-        .get(HOST)
-        .and_then(|h| h.to_str().ok())
-        .map(str::to_string)
-        .or_else(|| req.uri().authority().map(|a| a.as_str().to_string()))
+fn configured_origin(config: &Config) -> String {
+    url::Url::parse(&config.site_url)
+        .ok()
+        .map(|url| url.origin().ascii_serialization())
+        .unwrap_or_default()
 }
 
-fn request_hostname<B>(req: &Request<B>) -> String {
-    request_authority(req)
-        .map(|h| h.split(':').next().unwrap_or(&h).to_string())
-        .unwrap_or_else(|| "localhost".to_string())
+fn request_has_allowed_origin(headers: &HeaderMap, allowed_origin: &str) -> bool {
+    if allowed_origin.is_empty() {
+        return false;
+    }
+
+    if let Some(origin) = headers.get(ORIGIN).and_then(|value| value.to_str().ok()) {
+        return origin == allowed_origin;
+    }
+
+    headers
+        .get(REFERER)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|referer| url::Url::parse(referer).ok())
+        .is_some_and(|url| url.origin().ascii_serialization() == allowed_origin)
+}
+
+async fn enforce_same_origin(req: Request<Body>, next: Next, allowed_origin: String) -> Response {
+    if matches!(
+        *req.method(),
+        Method::POST | Method::PUT | Method::PATCH | Method::DELETE
+    ) && !request_has_allowed_origin(req.headers(), &allowed_origin)
+    {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+
+    next.run(req).await
+}
+
+async fn authorize_source_request(
+    req: Request<Body>,
+    next: Next,
+    db: ScyllaDb,
+    redis: RedisConn,
+) -> Response {
+    let original_path = req
+        .extensions()
+        .get::<OriginalUri>()
+        .map(|uri| uri.0.path())
+        .unwrap_or_else(|| req.uri().path());
+    let relative_path = original_path
+        .strip_prefix("/source/")
+        .unwrap_or(original_path.trim_start_matches('/'));
+    let Some(resource_id) = relative_path.split('/').next() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    if matches!(
+        resource_id,
+        "favicon.svg" | "system_style" | "system_pregen"
+    ) {
+        return next.run(req).await;
+    }
+
+    if !is_valid_resource_id(resource_id) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    let normally_accessible =
+        can_access_media_request(req.headers(), &db, redis, resource_id).await;
+    if !normally_accessible && !is_public_profile_asset(&db, resource_id, relative_path).await {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    next.run(req).await
 }
 
 fn load_certs_from_pem(cert_pem: &[u8]) -> Vec<CertificateDer<'static>> {
@@ -152,8 +216,27 @@ async fn main() {
         .install_default()
         .expect("Failed to install rustls crypto provider");
 
-    let config: Config =
+    let mut config: Config =
         serde_json::from_str(&fs::read_to_string("config.json").await.unwrap()).unwrap();
+
+    let public_site =
+        url::Url::parse(&config.site_url).expect("config: site_url must be an absolute URL");
+    if !matches!(public_site.scheme(), "http" | "https") {
+        panic!("config: site_url must use http or https");
+    }
+    let allowed_origin = configured_origin(&config);
+
+    // Media must pass through this application so visibility checks cannot be bypassed
+    // through an unauthenticated static-file host.
+    if !config.source_server_url.is_empty() {
+        eprintln!(
+            "WARNING: source_server_url is ignored; media is served through authenticated /source routes"
+        );
+        config.source_server_url.clear();
+    }
+    if let Ok(meilisearch_key) = std::env::var("MEILISEARCH_KEY") {
+        config.meilisearch_key = Some(meilisearch_key);
+    }
 
     // Extract TLS/compression settings before config is moved into the Extension layer.
     let tls_cert = config.tls_cert.clone();
@@ -167,17 +250,20 @@ async fn main() {
     // HSTS is only meaningful over HTTPS; pre-compute the flag used in the middleware.
     let hsts_active = tls_cert.is_some() && enable_hsts;
 
-    let keyspace = config.scylla_keyspace.clone().unwrap_or_else(|| "videoplatform".to_string());
+    let keyspace = config
+        .scylla_keyspace
+        .clone()
+        .unwrap_or_else(|| "videoplatform".to_string());
     let db = ScyllaDb::connect(&config.scylla_nodes, &keyspace)
         .await
         .expect("Failed to connect to ScyllaDB");
-    println!("ScyllaDB connected: nodes={:?}, keyspace={}", &config.scylla_nodes, keyspace);
+    println!(
+        "ScyllaDB connected: nodes={:?}, keyspace={}",
+        &config.scylla_nodes, keyspace
+    );
 
-    let meilisearch_client = MeilisearchClient::new(
-        &config.meilisearch_url,
-        config.meilisearch_key.as_deref(),
-    )
-    .unwrap();
+    let meilisearch_client =
+        MeilisearchClient::new(&config.meilisearch_url, config.meilisearch_key.as_deref()).unwrap();
 
     // Verify Meilisearch connectivity at startup
     match meilisearch_client.health().await {
@@ -200,7 +286,10 @@ async fn main() {
     for index_name in &["media", "lists", "users"] {
         match meilisearch_client.get_index(index_name).await {
             Ok(index) => {
-                println!("Meilisearch '{}' index found: uid={}", index_name, index.uid);
+                println!(
+                    "Meilisearch '{}' index found: uid={}",
+                    index_name, index.uid
+                );
             }
             Err(e) => {
                 eprintln!(
@@ -217,14 +306,19 @@ async fn main() {
 
     let redis_client = redis::Client::open(config.redis_url.as_str()).unwrap();
     let redis_conn = redis_client.get_connection_manager().await.unwrap();
-    println!("Redis connected: url={}", &config.redis_url);
+    println!("Redis connected");
 
     // Build the localization service (parses embedded FTL files at startup)
     let localization = LocalizationService::new();
     println!(
         "Localization: {} language(s) loaded: {}",
         localization.available_langs.len(),
-        localization.available_langs.iter().map(|l| l.code.as_str()).collect::<Vec<_>>().join(", ")
+        localization
+            .available_langs
+            .iter()
+            .map(|l| l.code.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
     );
 
     // Build WebAuthn instance (optional – only when rp_id and rp_origin are configured)
@@ -238,11 +332,16 @@ async fn main() {
                     .rp_name(&config.instancename)
                     .build()
                     .expect("Failed to build WebAuthn");
-                println!("WebAuthn enabled: rp_id={}, origin={}", rp_id, rp_origin_str);
+                println!(
+                    "WebAuthn enabled: rp_id={}, origin={}",
+                    rp_id, rp_origin_str
+                );
                 Some(webauthn)
             }
             _ => {
-                println!("WebAuthn disabled (webauthn_rp_id / webauthn_rp_origin not set in config.json)");
+                println!(
+                "WebAuthn disabled (webauthn_rp_id / webauthn_rp_origin not set in config.json)"
+            );
                 None
             }
         };
@@ -252,6 +351,17 @@ async fn main() {
     let memory_router = memory_serve::load!().into_router();
 
     let has_tls = tls_cert.is_some();
+    let public_site_url = config.site_url.trim_end_matches('/').to_owned();
+    let source_db = db.clone();
+    let source_redis = redis_conn.clone();
+    let source_router = static_router("source").layer(axum::middleware::from_fn(
+        move |req: Request<Body>, next: Next| {
+            let db = source_db.clone();
+            let redis = source_redis.clone();
+            async move { authorize_source_request(req, next, db, redis).await }
+        },
+    ));
+
     let app = Router::new()
         .route("/robots.txt", get(robots_txt))
         .route("/sitemap.xml", get(sitemap_xml))
@@ -278,16 +388,16 @@ async fn main() {
         .route("/hx/comments/{mediumid}/add", post(hx_add_comment))
         .route("/hx/comment/{commentid}/delta.json", get(comment_delta))
         .route("/hx/reccomended/{mediumid}", get(hx_recommended))
-        .route("/hx/new_view/{mediumid}", get(hx_new_view))
+        .route("/hx/new_view/{mediumid}", post(hx_new_view))
         .route("/hx/likedislikebutton/{mediumid}", get(hx_likedislikebutton))
-        .route("/hx/like/{mediumid}", get(hx_like))
-        .route("/hx/dislike/{mediumid}", get(hx_dislike))
-        .route("/hx/subscribe/{userid}", get(hx_subscribe))
-        .route("/hx/unsubscribe/{userid}", get(hx_unsubscribe))
+        .route("/hx/like/{mediumid}", post(hx_like))
+        .route("/hx/dislike/{mediumid}", post(hx_dislike))
+        .route("/hx/subscribe/{userid}", post(hx_subscribe))
+        .route("/hx/unsubscribe/{userid}", post(hx_unsubscribe))
         .route("/hx/subscribebutton/{userid}", get(hx_subscribebutton))
         .route("/hx/login", post(hx_login))
         .route("/hx/login/2fa/totp", post(hx_login_2fa_totp))
-        .route("/hx/logout", get(hx_logout))
+        .route("/hx/logout", post(hx_logout))
         .route("/hx/usernav", get(hx_usernav))
         .route("/hx/sidebar/{active_item}", get(hx_sidebar))
         .route("/hx/searchsuggestions", post(hx_search_suggestions))
@@ -345,7 +455,7 @@ async fn main() {
             "/studio/edit/{mediumid}/textures/apply",
             post(studio_textures_apply),
         )
-        .route("/hx/studio/delete/{mediumid}", get(hx_delete_video))
+        .route("/hx/studio/delete/{mediumid}", post(hx_delete_video))
         .route(
             "/hx/studio/edit/{mediumid}/description",
             get(hx_studio_edit_description),
@@ -395,9 +505,9 @@ async fn main() {
         .route("/hx/listsidebar/{listid}/{mediumid}", get(hx_list_sidebar))
         .route("/hx/listmodal/{mediumid}", get(hx_list_modal))
         .route("/hx/createlist/{mediumid}", post(hx_create_list))
-        .route("/hx/addtolist/{listid}/{mediumid}", get(hx_add_to_list))
-        .route("/hx/removefromlist/{listid}/{mediumid}", get(hx_remove_from_list))
-        .route("/hx/deletelist/{listid}", get(hx_delete_list))
+        .route("/hx/addtolist/{listid}/{mediumid}", post(hx_add_to_list))
+        .route("/hx/removefromlist/{listid}/{mediumid}", post(hx_remove_from_list))
+        .route("/hx/deletelist/{listid}", post(hx_delete_list))
         .route("/hx/userlists/{userid}", get(hx_user_lists))
         .route("/hx/userlists/{userid}/{page}", get(hx_user_lists_page))
         .route("/user-style.css", get(user_style_css))
@@ -440,12 +550,12 @@ async fn main() {
         .route("/studio/groups", get(studio_groups))
         .route("/hx/studio/groups", get(hx_studio_groups))
         .route("/hx/creategroup", post(hx_create_group))
-        .route("/hx/deletegroup/{groupid}", get(hx_delete_group))
+        .route("/hx/deletegroup/{groupid}", post(hx_delete_group))
         .route("/hx/group/{groupid}/members", get(hx_group_members))
         .route("/hx/group/{groupid}/addmember", post(hx_add_group_member))
-        .route("/hx/group/{groupid}/removemember/{login}", get(hx_remove_group_member))
+        .route("/hx/group/{groupid}/removemember/{login}", post(hx_remove_group_member))
         .route("/hx/usergroups.json", get(hx_user_groups_json))
-        .nest("/source", static_router("source"))
+        .nest("/source", source_router)
         .layer(Extension(db))
         .layer(Extension(config))
         .layer(Extension(redis_conn))
@@ -511,13 +621,41 @@ async fn main() {
                     );
                 }
 
+                response.headers_mut().insert(
+                    axum::http::header::X_CONTENT_TYPE_OPTIONS,
+                    axum::http::HeaderValue::from_static("nosniff"),
+                );
+                response.headers_mut().insert(
+                    axum::http::header::X_FRAME_OPTIONS,
+                    axum::http::HeaderValue::from_static("DENY"),
+                );
+                response.headers_mut().insert(
+                    axum::http::header::REFERRER_POLICY,
+                    axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+                );
+                response.headers_mut().insert(
+                    axum::http::header::HeaderName::from_static("permissions-policy"),
+                    axum::http::HeaderValue::from_static(
+                        "camera=(), microphone=(), geolocation=(), payment=()",
+                    ),
+                );
+                response.headers_mut().insert(
+                    axum::http::header::CONTENT_SECURITY_POLICY,
+                    axum::http::HeaderValue::from_static(
+                        "default-src 'self'; base-uri 'self'; object-src 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:",
+                    ),
+                );
+
                 response
             },
-        ));
+        ))
+        .layer(axum::middleware::from_fn(move |req, next| {
+            let allowed_origin = allowed_origin.clone();
+            async move { enforce_same_origin(req, next, allowed_origin).await }
+        }));
 
     if let Some(cert_path) = tls_cert {
-        let key_path = tls_key
-            .expect("config: tls_key must be set when tls_cert is provided");
+        let key_path = tls_key.expect("config: tls_key must be set when tls_cert is provided");
 
         let cert_bytes = tokio::fs::read(&cert_path)
             .await
@@ -543,22 +681,20 @@ async fn main() {
         let http_addr: SocketAddr = "0.0.0.0:8080".parse().unwrap();
 
         // Plain-HTTP server on :8080 — redirects every request to HTTPS on :8443 [1].
-        let redirect_app = Router::new().fallback(
-            |req: axum::http::Request<Body>| async move {
-                let hostname = request_hostname(&req);
+        let redirect_app = Router::new().fallback(move |req: Request<Body>| {
+            let public_site_url = public_site_url.clone();
+            async move {
                 let path_and_query = req
                     .uri()
                     .path_and_query()
                     .map(|pq| pq.as_str())
                     .unwrap_or("/");
-                let url = format!("https://{}:8443{}", hostname, path_and_query);
+                let url = format!("{}{}", public_site_url, path_and_query);
                 Redirect::permanent(&url)
-            },
-        );
+            }
+        });
 
-        let redirect_listener = tokio::net::TcpListener::bind(http_addr)
-            .await
-            .unwrap();
+        let redirect_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
 
         println!(
             "HTTP  redirect on: http://{}  →  https://<host>:8443",
@@ -571,9 +707,7 @@ async fn main() {
 
         // Spawn the plain-HTTP redirect server; run the HTTPS server in the foreground [1].
         tokio::spawn(async move {
-            axum::serve(redirect_listener, redirect_app)
-                .await
-                .unwrap();
+            axum::serve(redirect_listener, redirect_app).await.unwrap();
         });
 
         // Optional HTTP/3 server on UDP/8443.
@@ -641,3 +775,86 @@ include!("settings.rs");
 include!("two_factor.rs");
 include!("sitemap.rs");
 include!("history.rs");
+
+#[cfg(test)]
+mod security_regression_tests {
+    use super::*;
+
+    #[derive(Template)]
+    #[template(source = "<div>{{ value }}</div>", ext = "html")]
+    struct EscapingTemplate<'a> {
+        value: &'a str,
+    }
+
+    #[test]
+    fn resource_ids_cannot_escape_their_directory() {
+        assert_eq!(
+            normalize_resource_id(" Safe-ID_1 "),
+            Some("safe-id_1".to_owned())
+        );
+        assert_eq!(normalize_resource_id("../../config"), None);
+        assert_eq!(normalize_resource_id("contains/slash"), None);
+        assert_eq!(normalize_resource_id(".."), None);
+    }
+
+    #[test]
+    fn subtitle_labels_reject_path_components() {
+        assert!(is_valid_subtitle_label("English CC"));
+        assert!(!is_valid_subtitle_label("../../secret"));
+        assert!(!is_valid_subtitle_label("name.vtt"));
+        assert!(!is_valid_subtitle_label("name/other"));
+    }
+
+    #[test]
+    fn templates_escape_untrusted_html_by_default() {
+        let rendered = EscapingTemplate {
+            value: "\"><script>alert(1)</script>",
+        }
+        .render()
+        .unwrap();
+        assert!(!rendered.contains("<script>"));
+        let escaped_value = rendered
+            .strip_prefix("<div>")
+            .and_then(|value| value.strip_suffix("</div>"))
+            .unwrap();
+        assert!(!escaped_value.contains(['<', '>']));
+    }
+
+    #[test]
+    fn rendered_html_is_minified_without_rewriting_inline_javascript() {
+        let html = "<div>   content   </div>\n<script>const value = 1 + 2;</script>".to_owned();
+        let minified = String::from_utf8(minifi_html(html.clone())).unwrap();
+
+        assert!(minified.len() < html.len());
+        assert!(minified.contains("const value = 1 + 2;"));
+    }
+
+    #[test]
+    fn search_highlights_allow_only_mark_tags() {
+        let sanitized = sanitize_search_highlight("<img src=x onerror=alert(1)><mark>match</mark>");
+        assert_eq!(
+            sanitized,
+            "&lt;img src=x onerror=alert(1)&gt;<mark>match</mark>"
+        );
+    }
+
+    #[test]
+    fn json_for_script_cannot_close_the_script_element() {
+        let json = json_for_html_script(&serde_json::json!({
+            "name": "</script><script>alert(1)</script>"
+        }));
+        assert!(!json.contains('<'));
+        assert!(json.contains("\\u003c/script\\u003e"));
+    }
+
+    #[test]
+    fn unsafe_requests_require_the_configured_origin() {
+        let mut headers = HeaderMap::new();
+        headers.insert(ORIGIN, "https://example.com".parse().unwrap());
+        assert!(request_has_allowed_origin(&headers, "https://example.com"));
+        assert!(!request_has_allowed_origin(
+            &headers,
+            "https://attacker.example"
+        ));
+    }
+}

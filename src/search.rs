@@ -62,12 +62,12 @@ async fn build_visibility_filter(db: &ScyllaDb, user: &Option<User>) -> String {
 
         let group_list = all_group_ids
             .iter()
-            .map(|g| format!("'{}'", g.replace('\'', "")))
+            .filter_map(|group| serde_json::to_string(group).ok())
             .collect::<Vec<_>>()
             .join(", ");
 
         let mut filter = format!(
-            "visibility = 'public' OR (visibility = 'restricted' AND restricted_to_group IN [{}])",
+            "visibility = \"public\" OR (visibility = \"restricted\" AND restricted_to_group IN [{}])",
             group_list
         );
 
@@ -76,19 +76,21 @@ async fn build_visibility_filter(db: &ScyllaDb, user: &Option<User>) -> String {
         if !subscribed_channels.is_empty() {
             let owner_list = subscribed_channels
                 .iter()
-                .map(|o| format!("'{}'", o.replace('\'', "")))
+                .filter_map(|owner| serde_json::to_string(owner).ok())
                 .collect::<Vec<_>>()
                 .join(", ");
 
             filter = format!(
-                "{} OR (visibility = 'restricted' AND restricted_to_group = '{}' AND owner IN [{}])",
-                filter, SYSTEM_GROUP_SUBSCRIBERS, owner_list
+                "{} OR (visibility = \"restricted\" AND restricted_to_group = {} AND owner IN [{}])",
+                filter,
+                serde_json::to_string(SYSTEM_GROUP_SUBSCRIBERS).unwrap(),
+                owner_list
             );
         }
 
         filter
     } else {
-        "visibility = 'public'".to_owned()
+        "visibility = \"public\"".to_owned()
     }
 }
 
@@ -102,7 +104,6 @@ struct HXSearch {
 #[derive(Debug, Clone)]
 struct SuggestionUser {
     login: String,
-    name: String,
     highlighted_name: String,
     profile_picture: Option<String>,
 }
@@ -110,14 +111,13 @@ struct SuggestionUser {
 #[derive(Debug, Clone)]
 struct SuggestionList {
     id: String,
-    name: String,
     highlighted_name: String,
     owner: String,
     item_count: i64,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-searchsuggestions.html", escape = "none")]
+#[template(path = "pages/hx-searchsuggestions.html")]
 struct HXSearchSuggestionsTemplate {
     users: Vec<SuggestionUser>,
     lists: Vec<SuggestionList>,
@@ -194,16 +194,14 @@ async fn hx_search_suggestions(
 
     let users: Vec<SuggestionUser> = match users_res {
         Ok(r) => r.hits.into_iter().map(|hit| {
-            let highlighted_name = hit
+            let highlighted_name = sanitize_search_highlight(hit
                 .formatted_result
                 .as_ref()
                 .and_then(|f| f.get("name"))
                 .and_then(|v| v.as_str())
-                .unwrap_or(&hit.result.name)
-                .to_owned();
+                .unwrap_or(&hit.result.name));
             SuggestionUser {
                 login: hit.result.login,
-                name: hit.result.name,
                 highlighted_name,
                 profile_picture: hit.result.profile_picture,
             }
@@ -213,16 +211,14 @@ async fn hx_search_suggestions(
 
     let lists: Vec<SuggestionList> = match lists_res {
         Ok(r) => r.hits.into_iter().map(|hit| {
-            let highlighted_name = hit
+            let highlighted_name = sanitize_search_highlight(hit
                 .formatted_result
                 .as_ref()
                 .and_then(|f| f.get("name"))
                 .and_then(|v| v.as_str())
-                .unwrap_or(&hit.result.name)
-                .to_owned();
+                .unwrap_or(&hit.result.name));
             SuggestionList {
                 id: hit.result.id,
-                name: hit.result.name,
                 highlighted_name,
                 owner: hit.result.owner,
                 item_count: hit.result.item_count,
@@ -273,7 +269,7 @@ struct HXSearchForm {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-search.html", escape = "none")]
+#[template(path = "pages/hx-search.html")]
 struct HXSearchTemplate {
     search_results: Vec<MeiliSearchHit>,
     next_page: usize,
@@ -286,7 +282,6 @@ struct HXSearchTemplate {
     is_first_page: bool,
     has_more: bool,
     config: Config,
-    locale: RequestLocale,
 }
 
 // --- List search ---
@@ -318,7 +313,7 @@ struct ListSearchHit {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-search-lists.html", escape = "none")]
+#[template(path = "pages/hx-search-lists.html")]
 struct HXSearchListsTemplate {
     search_results: Vec<ListSearchHit>,
     next_page: usize,
@@ -327,7 +322,6 @@ struct HXSearchListsTemplate {
     query_time_ms: usize,
     is_first_page: bool,
     has_more: bool,
-    config: Config,
     locale: RequestLocale,
 }
 
@@ -352,7 +346,7 @@ struct UserSearchHit {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-search-users.html", escape = "none")]
+#[template(path = "pages/hx-search-users.html")]
 struct HXSearchUsersTemplate {
     search_results: Vec<UserSearchHit>,
     next_page: usize,
@@ -381,7 +375,7 @@ struct MeiliSearchHit {
 // --- Combined "all" search ---
 
 #[derive(Template)]
-#[template(path = "pages/hx-search-all.html", escape = "none")]
+#[template(path = "pages/hx-search-all.html")]
 struct HXSearchAllTemplate {
     users: Vec<UserSearchHit>,
     lists: Vec<ListSearchHit>,
@@ -390,11 +384,11 @@ struct HXSearchAllTemplate {
     lists_total: usize,
     media_total: usize,
     query_time_ms: usize,
-    search_term: String,
     config: Config,
     locale: RequestLocale,
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn hx_search(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
@@ -419,7 +413,7 @@ async fn hx_search(
 
     match search_in.as_str() {
         "lists" => {
-            return hx_search_lists_inner(config, db, meili, user, pageid, form.search, locale).await;
+            return hx_search_lists_inner(db, meili, user, pageid, form.search, locale).await;
         }
         "users" => {
             return hx_search_users_inner(config, meili, pageid, form.search, locale).await;
@@ -432,7 +426,9 @@ async fn hx_search(
     }
 
     let hits_per_page: usize = 41;
-    let offset = pageid * 40;
+    let Some(offset) = page_offset(pageid, 40) else {
+        return Html(String::new());
+    };
     let next_page = pageid + 1;
 
     let media_type = form.media_type.clone().unwrap_or_default();
@@ -501,13 +497,12 @@ async fn hx_search(
                 .hits
                 .into_iter()
                 .map(|hit| {
-                    let highlighted_name = hit
+                    let highlighted_name = sanitize_search_highlight(hit
                         .formatted_result
                         .as_ref()
                         .and_then(|f| f.get("name"))
                         .and_then(|v| v.as_str())
-                        .unwrap_or(&hit.result.name)
-                        .to_owned();
+                        .unwrap_or(&hit.result.name));
 
                     MeiliSearchHit {
                         id: hit.result.id,
@@ -553,7 +548,6 @@ async fn hx_search(
                 is_first_page: pageid == 0,
                 has_more,
                 config,
-                locale,
             };
             Html(template.render().unwrap())
         }
@@ -570,7 +564,6 @@ async fn hx_search(
 // --- List search inner (Meilisearch) ---
 
 async fn hx_search_lists_inner(
-    config: Config,
     db: ScyllaDb,
     meili: Arc<MeilisearchClient>,
     user: Option<User>,
@@ -579,7 +572,9 @@ async fn hx_search_lists_inner(
     locale: RequestLocale,
 ) -> axum::response::Html<String> {
     let hits_per_page: usize = 41;
-    let offset = pageid * 40;
+    let Some(offset) = page_offset(pageid, 40) else {
+        return Html(String::new());
+    };
 
     // Reuse the same visibility filter logic as media search
     let visibility_filter = build_visibility_filter(&db, &user).await;
@@ -610,13 +605,12 @@ async fn hx_search_lists_inner(
                 .hits
                 .into_iter()
                 .map(|hit| {
-                    let highlighted_name = hit
+                    let highlighted_name = sanitize_search_highlight(hit
                         .formatted_result
                         .as_ref()
                         .and_then(|f| f.get("name"))
                         .and_then(|v| v.as_str())
-                        .unwrap_or(&hit.result.name)
-                        .to_owned();
+                        .unwrap_or(&hit.result.name));
                     ListSearchHit {
                         id: hit.result.id,
                         name: hit.result.name,
@@ -654,7 +648,6 @@ async fn hx_search_lists_inner(
                 query_time_ms,
                 is_first_page: pageid == 0,
                 has_more,
-                config,
                 locale,
             };
             Html(template.render().unwrap())
@@ -679,7 +672,9 @@ async fn hx_search_users_inner(
     locale: RequestLocale,
 ) -> axum::response::Html<String> {
     let hits_per_page: usize = 41;
-    let offset = pageid * 40;
+    let Some(offset) = page_offset(pageid, 40) else {
+        return Html(String::new());
+    };
 
     let index = meili.index("users");
     let results = index
@@ -705,13 +700,12 @@ async fn hx_search_users_inner(
                 .hits
                 .into_iter()
                 .map(|hit| {
-                    let highlighted_name = hit
+                    let highlighted_name = sanitize_search_highlight(hit
                         .formatted_result
                         .as_ref()
                         .and_then(|f| f.get("name"))
                         .and_then(|v| v.as_str())
-                        .unwrap_or(&hit.result.name)
-                        .to_owned();
+                        .unwrap_or(&hit.result.name));
                     UserSearchHit {
                         login: hit.result.login,
                         name: hit.result.name,
@@ -828,11 +822,10 @@ async fn hx_search_all_inner(
             let total = r.estimated_total_hits.unwrap_or(0);
             let time = r.processing_time_ms;
             let hits: Vec<UserSearchHit> = r.hits.into_iter().map(|hit| {
-                let highlighted_name = hit.formatted_result.as_ref()
+                let highlighted_name = sanitize_search_highlight(hit.formatted_result.as_ref()
                     .and_then(|f| f.get("name"))
                     .and_then(|v| v.as_str())
-                    .unwrap_or(&hit.result.name)
-                    .to_owned();
+                    .unwrap_or(&hit.result.name));
                 UserSearchHit {
                     login: hit.result.login,
                     name: hit.result.name,
@@ -850,11 +843,10 @@ async fn hx_search_all_inner(
             let total = r.estimated_total_hits.unwrap_or(0);
             query_time_ms = query_time_ms.max(r.processing_time_ms);
             let hits: Vec<ListSearchHit> = r.hits.into_iter().map(|hit| {
-                let highlighted_name = hit.formatted_result.as_ref()
+                let highlighted_name = sanitize_search_highlight(hit.formatted_result.as_ref()
                     .and_then(|f| f.get("name"))
                     .and_then(|v| v.as_str())
-                    .unwrap_or(&hit.result.name)
-                    .to_owned();
+                    .unwrap_or(&hit.result.name));
                 ListSearchHit {
                     id: hit.result.id,
                     name: hit.result.name,
@@ -873,11 +865,10 @@ async fn hx_search_all_inner(
             let total = r.estimated_total_hits.unwrap_or(0);
             query_time_ms = query_time_ms.max(r.processing_time_ms);
             let hits: Vec<MeiliSearchHit> = r.hits.into_iter().map(|hit| {
-                let highlighted_name = hit.formatted_result.as_ref()
+                let highlighted_name = sanitize_search_highlight(hit.formatted_result.as_ref()
                     .and_then(|f| f.get("name"))
                     .and_then(|v| v.as_str())
-                    .unwrap_or(&hit.result.name)
-                    .to_owned();
+                    .unwrap_or(&hit.result.name));
                 MeiliSearchHit {
                     id: hit.result.id,
                     name: hit.result.name,
@@ -909,7 +900,6 @@ async fn hx_search_all_inner(
         lists_total,
         media_total,
         query_time_ms,
-        search_term,
         config,
         locale,
     };
@@ -919,11 +909,10 @@ async fn hx_search_all_inner(
 // --- Search page ---
 
 #[derive(Template)]
-#[template(path = "pages/search.html", escape = "none")]
+#[template(path = "pages/search.html")]
 struct SearchTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     initial_query: String,
     schema_org_json: String,
     locale: RequestLocale,
@@ -942,7 +931,7 @@ async fn search(
     headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<SearchQuery>,
 ) -> axum::response::Html<Vec<u8>> {
-    let schema_org_json = serde_json::to_string(&serde_json::json!({
+    let schema_org_json = json_for_html_script(&serde_json::json!({
         "@context": "https://schema.org",
         "@type": "SearchResultsPage",
         "name": format!("Search - {}", config.instancename),
@@ -953,7 +942,7 @@ async fn search(
             "name": &config.instancename,
             "url": &config.site_url
         }
-    })).unwrap_or_default();
+    }));
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_locale_noauth(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
@@ -964,7 +953,6 @@ async fn search(
     let template = SearchTemplate {
         sidebar,
         config,
-        common_headers,
         initial_query,
         schema_org_json,
         locale,

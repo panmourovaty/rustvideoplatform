@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/home.html", escape = "none")]
+#[template(path = "pages/home.html")]
 struct HomeTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     schema_org_json: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -13,7 +12,7 @@ async fn home(
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    let schema_org_json = serde_json::to_string(&serde_json::json!({
+    let schema_org_json = json_for_html_script(&serde_json::json!({
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": &config.instancename,
@@ -27,7 +26,7 @@ async fn home(
             },
             "query-input": "required name=search_term_string"
         }
-    })).unwrap_or_default();
+    }));
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_locale_noauth(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
@@ -37,7 +36,6 @@ async fn home(
     let template = HomeTemplate {
         config,
         sidebar,
-        common_headers,
         schema_org_json,
         locale,
         resolved_lang,

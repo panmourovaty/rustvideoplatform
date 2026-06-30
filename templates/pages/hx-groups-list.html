@@ -10,7 +10,7 @@
                 <span hx-get="/hx/group/{{ group.id }}/members" hx-target="#group-members-panel" class="text-primary" style="cursor:pointer;" title="Manage members">
                     <i class="fa-solid fa-user-gear"></i>
                 </span>
-                <span hx-get="/hx/deletegroup/{{ group.id }}" hx-target="#groups-list" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete this group? Media and lists restricted to this group will become hidden." class="text-secondary" style="cursor:pointer;" title="Delete group">
+                <span hx-post="/hx/deletegroup/{{ group.id }}" hx-target="#groups-list" hx-swap="innerHTML" hx-confirm="Are you sure you want to delete this group? Media and lists restricted to this group will become hidden." class="text-secondary" style="cursor:pointer;" title="Delete group">
                     <i class="fa-solid fa-trash text-danger"></i>
                 </span>
             </div>

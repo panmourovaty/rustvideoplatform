@@ -19,7 +19,7 @@
     </head>
 
     <body hx-ext="preload">
-        {{ sidebar }} {% include "component-navbar.html" %}
+        {{ sidebar|safe }} {% include "component-navbar.html" %}
         <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                 <div class="card py-3 px-3 text-white" style="min-height: 80vh">

@@ -1,5 +1,5 @@
 #[derive(Template)]
-#[template(path = "pages/hx-usernav.html", escape = "none")]
+#[template(path = "pages/hx-usernav.html")]
 struct HXUsernavTemplate {
     user: User,
     config: Config,
@@ -17,13 +17,12 @@ async fn hx_usernav(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let try_user = get_user_login(headers, &db, redis.clone()).await;
-    if try_user.is_some() {
-        let user = try_user.unwrap();
+    if let Some(user) = try_user {
         let template = HXUsernavTemplate { user, config, locale };
-        return Html(minifi_html(template.render().unwrap()));
+        Html(minifi_html(template.render().unwrap()))
     } else {
         let login_text = locale.t("nav-login");
-        let result = format!("<a href=\"/login\"><button class=\"btn text-white\"><i class=\"fa-solid fa-user mx-2\" preload=\"mouseover\"></i>{}</button></a>", login_text);
-        return Html(minifi_html(result));
+        let result = format!("<a href=\"/login\"><button class=\"btn text-white\"><i class=\"fa-solid fa-user mx-2\" preload=\"mouseover\"></i>{}</button></a>", escape_html(&login_text));
+        Html(minifi_html(result))
     }
 }

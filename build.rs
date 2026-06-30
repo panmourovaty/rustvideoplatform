@@ -24,16 +24,18 @@ fn main() {
         .ok()
         .filter(|v| !v.is_empty() && v != "unknown")
         .unwrap_or_else(|| {
-            let output = Command::new("git")
-                .args(["rev-parse", "HEAD"])
-                .output();
+            let output = Command::new("git").args(["rev-parse", "HEAD"]).output();
             match output {
                 Ok(o) if o.status.success() => {
                     let hash = String::from_utf8(o.stdout)
                         .unwrap_or_default()
                         .trim()
                         .to_owned();
-                    if hash.is_empty() { "unknown".to_owned() } else { hash }
+                    if hash.is_empty() {
+                        "unknown".to_owned()
+                    } else {
+                        hash
+                    }
                 }
                 _ => "unknown".to_owned(),
             }
@@ -55,7 +57,11 @@ fn main() {
                         .unwrap_or_default()
                         .trim()
                         .to_owned();
-                    if branch.is_empty() { "unknown".to_owned() } else { branch }
+                    if branch.is_empty() {
+                        "unknown".to_owned()
+                    } else {
+                        branch
+                    }
                 }
                 _ => "unknown".to_owned(),
             }
@@ -79,9 +85,7 @@ fn main() {
     let npx_available = command_exists("npx");
 
     if !npm_available || !npx_available {
-        println!(
-            "cargo:warning=Skipping CSS/JS optimization because npm or npx is unavailable"
-        );
+        println!("cargo:warning=Skipping CSS/JS optimization because npm or npx is unavailable");
 
         fs::copy("assets/static/style.css", "assets/processed/style.css")
             .expect("Failed to copy fallback CSS asset");
@@ -100,8 +104,10 @@ fn main() {
             "npx",
             &[
                 "purgecss",
-                "--config", "purgecss.config.cjs",
-                "--output", "assets/processed",
+                "--config",
+                "purgecss.config.cjs",
+                "--output",
+                "assets/processed",
             ],
             "PurgeCSS",
         );
@@ -113,7 +119,8 @@ fn main() {
             &[
                 "csso",
                 "assets/processed/style.css",
-                "--output", "assets/processed/style.css",
+                "--output",
+                "assets/processed/style.css",
             ],
             "csso CSS minification",
         );
@@ -127,7 +134,8 @@ fn main() {
                 "assets/static/script.js",
                 "--compress",
                 "--mangle",
-                "--output", "assets/processed/script.js",
+                "--output",
+                "assets/processed/script.js",
             ],
             "terser JS minification",
         );

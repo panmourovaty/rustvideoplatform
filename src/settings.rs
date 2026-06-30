@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/settings.html", escape = "none")]
+#[template(path = "pages/settings.html")]
 struct SettingsTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     active_tab: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -29,7 +28,6 @@ async fn settings(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "channel_name".to_owned(),
         locale,
         resolved_lang,
@@ -57,7 +55,6 @@ async fn settings_password(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "password".to_owned(),
         locale,
         resolved_lang,
@@ -85,7 +82,6 @@ async fn settings_profile_picture(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "profile_picture".to_owned(),
         locale,
         resolved_lang,
@@ -113,7 +109,6 @@ async fn settings_channel_picture(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "channel_picture".to_owned(),
         locale,
         resolved_lang,
@@ -141,7 +136,6 @@ async fn settings_diagnostics(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "diagnostics".to_owned(),
         locale,
         resolved_lang,
@@ -163,7 +157,7 @@ async fn settings_2fa(
 // --- HTMX tab content handlers ---
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-channel-name.html", escape = "none")]
+#[template(path = "pages/hx-settings-channel-name.html")]
 struct HXSettingsChannelNameTemplate {
     current_name: String,
     locale: RequestLocale,
@@ -216,7 +210,7 @@ async fn hx_settings_channel_name_save(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-password.html", escape = "none")]
+#[template(path = "pages/hx-settings-password.html")]
 struct HXSettingsPasswordTemplate {
     locale: RequestLocale,
 }
@@ -306,7 +300,7 @@ struct PictureMedium {
     visibility: String,
 }
 #[derive(Template)]
-#[template(path = "pages/hx-settings-profile-picture.html", escape = "none")]
+#[template(path = "pages/hx-settings-profile-picture.html")]
 struct HXSettingsProfilePictureTemplate {
     media: Vec<PictureMedium>,
     current_picture: Option<String>,
@@ -400,7 +394,7 @@ async fn hx_settings_profile_picture_save(
 // --- Channel Picture ---
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-channel-picture.html", escape = "none")]
+#[template(path = "pages/hx-settings-channel-picture.html")]
 struct HXSettingsChannelPictureTemplate {
     media: Vec<PictureMedium>,
     current_picture: Option<String>,
@@ -492,8 +486,8 @@ async fn hx_settings_channel_picture_save(
 fn get_os_distro() -> String {
     if let Ok(content) = std::fs::read_to_string("/etc/os-release") {
         for line in content.lines() {
-            if line.starts_with("PRETTY_NAME=") {
-                return line[12..].trim_matches('"').to_owned();
+            if let Some(pretty_name) = line.strip_prefix("PRETTY_NAME=") {
+                return pretty_name.trim_matches('"').to_owned();
             }
         }
     }
@@ -549,8 +543,8 @@ async fn get_redis_version(mut redis: RedisConn) -> String {
     match info {
         Ok(info_str) => {
             for line in info_str.lines() {
-                if line.starts_with("redis_version:") {
-                    return line["redis_version:".len()..].trim().to_owned();
+                if let Some(version) = line.strip_prefix("redis_version:") {
+                    return version.trim().to_owned();
                 }
             }
             "unknown".to_owned()
@@ -560,7 +554,7 @@ async fn get_redis_version(mut redis: RedisConn) -> String {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-diagnostics.html", escape = "none")]
+#[template(path = "pages/hx-settings-diagnostics.html")]
 struct HXSettingsDiagnosticsTemplate {
     git_commit: String,
     git_branch: String,
@@ -659,7 +653,7 @@ fn is_valid_theme_name(name: &str) -> bool {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-theme.html", escape = "none")]
+#[template(path = "pages/hx-settings-theme.html")]
 struct HXSettingsThemeTemplate {
     available_themes: Vec<String>,
     current_theme: String,
@@ -789,7 +783,6 @@ async fn settings_theme(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "theme".to_owned(),
         locale,
         resolved_lang,
@@ -836,7 +829,7 @@ async fn resolve_request_locale(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-settings-language.html", escape = "none")]
+#[template(path = "pages/hx-settings-language.html")]
 struct HXSettingsLanguageTemplate {
     available_langs: Vec<LangInfo>,
     current_language: String,
@@ -957,7 +950,6 @@ async fn settings_language(
     let template = SettingsTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "language".to_owned(),
         locale,
         resolved_lang,

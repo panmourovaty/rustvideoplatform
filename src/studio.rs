@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/studio.html", escape = "none")]
+#[template(path = "pages/studio.html")]
 struct StudioTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     active_tab: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -30,7 +29,6 @@ async fn studio(
     let template = StudioTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "media".to_owned(),
         locale,
         resolved_lang,
@@ -47,7 +45,7 @@ struct MediumStudio {
     r#type: String,
 }
 #[derive(Template)]
-#[template(path = "pages/hx-studio.html", escape = "none")]
+#[template(path = "pages/hx-studio.html")]
 struct HXStudioTemplate {
     media: Vec<MediumStudio>,
     config: Config,
@@ -85,6 +83,9 @@ async fn hx_studio_inner(
     headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
@@ -97,11 +98,21 @@ async fn hx_studio_inner(
 
     // Fetch from media_by_owner (already ordered by upload DESC via clustering key)
     // Row type: (id, name, description, views, type, upload, visibility, restricted_to_group)
-    let all_rows: Vec<(String, String, Option<String>, i64, String, i64, String, Option<String>)> =
+    type MediaOwnerRow = (
+        String,
+        String,
+        Option<String>,
+        i64,
+        String,
+        i64,
+        String,
+        Option<String>,
+    );
+    let all_rows: Vec<MediaOwnerRow> =
         db.session.execute_unpaged(&db.get_media_by_owner, (&user_info.login, fetch_limit))
             .await
             .ok().and_then(|r| r.into_rows_result().ok())
-            .map(|rows| rows.rows::<(String, String, Option<String>, i64, String, i64, String, Option<String>)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
+            .map(|rows| rows.rows::<MediaOwnerRow>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
             .unwrap_or_default();
 
     // App-level pagination: skip and take
@@ -149,7 +160,6 @@ async fn studio_lists(
     let template = StudioTemplate {
         sidebar,
         config,
-        common_headers,
         active_tab: "lists".to_owned(),
         locale,
         resolved_lang,
@@ -158,7 +168,7 @@ async fn studio_lists(
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-lists.html", escape = "none")]
+#[template(path = "pages/hx-studio-lists.html")]
 struct HXStudioListsTemplate {
     lists: Vec<ListWithCount>,
     page: i64,
@@ -195,6 +205,9 @@ async fn hx_studio_lists_inner(
     headers: HeaderMap,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html(
@@ -257,47 +270,46 @@ struct MediumEdit {
     medium_type: String,
 }
 #[derive(Template)]
-#[template(path = "pages/studio-edit.html", escape = "none")]
+#[template(path = "pages/studio-edit.html")]
 struct StudioEditTemplate {
     sidebar: String,
     config: Config,
     medium: MediumEdit,
-    common_headers: CommonHeaders,
     active_tab: String,
     locale: RequestLocale,
     resolved_lang: String,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-description.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-description.html")]
 struct HXStudioEditDescriptionTemplate {
     medium: MediumEdit,
     locale: RequestLocale,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-chapters.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-chapters.html")]
 struct HXStudioEditChaptersTemplate {
     medium_id: String,
     locale: RequestLocale,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-subtitles.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-subtitles.html")]
 struct HXStudioEditSubtitlesTemplate {
     medium_id: String,
     locale: RequestLocale,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-thumbnail.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-thumbnail.html")]
 struct HXStudioEditThumbnailTemplate {
     medium_id: String,
     locale: RequestLocale,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-danger.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-danger.html")]
 struct HXStudioEditDangerTemplate {
     medium_id: String,
     medium_name: String,
@@ -305,7 +317,7 @@ struct HXStudioEditDangerTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-permissions.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-permissions.html")]
 struct HXStudioEditPermissionsTemplate {
     medium: MediumEdit,
     owner_groups: Vec<UserGroup>,
@@ -357,7 +369,6 @@ async fn studio_edit(
                     restricted_to_group: restricted_to_group.unwrap_or_default(),
                     medium_type: media_type,
                 },
-                common_headers,
                 active_tab: "description".to_owned(),
                 locale,
                 resolved_lang,
@@ -394,21 +405,23 @@ async fn studio_edit_save(
     }
     let user_info = user_info.unwrap();
 
-    // Verify ownership
-    let media_owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+    let media_row = db.session.execute_unpaged(&db.get_media_by_id, (&mediumid,))
         .await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten());
+        .and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten());
+    let Some((_id, old_name, old_description, upload, owner, _views, _media_type, _visibility, _restricted_group)) = media_row else {
+        return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
+    };
+    if owner != user_info.login {
+        return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
+    }
 
-    match media_owner {
-        Some((owner,)) => {
-            if owner != user_info.login {
-                return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
-            }
-        }
-        None => {
-            return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
-        }
+    let medium_name = form.medium_name.trim();
+    if medium_name.is_empty() || medium_name.len() > 200 {
+        return Html(
+            "<b class=\"text-danger\">Media name must be between 1 and 200 characters.</b>"
+                .to_owned(),
+        );
     }
 
     // Serialize description JSON to string for Cassandra storage
@@ -419,10 +432,33 @@ async fn studio_edit_save(
     // Update media table
     let update_result = db.session.execute_unpaged(
         &db.update_media_name_desc,
-        (&form.medium_name, &description_string, &mediumid),
+        (medium_name, &description_string, &mediumid),
     ).await;
+    let owner_update = if update_result.is_ok() {
+        db.session
+            .execute_unpaged(
+                &db.update_media_by_owner_name_desc,
+                (medium_name, &description_string, &owner, upload, &mediumid),
+            )
+            .await
+    } else {
+        return Html(
+            "<b class=\"text-danger\">Failed to save changes.</b>".to_owned(),
+        );
+    };
 
-    if update_result.is_err() {
+    if owner_update.is_err() {
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_media_name_desc,
+                (
+                    &old_name,
+                    &old_description.unwrap_or_default(),
+                    &mediumid,
+                ),
+            )
+            .await;
         return Html(format!(
             "<b class=\"text-danger\">Failed to save changes.</b><script>setTimeout(function(){{window.location.replace(\"/studio/edit/{}\");}},2000);</script>",
             mediumid
@@ -441,6 +477,9 @@ async fn hx_delete_video(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> impl IntoResponse {
+    if !is_valid_resource_id(&mediumid) {
+        return Redirect::to("/studio");
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Redirect::to("/login");
@@ -454,7 +493,17 @@ async fn hx_delete_video(
         .ok().and_then(|r| r.into_rows_result().ok())
         .and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten());
 
-    let (_id, _name, _description, upload, owner, _views, _media_type, _visibility, _restricted_to_group) = match media_row {
+    let (
+        _id,
+        name,
+        description,
+        upload,
+        owner,
+        views,
+        media_type,
+        visibility,
+        restricted_to_group,
+    ) = match media_row {
         Some(r) => r,
         None => return Redirect::to("/studio"),
     };
@@ -464,26 +513,98 @@ async fn hx_delete_video(
     }
 
     // Delete from lists: find all lists containing this media, then delete each entry
-    let list_entries: Vec<(String, i32)> = db.session.execute_unpaged(&db.get_list_items_by_media, (&mediumid,))
+    let list_entries = db.session.execute_unpaged(&db.get_list_items_by_media, (&mediumid,))
         .await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(String, i32)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(String, i32)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(list_entries) = list_entries else {
+        return Redirect::to("/studio");
+    };
 
     for (list_id, position) in &list_entries {
-        let _ = db.session.execute_unpaged(&db.delete_list_item, (list_id, position)).await;
-        let _ = db.session.execute_unpaged(&db.delete_list_item_by_media, (&mediumid, list_id)).await;
+        let item_delete = db
+            .session
+            .execute_unpaged(&db.delete_list_item, (list_id, position))
+            .await;
+        let reverse_delete = if item_delete.is_ok() {
+            db.session
+                .execute_unpaged(&db.delete_list_item_by_media, (&mediumid, list_id))
+                .await
+        } else {
+            restore_media_list_entries(&db, &mediumid, &list_entries).await;
+            return Redirect::to("/studio");
+        };
+        if reverse_delete.is_err() {
+            restore_media_list_entries(&db, &mediumid, &list_entries).await;
+            return Redirect::to("/studio");
+        }
     }
 
-    // Delete media from main table and media_by_owner
-    let _ = db.session.execute_unpaged(&db.delete_media, (&mediumid,)).await;
-    let _ = db.session.execute_unpaged(&db.delete_media_by_owner, (&owner, &upload, &mediumid)).await;
+    if db
+        .session
+        .execute_unpaged(&db.delete_media_by_owner, (&owner, upload, &mediumid))
+        .await
+        .is_err()
+    {
+        restore_media_list_entries(&db, &mediumid, &list_entries).await;
+        return Redirect::to("/studio");
+    }
+    if db
+        .session
+        .execute_unpaged(&db.delete_media, (&mediumid,))
+        .await
+        .is_err()
+    {
+        let is_public = visibility == "public";
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_media_by_owner,
+                (
+                    &owner,
+                    upload,
+                    &mediumid,
+                    &name,
+                    &description,
+                    views,
+                    &media_type,
+                    is_public,
+                    &visibility,
+                    &restricted_to_group,
+                ),
+            )
+            .await;
+        restore_media_list_entries(&db, &mediumid, &list_entries).await;
+        return Redirect::to("/studio");
+    }
 
     // Delete the source directory
     let source_path = format!("source/{}", mediumid);
-    let _ = fs::remove_dir_all(&source_path).await;
+    if fs::remove_dir_all(&source_path).await.is_err() {
+        eprintln!("WARNING: deleted media {mediumid}, but its source directory remains");
+    }
 
     Redirect::to("/studio")
+}
+
+async fn restore_media_list_entries(
+    db: &ScyllaDb,
+    medium_id: &str,
+    entries: &[(String, i32)],
+) {
+    for (list_id, position) in entries {
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_list_item, (list_id, position, medium_id))
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_list_item_by_media,
+                (medium_id, list_id, position),
+            )
+            .await;
+    }
 }
 
 async fn hx_studio_edit_description(
@@ -729,21 +850,15 @@ async fn studio_edit_permissions_save(
     }
     let user_info = user_info.unwrap();
 
-    // Verify ownership
-    let media_owner = db.session.execute_unpaged(&db.get_media_owner, (&mediumid,))
+    let media_row = db.session.execute_unpaged(&db.get_media_by_id, (&mediumid,))
         .await
         .ok().and_then(|r| r.into_rows_result().ok())
-        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten());
-
-    match media_owner {
-        Some((owner,)) => {
-            if owner != user_info.login {
-                return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
-            }
-        }
-        None => {
-            return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
-        }
+        .and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten());
+    let Some((_id, _name, _description, upload, owner, _views, _media_type, old_visibility, old_restricted_group)) = media_row else {
+        return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
+    };
+    if owner != user_info.login {
+        return Html("<script>window.location.replace(\"/studio\");</script>".to_owned());
     }
 
     let visibility = match form.medium_visibility.as_str() {
@@ -752,7 +867,17 @@ async fn studio_edit_permissions_save(
     };
     let ispublic = visibility == "public";
     let restricted_to_group = if visibility == "restricted" {
-        form.medium_restricted_group.clone().filter(|g| !g.is_empty())
+        let Some(group_id) = form
+            .medium_restricted_group
+            .as_deref()
+            .filter(|group_id| !group_id.is_empty())
+        else {
+            return Html("<b class=\"text-danger\">Select a restricted group.</b>".to_owned());
+        };
+        if !is_owned_or_system_group(&db, &user_info.login, group_id).await {
+            return Html("<b class=\"text-danger\">Invalid restricted group.</b>".to_owned());
+        }
+        Some(group_id.to_owned())
     } else {
         None
     };
@@ -762,8 +887,38 @@ async fn studio_edit_permissions_save(
         &db.update_media_permissions,
         (&ispublic, &visibility, &restricted_to_group, &mediumid),
     ).await;
+    let owner_update = if update_result.is_ok() {
+        db.session
+            .execute_unpaged(
+                &db.update_media_by_owner_permissions,
+                (
+                    &ispublic,
+                    &visibility,
+                    &restricted_to_group,
+                    &owner,
+                    upload,
+                    &mediumid,
+                ),
+            )
+            .await
+    } else {
+        return Html("<b class=\"text-danger\">Failed to save changes.</b>".to_owned());
+    };
 
-    if update_result.is_err() {
+    if owner_update.is_err() {
+        let old_public = old_visibility == "public";
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.update_media_permissions,
+                (
+                    old_public,
+                    &old_visibility,
+                    &old_restricted_group,
+                    &mediumid,
+                ),
+            )
+            .await;
         return Html(format!(
             "<b class=\"text-danger\">Failed to save changes.</b><script>setTimeout(function(){{window.location.replace(\"/studio/edit/{}\");}},2000);</script>",
             mediumid

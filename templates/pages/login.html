@@ -55,6 +55,12 @@
         return btoa(String.fromCharCode(...new Uint8Array(a)))
             .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
     }
+    function showWebAuthnLoginError(resultEl, message) {
+        const error = document.createElement('b');
+        error.className = 'text-danger';
+        error.textContent = message;
+        resultEl.replaceChildren(error);
+    }
 
     async function startWebAuthnLogin() {
         const username = document.getElementById('login').value.trim();
@@ -72,7 +78,7 @@
             });
             const startData = await startResp.json();
             if (!startResp.ok || startData.error) {
-                resultEl.innerHTML = '<b class="text-danger">' + (startData.error || 'Failed to start') + '</b>';
+                showWebAuthnLoginError(resultEl, startData.error || 'Failed to start');
                 return;
             }
             const token = startData.token;
@@ -111,10 +117,10 @@
                 resultEl.innerHTML = '<b class="text-success">Authenticated! Redirecting&hellip;</b>';
                 window.location.replace('/');
             } else {
-                resultEl.innerHTML = '<b class="text-danger">' + (finishData.error || 'Authentication failed') + '</b>';
+                showWebAuthnLoginError(resultEl, finishData.error || 'Authentication failed');
             }
         } catch(e) {
-            resultEl.innerHTML = '<b class="text-danger">Error: ' + e.message + '</b>';
+            showWebAuthnLoginError(resultEl, 'Error: ' + e.message);
         }
     }
     </script>

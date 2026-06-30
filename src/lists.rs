@@ -32,20 +32,19 @@ struct CreateListForm {
 }
 
 #[derive(Template)]
-#[template(path = "pages/list.html", escape = "none")]
+#[template(path = "pages/list.html")]
 struct ListPageTemplate {
     sidebar: String,
     config: Config,
     list: List,
     is_owner: bool,
-    common_headers: CommonHeaders,
     schema_org_json: String,
     locale: RequestLocale,
     resolved_lang: String,
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-listitems.html", escape = "none")]
+#[template(path = "pages/hx-listitems.html")]
 struct HXListItemsTemplate {
     items: Vec<Medium>,
     list_id: String,
@@ -57,7 +56,7 @@ struct HXListItemsTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-listmodal.html", escape = "none")]
+#[template(path = "pages/hx-listmodal.html")]
 struct HXListModalTemplate {
     lists: Vec<ListModalEntry>,
     medium_id: String,
@@ -66,7 +65,7 @@ struct HXListModalTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "pages/hx-userlists.html", escape = "none")]
+#[template(path = "pages/hx-userlists.html")]
 struct HXUserListsTemplate {
     lists: Vec<ListWithCount>,
     page: i64,
@@ -118,7 +117,7 @@ async fn list_page(
     }
 
     let common_headers = extract_common_headers(&headers);
-    let schema_org_json = serde_json::to_string(&serde_json::json!({
+    let schema_org_json = json_for_html_script(&serde_json::json!({
         "@context": "https://schema.org",
         "@type": "ItemList",
         "name": &list.name,
@@ -128,7 +127,7 @@ async fn list_page(
             "identifier": &list.owner,
             "url": format!("{}/u/{}", config.site_url, list.owner)
         }
-    })).unwrap_or_default();
+    }));
     let locale = resolve_locale_noauth(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
@@ -139,7 +138,6 @@ async fn list_page(
         config,
         list,
         is_owner,
-        common_headers,
         schema_org_json,
         locale,
         resolved_lang,
@@ -232,26 +230,12 @@ async fn medium_in_list(
     let medium_custom_font =
         std::path::Path::new(&format!("source/{}/captions/font.woff2", medium_id)).exists();
 
-    let medium_chapters_exist: bool;
-    if std::path::Path::new(&format!("source/{}/chapters.vtt", medium_id)).exists() {
-        medium_chapters_exist = true;
-    } else {
-        medium_chapters_exist = false;
-    }
-
-    let medium_previews_exist: bool;
-    if std::path::Path::new(&format!("source/{}/previews/previews.vtt", medium_id)).exists() {
-        medium_previews_exist = true;
-    } else {
-        medium_previews_exist = false;
-    }
-
-    let is_cmaf: bool;
-    if std::path::Path::new(&format!("source/{}/video/video.m3u8", medium_id)).exists() {
-        is_cmaf = true;
-    } else {
-        is_cmaf = false;
-    }
+    let medium_chapters_exist =
+        std::path::Path::new(&format!("source/{}/chapters.vtt", medium_id)).exists();
+    let medium_previews_exist =
+        std::path::Path::new(&format!("source/{}/previews/previews.vtt", medium_id)).exists();
+    let is_cmaf =
+        std::path::Path::new(&format!("source/{}/video/video.m3u8", medium_id)).exists();
 
     let upload_iso = chrono::DateTime::from_timestamp(m_upload, 0)
         .map(|dt: chrono::DateTime<chrono::Utc>| dt.to_rfc3339())
@@ -262,7 +246,7 @@ async fn medium_in_list(
                 "@context": "https://schema.org",
                 "@type": "VideoObject",
                 "name": m_name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "contentUrl": format!("{}/m/{}/video-sm.mp4", config.site_url, medium_id),
                 "embedUrl": format!("{}/m/{}", config.site_url, medium_id),
@@ -276,9 +260,9 @@ async fn medium_in_list(
                 "@context": "https://schema.org",
                 "@type": "AudioObject",
                 "name": m_name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
-                "contentUrl": format!("{}/source/{}/audio.ogg", config.source_server_url, medium_id),
+                "contentUrl": format!("{}/source/{}/audio.ogg", config.site_url, medium_id),
                 "author": {
                     "@type": "Person",
                     "name": owner_name.clone(),
@@ -289,7 +273,7 @@ async fn medium_in_list(
                 "@context": "https://schema.org",
                 "@type": "ImageObject",
                 "name": m_name.clone(),
-                "contentUrl": format!("{}/source/{}/picture.avif", config.source_server_url, medium_id),
+                "contentUrl": format!("{}/source/{}/picture.avif", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -301,7 +285,7 @@ async fn medium_in_list(
                 "@context": "https://schema.org",
                 "@type": "DigitalDocument",
                 "name": m_name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -313,7 +297,7 @@ async fn medium_in_list(
                 "@context": "https://schema.org",
                 "@type": "3DModel",
                 "name": m_name.clone(),
-                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.source_server_url, medium_id),
+                "thumbnailUrl": format!("{}/source/{}/thumbnail.jpg", config.site_url, medium_id),
                 "uploadDate": upload_iso,
                 "author": {
                     "@type": "Person",
@@ -323,7 +307,7 @@ async fn medium_in_list(
             }),
             _ => serde_json::json!({}),
         };
-        serde_json::to_string(&v).unwrap_or_default()
+        json_for_html_script(&v)
     };
 
     let medium_3d_original_ext = if m_type == "object_3d" {
@@ -360,7 +344,6 @@ async fn medium_in_list(
         medium_3d_original_ext,
         schema_org_json,
         config,
-        common_headers,
         is_logged_in,
         list_id: listid,
         list_name: list.4,
@@ -373,31 +356,40 @@ async fn medium_in_list(
 async fn hx_list_items(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path(listid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_list_items_inner(config, db, localization, headers, listid, 0).await
+    hx_list_items_inner(config, db, redis, localization, headers, listid, 0).await
 }
 
 async fn hx_list_items_page(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((listid, page)): Path<(String, i64)>,
 ) -> axum::response::Html<Vec<u8>> {
-    hx_list_items_inner(config, db, localization, headers, listid, page).await
+    hx_list_items_inner(config, db, redis, localization, headers, listid, page).await
 }
 
 async fn hx_list_items_inner(
     config: Config,
     db: ScyllaDb,
+    redis: RedisConn,
     localization: Arc<LocalizationService>,
     headers: HeaderMap,
     listid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page)
+        || !can_access_list_request(&headers, &db, redis.clone(), &listid).await
+    {
+        return Html(Vec::new());
+    }
+    let user = get_user_login(headers.clone(), &db, redis.clone()).await;
     let fetch_limit = ((page + 1) * 40 + 1) as i32;
     let skip = (page * 40) as usize;
 
@@ -419,7 +411,19 @@ async fn hx_list_items_inner(
             .ok().and_then(|r| r.into_rows_result().ok())
             .and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten());
 
-        if let Some((id, name, _desc, _upload, owner, views, media_type, _vis, _rg)) = media_row {
+        if let Some((id, name, _desc, _upload, owner, views, media_type, visibility, restricted_group)) = media_row {
+            if !can_access_restricted(
+                &db,
+                &visibility,
+                restricted_group.as_deref(),
+                &owner,
+                &user,
+                redis.clone(),
+            )
+            .await
+            {
+                continue;
+            }
             items.push(Medium {
                 id,
                 name,
@@ -456,10 +460,15 @@ async fn hx_list_items_inner(
 async fn hx_list_sidebar(
     Extension(config): Extension<Config>,
     Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     Path((listid, mediumid)): Path<(String, String)>,
 ) -> axum::response::Html<Vec<u8>> {
+    if !can_access_list_request(&headers, &db, redis.clone(), &listid).await {
+        return Html(Vec::new());
+    }
+    let user = get_user_login(headers.clone(), &db, redis.clone()).await;
     // Fetch all list items (no pagination for sidebar)
     let list_items: Vec<(String, i32)> = db.session.execute_unpaged(&db.get_list_items, (&listid, 10000i32))
         .await.ok().and_then(|r| r.into_rows_result().ok())
@@ -473,7 +482,19 @@ async fn hx_list_sidebar(
             .ok().and_then(|r| r.into_rows_result().ok())
             .and_then(|rows| rows.maybe_first_row::<(String, String, Option<String>, i64, String, i64, String, String, Option<String>)>().ok().flatten());
 
-        if let Some((id, name, _desc, _upload, owner, views, media_type, _vis, _rg)) = media_row {
+        if let Some((id, name, _desc, _upload, owner, views, media_type, visibility, restricted_group)) = media_row {
+            if !can_access_restricted(
+                &db,
+                &visibility,
+                restricted_group.as_deref(),
+                &owner,
+                &user,
+                redis.clone(),
+            )
+            .await
+            {
+                continue;
+            }
             media.push(Medium {
                 id,
                 name,
@@ -495,7 +516,6 @@ async fn hx_list_sidebar(
     let template = HXMediumListTemplate {
         media,
         current_medium_id: mediumid,
-        list_id: listid,
         config,
         locale,
     };
@@ -548,6 +568,9 @@ async fn hx_list_modal(
         return Html("".as_bytes().to_vec());
     }
     let user_info = user_info.unwrap();
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return Html(Vec::new());
+    }
 
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
 
@@ -578,6 +601,17 @@ async fn hx_create_list(
         return Html("".as_bytes().to_vec());
     }
     let user_info = user_info.unwrap();
+    let list_name = form.name.trim();
+    if list_name.is_empty() || list_name.len() > 200 {
+        return Html(
+            "<b class=\"text-danger\">List name must be between 1 and 200 characters.</b>"
+                .as_bytes()
+                .to_vec(),
+        );
+    }
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return Html(Vec::new());
+    }
 
     let list_id = generate_medium_id();
     let visibility = match form.visibility.as_deref() {
@@ -587,7 +621,21 @@ async fn hx_create_list(
     };
     let is_public = visibility == "public";
     let restricted_to_group = if visibility == "restricted" {
-        form.restricted_group.clone().filter(|g| !g.is_empty())
+        let Some(group_id) = form
+            .restricted_group
+            .as_deref()
+            .filter(|group_id| !group_id.is_empty())
+        else {
+            return Html(
+                "<b class=\"text-danger\">Select a restricted group.</b>"
+                    .as_bytes()
+                    .to_vec(),
+            );
+        };
+        if !is_owned_or_system_group(&db, &user_info.login, group_id).await {
+            return Html(Vec::new());
+        }
+        Some(group_id.to_owned())
     } else {
         None
     };
@@ -597,15 +645,29 @@ async fn hx_create_list(
         .unwrap()
         .as_secs() as i64;
 
-    // Insert into lists table
-    let _ = db.session.execute_unpaged(&db.insert_list, (&list_id, &form.name, &user_info.login, is_public, visibility, &restricted_to_group, created)).await;
-
-    // Insert into lists_by_owner table
-    let _ = db.session.execute_unpaged(&db.insert_list_by_owner, (&user_info.login, created, &list_id, &form.name, is_public, visibility, &restricted_to_group)).await;
-
-    // Insert first item into list_items and list_items_by_media
-    let _ = db.session.execute_unpaged(&db.insert_list_item, (&list_id, 0i32, &mediumid)).await;
-    let _ = db.session.execute_unpaged(&db.insert_list_item_by_media, (&mediumid, &list_id, 0i32)).await;
+    let main_insert = db.session.execute_unpaged(&db.insert_list, (&list_id, list_name, &user_info.login, is_public, visibility, &restricted_to_group, created)).await;
+    if main_insert.is_err() {
+        return Html("<b class=\"text-danger\">Failed to create list.</b>".as_bytes().to_vec());
+    }
+    let owner_insert = db.session.execute_unpaged(&db.insert_list_by_owner, (&user_info.login, created, &list_id, list_name, is_public, visibility, &restricted_to_group)).await;
+    if owner_insert.is_err() {
+        let _ = db.session.execute_unpaged(&db.delete_list, (&list_id,)).await;
+        return Html("<b class=\"text-danger\">Failed to create list.</b>".as_bytes().to_vec());
+    }
+    let item_insert = db.session.execute_unpaged(&db.insert_list_item, (&list_id, 0i32, &mediumid)).await;
+    let reverse_item_insert = if item_insert.is_ok() {
+        db.session.execute_unpaged(&db.insert_list_item_by_media, (&mediumid, &list_id, 0i32)).await
+    } else {
+        let _ = db.session.execute_unpaged(&db.delete_list, (&list_id,)).await;
+        let _ = db.session.execute_unpaged(&db.delete_list_by_owner, (&user_info.login, created, &list_id)).await;
+        return Html("<b class=\"text-danger\">Failed to add media to list.</b>".as_bytes().to_vec());
+    };
+    if reverse_item_insert.is_err() {
+        let _ = db.session.execute_unpaged(&db.delete_list_item, (&list_id, 0i32)).await;
+        let _ = db.session.execute_unpaged(&db.delete_list, (&list_id,)).await;
+        let _ = db.session.execute_unpaged(&db.delete_list_by_owner, (&user_info.login, created, &list_id)).await;
+        return Html("<b class=\"text-danger\">Failed to add media to list.</b>".as_bytes().to_vec());
+    }
 
     // Re-fetch lists and groups for modal template
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
@@ -636,6 +698,9 @@ async fn hx_add_to_list(
         return Html("".as_bytes().to_vec());
     }
     let user_info = user_info.unwrap();
+    if !can_access_media_request(&headers, &db, redis.clone(), &mediumid).await {
+        return Html(Vec::new());
+    }
 
     // Verify ownership
     let owner_row = db.session.execute_unpaged(&db.get_list_owner, (&listid,)).await
@@ -656,9 +721,14 @@ async fn hx_add_to_list(
 
     let next_pos = max_pos + 1;
 
-    // Insert item
-    let _ = db.session.execute_unpaged(&db.insert_list_item, (&listid, next_pos, &mediumid)).await;
-    let _ = db.session.execute_unpaged(&db.insert_list_item_by_media, (&mediumid, &listid, next_pos)).await;
+    let item_insert = db.session.execute_unpaged(&db.insert_list_item, (&listid, next_pos, &mediumid)).await;
+    if item_insert.is_err() {
+        return Html(Vec::new());
+    }
+    if db.session.execute_unpaged(&db.insert_list_item_by_media, (&mediumid, &listid, next_pos)).await.is_err() {
+        let _ = db.session.execute_unpaged(&db.delete_list_item, (&listid, next_pos)).await;
+        return Html(Vec::new());
+    }
 
     // Re-fetch lists and groups for modal template
     let (lists, owner_groups) = fetch_lists_and_groups_for_modal(&db, &user_info.login, &mediumid).await;
@@ -707,9 +777,26 @@ async fn hx_remove_from_list(
         .unwrap_or_default();
 
     if let Some((_list_id, position)) = media_entries.into_iter().find(|(lid, _)| lid == &listid) {
-        // Delete from list_items and list_items_by_media
-        let _ = db.session.execute_unpaged(&db.delete_list_item, (&listid, position)).await;
-        let _ = db.session.execute_unpaged(&db.delete_list_item_by_media, (&mediumid, &listid)).await;
+        if db
+            .session
+            .execute_unpaged(&db.delete_list_item, (&listid, position))
+            .await
+            .is_err()
+        {
+            return Html(Vec::new());
+        }
+        if db
+            .session
+            .execute_unpaged(&db.delete_list_item_by_media, (&mediumid, &listid))
+            .await
+            .is_err()
+        {
+            let _ = db
+                .session
+                .execute_unpaged(&db.insert_list_item, (&listid, position, &mediumid))
+                .await;
+            return Html(Vec::new());
+        }
     }
 
     // Re-fetch lists and groups for modal template
@@ -745,14 +832,14 @@ async fn hx_delete_list(
         .ok().and_then(|r| r.into_rows_result().ok())
         .and_then(|rows| rows.maybe_first_row::<(String, String, String, String, Option<String>, i64)>().ok().flatten());
 
-    let (owner, created) = match list_row {
-        Some((_id, _name, owner, _vis, _rg, created)) => {
+    let (name, owner, visibility, restricted_group, created) = match list_row {
+        Some((_id, name, owner, visibility, restricted_group, created)) => {
             if owner != user_info.login {
                 return Html(
                     "<script>window.location.replace(\"/\");</script>".to_owned(),
                 );
             }
-            (owner, created)
+            (name, owner, visibility, restricted_group, created)
         }
         None => {
             return Html(
@@ -762,22 +849,86 @@ async fn hx_delete_list(
     };
 
     // Fetch all items to delete them individually
-    let all_items: Vec<(i32, String)> = db.session.execute_unpaged(&db.delete_all_list_items, (&listid,))
+    let all_items = db.session.execute_unpaged(&db.delete_all_list_items, (&listid,))
         .await.ok().and_then(|r| r.into_rows_result().ok())
-        .map(|rows| rows.rows::<(i32, String)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>())
-        .unwrap_or_default();
+        .map(|rows| rows.rows::<(i32, String)>().unwrap().filter_map(|r| r.ok()).collect::<Vec<_>>());
+    let Some(all_items) = all_items else {
+        return Html("<b class=\"text-danger\">Failed to delete list.</b>".to_owned());
+    };
 
-    // Delete each item from both tables
     for (position, media_id) in &all_items {
-        let _ = db.session.execute_unpaged(&db.delete_list_item, (&listid, position)).await;
-        let _ = db.session.execute_unpaged(&db.delete_list_item_by_media, (media_id, &listid)).await;
+        if db
+            .session
+            .execute_unpaged(&db.delete_list_item, (&listid, position))
+            .await
+            .is_err()
+        {
+            restore_list_items(&db, &listid, &all_items).await;
+            return Html("<b class=\"text-danger\">Failed to delete list.</b>".to_owned());
+        }
+        if db
+            .session
+            .execute_unpaged(&db.delete_list_item_by_media, (media_id, &listid))
+            .await
+            .is_err()
+        {
+            restore_list_items(&db, &listid, &all_items).await;
+            return Html("<b class=\"text-danger\">Failed to delete list.</b>".to_owned());
+        }
     }
 
-    // Delete the list itself
-    let _ = db.session.execute_unpaged(&db.delete_list, (&listid,)).await;
-    let _ = db.session.execute_unpaged(&db.delete_list_by_owner, (&owner, created, &listid)).await;
+    if db
+        .session
+        .execute_unpaged(&db.delete_list, (&listid,))
+        .await
+        .is_err()
+    {
+        restore_list_items(&db, &listid, &all_items).await;
+        return Html("<b class=\"text-danger\">Failed to delete list.</b>".to_owned());
+    }
+    if db
+        .session
+        .execute_unpaged(&db.delete_list_by_owner, (&owner, created, &listid))
+        .await
+        .is_err()
+    {
+        let is_public = visibility == "public";
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_list,
+                (
+                    &listid,
+                    &name,
+                    &owner,
+                    is_public,
+                    &visibility,
+                    &restricted_group,
+                    created,
+                ),
+            )
+            .await;
+        restore_list_items(&db, &listid, &all_items).await;
+        return Html("<b class=\"text-danger\">Failed to delete list.</b>".to_owned());
+    }
 
     Html("<b class=\"text-success\">LIST DELETED</b><script>window.location.replace(\"/\");</script>".to_owned())
+}
+
+async fn restore_list_items(db: &ScyllaDb, list_id: &str, items: &[(i32, String)]) {
+    for (position, media_id) in items {
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_list_item, (list_id, position, media_id))
+            .await;
+        let _ = db
+            .session
+            .execute_unpaged(
+                &db.insert_list_item_by_media,
+                (media_id, list_id, position),
+            )
+            .await;
+    }
 }
 
 async fn hx_user_lists(
@@ -811,6 +962,9 @@ async fn hx_user_lists_inner(
     userid: String,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let common_headers = extract_common_headers(&headers);
     let user = get_user_login(headers, &db, redis.clone()).await;
     let user_login = user.as_ref().map(|u| u.login.clone()).unwrap_or_default();

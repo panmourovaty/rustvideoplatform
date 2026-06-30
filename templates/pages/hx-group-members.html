@@ -46,7 +46,7 @@
                     </td>
                     {% if is_owner %}
                     <td>
-                        <a hx-get="/hx/group/{{ group.id }}/removemember/{{ member.user_login }}"
+                        <a hx-post="/hx/group/{{ group.id }}/removemember/{{ member.user_login }}"
                            hx-target="#group-members-panel"
                            hx-confirm="Remove {{ member.user_login }} from this group?"
                            class="btn btn-sm btn-outline-danger" title="Remove member">

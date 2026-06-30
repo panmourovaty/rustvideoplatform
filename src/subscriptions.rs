@@ -1,9 +1,8 @@
 #[derive(Template)]
-#[template(path = "pages/subscriptions.html", escape = "none")]
+#[template(path = "pages/subscriptions.html")]
 struct SubscriptionsTemplate {
     sidebar: String,
     config: Config,
-    common_headers: CommonHeaders,
     locale: RequestLocale,
     resolved_lang: String,
 }
@@ -22,7 +21,6 @@ async fn subscriptions(
     let template = SubscriptionsTemplate {
         sidebar,
         config,
-        common_headers,
         locale,
         resolved_lang,
     };
@@ -58,6 +56,9 @@ async fn hx_subscriptions_inner(
     redis: RedisConn,
     page: i64,
 ) -> axum::response::Html<Vec<u8>> {
+    if !valid_page(page) {
+        return Html(Vec::new());
+    }
     let common_headers = extract_common_headers(&headers);
     let user = match get_user_login(headers, &db, redis.clone()).await {
         Some(user) => user,
@@ -112,7 +113,7 @@ async fn hx_subscriptions_inner(
     }
 
     // Sort by upload DESC
-    all_media_owned.sort_by(|a, b| b.upload.cmp(&a.upload));
+    all_media_owned.sort_by_key(|medium| std::cmp::Reverse(medium.upload));
 
     // Filter by visibility and paginate
     let user_opt = Some(user.clone());
@@ -181,10 +182,41 @@ async fn hx_subscribe(
     Extension(redis): Extension<RedisConn>,
     Path(userid): Path<String>,
 ) -> axum::response::Html<String> {
-    let user = get_user_login(headers, &db, redis.clone()).await.unwrap();
-    let _ = db.session.execute_unpaged(&db.insert_subscription, (&user.login, &userid)).await;
-    let _ = db.session.execute_unpaged(&db.insert_subscriber_by_target, (&userid, &user.login)).await;
-    Html(format!("<a hx-get=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",user.login))
+    let Some(user) = get_user_login(headers, &db, redis.clone()).await else {
+        return Html(String::new());
+    };
+    let target_exists = db
+        .session
+        .execute_unpaged(&db.check_user_exists, (&userid,))
+        .await
+        .ok()
+        .and_then(|result| result.into_rows_result().ok())
+        .and_then(|rows| rows.maybe_first_row::<(String,)>().ok().flatten())
+        .is_some();
+    if !target_exists || userid == user.login {
+        return Html(String::new());
+    }
+    if db
+        .session
+        .execute_unpaged(&db.insert_subscription, (&user.login, &userid))
+        .await
+        .is_err()
+    {
+        return Html(String::new());
+    }
+    if db
+        .session
+        .execute_unpaged(&db.insert_subscriber_by_target, (&userid, &user.login))
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(&db.delete_subscription, (&user.login, &userid))
+            .await;
+        return Html(String::new());
+    }
+    Html(format!("<a hx-post=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>", escape_html(&userid)))
 }
 async fn hx_unsubscribe(
     headers: HeaderMap,
@@ -192,10 +224,30 @@ async fn hx_unsubscribe(
     Extension(redis): Extension<RedisConn>,
     Path(userid): Path<String>,
 ) -> axum::response::Html<String> {
-    let user = get_user_login(headers, &db, redis.clone()).await.unwrap();
-    let _ = db.session.execute_unpaged(&db.delete_subscription, (&user.login, &userid)).await;
-    let _ = db.session.execute_unpaged(&db.delete_subscriber_by_target, (&userid, &user.login)).await;
-    Html(format!("<a hx-get=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",user.login))
+    let Some(user) = get_user_login(headers, &db, redis.clone()).await else {
+        return Html(String::new());
+    };
+    if db
+        .session
+        .execute_unpaged(&db.delete_subscription, (&user.login, &userid))
+        .await
+        .is_err()
+    {
+        return Html(String::new());
+    }
+    if db
+        .session
+        .execute_unpaged(&db.delete_subscriber_by_target, (&userid, &user.login))
+        .await
+        .is_err()
+    {
+        let _ = db
+            .session
+            .execute_unpaged(&db.insert_subscription, (&user.login, &userid))
+            .await;
+        return Html(String::new());
+    }
+    Html(format!("<a hx-post=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>", escape_html(&userid)))
 }
 async fn hx_subscribebutton(
     headers: HeaderMap,
@@ -213,13 +265,13 @@ async fn hx_subscribebutton(
 
         let button = if issubscribed {
             format!(
-                "<a hx-get=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",
-                userid
+                "<a hx-post=\"/hx/unsubscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-secondary\"><i class=\"fa-solid fa-user-minus\"></i>&nbsp;Unsubscribe</a>",
+                escape_html(&userid)
             )
         } else {
             format!(
-                "<a hx-get=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",
-                userid
+                "<a hx-post=\"/hx/subscribe/{}\" hx-swap=\"outerHTML\" class=\"btn btn-primary\"><i class=\"fa-solid fa-user-plus\"></i>&nbsp;Subscribe</a>",
+                escape_html(&userid)
             )
         };
 

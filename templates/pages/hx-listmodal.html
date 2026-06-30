@@ -12,13 +12,13 @@
             <span class="text-white">{{ list.name }}</span>
             <div>
                 {% if list.already_added %}
-                <a hx-get="/hx/removefromlist/{{ list.id }}/{{ medium_id }}"
+                <a hx-post="/hx/removefromlist/{{ list.id }}/{{ medium_id }}"
                    hx-target="#listmodal-body"
                    class="btn btn-secondary btn-sm">
                     <i class="fa-solid fa-check"></i> {{ locale.t("listmodal-added") }}
                 </a>
                 {% else %}
-                <a hx-get="/hx/addtolist/{{ list.id }}/{{ medium_id }}"
+                <a hx-post="/hx/addtolist/{{ list.id }}/{{ medium_id }}"
                    hx-target="#listmodal-body"
                    class="btn btn-primary btn-sm">
                     <i class="fa-solid fa-plus"></i> {{ locale.t("button-add") }}

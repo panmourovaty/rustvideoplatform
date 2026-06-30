@@ -1,5 +1,5 @@
 #[derive(Template)]
-#[template(path = "pages/hx-studio-edit-textures.html", escape = "none")]
+#[template(path = "pages/hx-studio-edit-textures.html")]
 struct HXStudioEditTexturesTemplate {
     medium_id: String,
     locale: RequestLocale,
@@ -13,6 +13,9 @@ async fn hx_studio_edit_textures_tab(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> axum::response::Html<Vec<u8>> {
+    if !is_valid_resource_id(&mediumid) {
+        return Html(Vec::new());
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Html(minifi_html("".to_owned()));
@@ -41,6 +44,9 @@ async fn studio_textures_list(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Json<serde_json::Value> {
+    if !is_valid_resource_id(&mediumid) {
+        return Json(serde_json::json!({ "textures": [] }));
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Json(serde_json::json!({ "textures": [] }));
@@ -85,6 +91,12 @@ async fn studio_textures_upload(
     Path(mediumid): Path<String>,
     mut multipart: Multipart,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -163,7 +175,7 @@ async fn studio_textures_upload(
     let safe_name = if safe_name.is_empty() { format!("texture.{}", ext) } else { safe_name };
 
     let textures_dir = format!("source/{}/textures", mediumid);
-    if let Err(_) = tokio::fs::create_dir_all(&textures_dir).await {
+    if tokio::fs::create_dir_all(&textures_dir).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -172,7 +184,7 @@ async fn studio_textures_upload(
     }
 
     let dest = format!("{}/{}", textures_dir, safe_name);
-    if let Err(_) = tokio::fs::write(&dest, &file_bytes).await {
+    if tokio::fs::write(&dest, &file_bytes).await.is_err() {
         return Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header(axum::http::header::CONTENT_TYPE, "application/json")
@@ -198,6 +210,12 @@ async fn studio_textures_delete(
     Path(mediumid): Path<String>,
     Json(body): Json<DeleteTextureForm>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
@@ -257,6 +275,12 @@ async fn studio_textures_apply(
     headers: HeaderMap,
     Path(mediumid): Path<String>,
 ) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return json_resp(
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid media id"}),
+        );
+    }
     let user_info = get_user_login(headers.clone(), &db, redis.clone()).await;
     if !is_logged(user_info.clone()).await {
         return Response::builder()
