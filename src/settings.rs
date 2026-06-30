@@ -3,6 +3,7 @@
 struct SettingsTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     active_tab: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -24,10 +25,16 @@ async fn settings(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "channel_name".to_owned(),
         locale,
         resolved_lang,
@@ -51,10 +58,16 @@ async fn settings_password(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "password".to_owned(),
         locale,
         resolved_lang,
@@ -78,10 +91,16 @@ async fn settings_profile_picture(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "profile_picture".to_owned(),
         locale,
         resolved_lang,
@@ -105,10 +124,16 @@ async fn settings_channel_picture(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "channel_picture".to_owned(),
         locale,
         resolved_lang,
@@ -132,10 +157,16 @@ async fn settings_diagnostics(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "diagnostics".to_owned(),
         locale,
         resolved_lang,
@@ -779,10 +810,16 @@ async fn settings_theme(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "theme".to_owned(),
         locale,
         resolved_lang,
@@ -946,10 +983,16 @@ async fn settings_language(
     let common_headers = extract_common_headers(&headers);
     let locale = resolve_request_locale(user_info.as_ref(), &common_headers, &db, &localization, &config).await;
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "settings".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "settings".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = SettingsTemplate {
         sidebar,
         config,
+        current_user: user_info,
         active_tab: "language".to_owned(),
         locale,
         resolved_lang,

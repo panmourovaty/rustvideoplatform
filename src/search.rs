@@ -913,6 +913,7 @@ async fn hx_search_all_inner(
 struct SearchTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     initial_query: String,
     schema_org_json: String,
     locale: RequestLocale,
@@ -927,6 +928,8 @@ struct SearchQuery {
 
 async fn search(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<SearchQuery>,
@@ -948,11 +951,18 @@ async fn search(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "search".to_owned(), locale.clone());
+    let current_user = get_user_login(headers, &db, redis).await;
+    let sidebar = generate_sidebar(
+        &config,
+        "search".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let initial_query = params.q.unwrap_or_default();
     let template = SearchTemplate {
         sidebar,
         config,
+        current_user,
         initial_query,
         schema_org_json,
         locale,

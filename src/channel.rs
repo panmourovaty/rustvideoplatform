@@ -11,6 +11,7 @@ struct UserChannel {
 struct ChannelTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     user: UserChannel,
     schema_org_json: String,
     locale: RequestLocale,
@@ -18,6 +19,7 @@ struct ChannelTemplate {
 }
 async fn channel(
     Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(config): Extension<Config>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
@@ -64,7 +66,13 @@ async fn channel(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "channel".to_owned(), locale.clone());
+    let current_user = get_user_login(headers, &db, redis).await;
+    let sidebar = generate_sidebar(
+        &config,
+        "channel".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let schema_org_json = {
         let profile_url = format!("{}/u/{}", config.site_url, user.login);
         let mut main_entity = serde_json::json!({
@@ -94,6 +102,7 @@ async fn channel(
     let template = ChannelTemplate {
         sidebar,
         config,
+        current_user,
         user,
         schema_org_json,
         locale,

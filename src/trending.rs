@@ -3,12 +3,15 @@
 struct TrendingTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     schema_org_json: String,
     locale: RequestLocale,
     resolved_lang: String,
 }
 async fn trending(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
@@ -29,10 +32,17 @@ async fn trending(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "trending".to_owned(), locale.clone());
+    let current_user = get_user_login(headers, &db, redis).await;
+    let sidebar = generate_sidebar(
+        &config,
+        "trending".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = TrendingTemplate {
         sidebar,
         config,
+        current_user,
         schema_org_json,
         locale,
         resolved_lang,

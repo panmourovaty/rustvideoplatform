@@ -38,6 +38,7 @@ fn parse_caption_entry(entry: &str) -> CaptionEntry {
 #[template(path = "pages/medium.html")]
 struct MediumTemplate {
     sidebar: String,
+    current_user: Option<User>,
     medium_id: String,
     medium_name: String,
     medium_owner: String,
@@ -315,9 +316,15 @@ async fn medium(
         &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "medium".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "medium".to_owned(),
+        user.clone(),
+        locale.clone(),
+    );
     let template = MediumTemplate {
         sidebar,
+        current_user: user,
         medium_id,
         medium_name: name,
         medium_owner: owner,

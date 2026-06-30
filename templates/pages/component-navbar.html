@@ -28,8 +28,33 @@
             </ul>
         </form>
         <div class="my-1 text-white d-flex align-items-center gap-5">
-            <div hx-get="/hx/usernav" hx-trigger="load" style="width:120px;height:40px;" class="mx-3 usernav-placeholder" preload="always">
-                <a href="/login" preload="mouseover" style="visibility:hidden;"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>{{ locale.t("nav-login") }}</button></a>
+            <div class="mx-3" style="width:120px;height:40px;">
+                {% if current_user.is_some() %}
+                {% let nav_user = current_user.as_ref().unwrap() %}
+                <div class="dropdown">
+                    <button class="btn d-flex align-items-center gap-2 p-1" aria-label="User menu for {{ nav_user.name }}" aria-haspopup="true">
+                        {% if nav_user.profile_picture.is_some() %}
+                        <img src="{{ config.source_server_url }}/source/{{ nav_user.profile_picture.as_ref().unwrap() }}/thumbnail-small.avif"
+                             class="user-avatar" alt="{{ nav_user.name }} profile picture" />
+                        {% else %}
+                        <div class="user-avatar-placeholder">
+                            <i class="fa-solid fa-user" style="font-size:14px;color:white;" aria-hidden="true"></i>
+                        </div>
+                        {% endif %}
+                        <span class="text-white user-name-clamp">{{ nav_user.name }}</span>
+                    </button>
+                    <div class="dropdown-content border shadow">
+                        <a class="dropdown-item" href="/u/{{ nav_user.login }}" preload="mouseover"><i class="fa-solid fa-house-flag mx-2"></i>{{ locale.t("usernav-my-channel") }}</a>
+                        <a class="dropdown-item" href="/studio" preload="mouseover"><i class="fa-solid fa-pen-ruler mx-2"></i>{{ locale.t("nav-studio") }}</a>
+                        <a class="dropdown-item" href="/settings" preload="mouseover"><i class="fa-solid fa-gear mx-2"></i>{{ locale.t("nav-settings") }}</a>
+                        <form method="post" action="/hx/logout">
+                            <button class="dropdown-item" type="submit"><i class="fa-solid fa-arrow-right-from-bracket mx-2"></i>{{ locale.t("usernav-log-out") }}</button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <a href="/login" preload="mouseover"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>{{ locale.t("nav-login") }}</button></a>
+                {% endif %}
             </div>
             <button class="btn btn-primary ms-3" onclick="toggleSidebar()" aria-label="{{ locale.t("nav-toggle-sidebar") }}" aria-expanded="true" aria-controls="sidebar"><i class="fa-solid fa-bars fa-xl" aria-hidden="true"></i></button>
         </div>

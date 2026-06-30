@@ -3,12 +3,15 @@
 struct SubscriptionsTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     locale: RequestLocale,
     resolved_lang: String,
 }
 
 async fn subscriptions(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
@@ -17,10 +20,17 @@ async fn subscriptions(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "subscribed".to_owned(), locale.clone());
+    let current_user = get_user_login(headers, &db, redis).await;
+    let sidebar = generate_sidebar(
+        &config,
+        "subscribed".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = SubscriptionsTemplate {
         sidebar,
         config,
+        current_user,
         locale,
         resolved_lang,
     };

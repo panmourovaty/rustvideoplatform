@@ -35,7 +35,8 @@ async fn studio_groups(
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
+    let current_user = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(current_user.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
@@ -46,10 +47,16 @@ async fn studio_groups(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "studio".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = StudioTemplate {
         sidebar,
         config,
+        current_user,
         active_tab: "groups".to_owned(),
         locale,
         resolved_lang,

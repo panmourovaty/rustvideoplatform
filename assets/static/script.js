@@ -74,9 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = event.detail.target;
         if (t && t.classList && (
             t.classList.contains('hx-placeholder') ||
-            t.classList.contains('sidebar-hx-placeholder') ||
-            t.classList.contains('subscribe-placeholder') ||
-            t.classList.contains('usernav-placeholder')
+            t.classList.contains('subscribe-placeholder')
         )) {
             t.style.opacity = '0';
         }
@@ -156,4 +154,3 @@ function fitMediumTitle() {
 }
 
 window.addEventListener('resize', fitMediumTitle);
-

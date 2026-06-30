@@ -3,12 +3,15 @@
 struct HomeTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     schema_org_json: String,
     locale: RequestLocale,
     resolved_lang: String,
 }
 async fn home(
     Extension(config): Extension<Config>,
+    Extension(db): Extension<ScyllaDb>,
+    Extension(redis): Extension<RedisConn>,
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
@@ -32,10 +35,17 @@ async fn home(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "home".to_owned(), locale.clone());
+    let current_user = get_user_login(headers, &db, redis).await;
+    let sidebar = generate_sidebar(
+        &config,
+        "home".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = HomeTemplate {
         config,
         sidebar,
+        current_user,
         schema_org_json,
         locale,
         resolved_lang,

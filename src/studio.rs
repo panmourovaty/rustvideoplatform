@@ -3,6 +3,7 @@
 struct StudioTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     active_tab: String,
     locale: RequestLocale,
     resolved_lang: String,
@@ -14,7 +15,8 @@ async fn studio(
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
+    let current_user = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(current_user.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
@@ -25,10 +27,16 @@ async fn studio(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "studio".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = StudioTemplate {
         sidebar,
         config,
+        current_user,
         active_tab: "media".to_owned(),
         locale,
         resolved_lang,
@@ -145,7 +153,8 @@ async fn studio_lists(
     Extension(localization): Extension<Arc<LocalizationService>>,
     headers: HeaderMap,
 ) -> axum::response::Html<Vec<u8>> {
-    if !is_logged(get_user_login(headers.clone(), &db, redis.clone()).await).await {
+    let current_user = get_user_login(headers.clone(), &db, redis.clone()).await;
+    if !is_logged(current_user.clone()).await {
         return Html(minifi_html(
             "<script>window.location.replace(\"/login\");</script>".to_owned(),
         ));
@@ -156,10 +165,16 @@ async fn studio_lists(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "studio".to_owned(),
+        current_user.clone(),
+        locale.clone(),
+    );
     let template = StudioTemplate {
         sidebar,
         config,
+        current_user,
         active_tab: "lists".to_owned(),
         locale,
         resolved_lang,
@@ -274,6 +289,7 @@ struct MediumEdit {
 struct StudioEditTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     medium: MediumEdit,
     active_tab: String,
     locale: RequestLocale,
@@ -358,10 +374,16 @@ async fn studio_edit(
                 common_headers.accept_language.as_deref(), &config.locale, &localization,
             );
             let resolved_lang = locale.lang.clone();
-            let sidebar = generate_sidebar(&config, "studio".to_owned(), locale.clone());
+            let sidebar = generate_sidebar(
+                &config,
+                "studio".to_owned(),
+                Some(user_info.clone()),
+                locale.clone(),
+            );
             let template = StudioEditTemplate {
                 sidebar,
                 config,
+                current_user: Some(user_info),
                 medium: MediumEdit {
                     id,
                     name,

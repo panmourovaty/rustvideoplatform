@@ -398,8 +398,6 @@ async fn main() {
         .route("/hx/login", post(hx_login))
         .route("/hx/login/2fa/totp", post(hx_login_2fa_totp))
         .route("/hx/logout", post(hx_logout))
-        .route("/hx/usernav", get(hx_usernav))
-        .route("/hx/sidebar/{active_item}", get(hx_sidebar))
         .route("/hx/searchsuggestions", post(hx_search_suggestions))
         .route("/search", get(search))
         .route("/hx/search/{pageid}", post(hx_search))
@@ -754,7 +752,6 @@ include!("likes_dislikes.rs");
 include!("subscriptions.rs");
 include!("views.rs");
 include!("login_handler.rs");
-include!("usernav.rs");
 include!("trending.rs");
 include!("home.rs");
 include!("search.rs");

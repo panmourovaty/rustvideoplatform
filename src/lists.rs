@@ -36,6 +36,7 @@ struct CreateListForm {
 struct ListPageTemplate {
     sidebar: String,
     config: Config,
+    current_user: Option<User>,
     list: List,
     is_owner: bool,
     schema_org_json: String,
@@ -132,10 +133,16 @@ async fn list_page(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "list".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "list".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = ListPageTemplate {
         sidebar,
         config,
+        current_user: user_info,
         list,
         is_owner,
         schema_org_json,
@@ -323,9 +330,15 @@ async fn medium_in_list(
         common_headers.accept_language.as_deref(), &config.locale, &localization,
     );
     let resolved_lang = locale.lang.clone();
-    let sidebar = generate_sidebar(&config, "medium".to_owned(), locale.clone());
+    let sidebar = generate_sidebar(
+        &config,
+        "medium".to_owned(),
+        user_info.clone(),
+        locale.clone(),
+    );
     let template = MediumTemplate {
         sidebar,
+        current_user: user_info,
         medium_id,
         medium_name: m_name,
         medium_owner: m_owner,
