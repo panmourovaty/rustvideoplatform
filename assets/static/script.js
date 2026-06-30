@@ -3,6 +3,12 @@
 const MOBILE_QUERY = "(max-width: 1000px)";
 const hlsPreviewStates = new WeakMap();
 
+function failHlsPreview(video, state) {
+    if (hlsPreviewStates.get(video) === state) {
+        stopHlsPreview(video);
+    }
+}
+
 function showHlsPreview(video, state) {
     if (!state.active) return;
 
@@ -10,11 +16,24 @@ function showHlsPreview(video, state) {
     if (playPromise && typeof playPromise.then === "function") {
         playPromise.then(() => {
             if (state.active) {
+                state.started = true;
                 video.closest(".thumbnail-container")?.classList.add("is-preview-playing");
             }
-        }).catch(() => {});
+        }).catch(() => failHlsPreview(video, state));
     } else {
+        state.started = true;
         video.closest(".thumbnail-container")?.classList.add("is-preview-playing");
+    }
+}
+
+function rememberHlsPreviewTime(video) {
+    const state = hlsPreviewStates.get(video);
+    const link = video.closest("a[href]");
+    if (!state?.started || !link) return;
+
+    const currentTime = video.currentTime;
+    if (Number.isFinite(currentTime) && currentTime > 0) {
+        link.dataset.hlsPreviewTime = currentTime.toFixed(3);
     }
 }
 
@@ -22,36 +41,58 @@ function startHlsPreview(video) {
     let state = hlsPreviewStates.get(video);
     if (state?.active) return;
 
-    state = { active: true, hls: null };
+    state = { active: true, started: false, hls: null, nativeErrorHandler: null };
     hlsPreviewStates.set(video, state);
     video.muted = true;
+    const link = video.closest("a[href]");
+    if (link) {
+        delete link.dataset.hlsPreviewTime;
+        const url = new URL(link.href, window.location.href);
+        url.searchParams.delete("t");
+        link.href = url.toString();
+    }
 
     const source = video.dataset.hlsPreviewSrc;
-    if (!source) return;
+    if (!source) {
+        failHlsPreview(video, state);
+        return;
+    }
 
     if (window.Hls && Hls.isSupported()) {
-        const hls = new Hls({
-            capLevelToPlayerSize: true,
-            maxBufferLength: 10,
-            backBufferLength: 0,
-        });
-        state.hls = hls;
-        hls.on(Hls.Events.MANIFEST_PARSED, () => showHlsPreview(video, state));
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.fatal) stopHlsPreview(video);
-        });
-        hls.loadSource(source);
-        hls.attachMedia(video);
+        try {
+            const hls = new Hls({
+                capLevelToPlayerSize: true,
+                maxBufferLength: 10,
+                backBufferLength: 0,
+            });
+            state.hls = hls;
+            hls.on(Hls.Events.MANIFEST_PARSED, () => showHlsPreview(video, state));
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+                if (data.fatal) failHlsPreview(video, state);
+            });
+            hls.loadSource(source);
+            hls.attachMedia(video);
+        } catch (_error) {
+            failHlsPreview(video, state);
+        }
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        state.nativeErrorHandler = () => failHlsPreview(video, state);
+        video.addEventListener("error", state.nativeErrorHandler, { once: true });
         video.src = source;
         showHlsPreview(video, state);
+    } else {
+        failHlsPreview(video, state);
     }
 }
 
 function stopHlsPreview(video) {
     const state = hlsPreviewStates.get(video);
     if (state) {
+        rememberHlsPreviewTime(video);
         state.active = false;
+        if (state.nativeErrorHandler) {
+            video.removeEventListener("error", state.nativeErrorHandler);
+        }
         state.hls?.destroy();
         hlsPreviewStates.delete(video);
     }
@@ -60,6 +101,20 @@ function stopHlsPreview(video) {
     video.pause();
     video.removeAttribute("src");
     video.load();
+}
+
+function addHlsPreviewTimeToLink(event) {
+    const link = event.target.closest?.("a[href]");
+    const video = link?.querySelector("video[data-hls-preview-src]");
+    if (!video) return;
+
+    rememberHlsPreviewTime(video);
+    const previewTime = Number(link.dataset.hlsPreviewTime);
+    if (!Number.isFinite(previewTime) || previewTime <= 0) return;
+
+    const url = new URL(link.href, window.location.href);
+    url.searchParams.set("t", previewTime.toFixed(3));
+    link.href = url.toString();
 }
 
 document.addEventListener("mouseover", (event) => {
@@ -83,6 +138,31 @@ document.addEventListener("visibilitychange", () => {
         document.querySelectorAll("video[data-hls-preview-src]").forEach(stopHlsPreview);
     }
 });
+
+document.addEventListener("pointerdown", addHlsPreviewTimeToLink, true);
+document.addEventListener("click", addHlsPreviewTimeToLink, true);
+
+function resumeMediaFromQuery() {
+    const resumeTime = Number(new URLSearchParams(window.location.search).get("t"));
+    if (!Number.isFinite(resumeTime) || resumeTime <= 0) return;
+
+    const player = document.querySelector("media-player");
+    if (!player) return;
+
+    const seekToResumeTime = () => {
+        const duration = Number(player.duration);
+        if (!Number.isFinite(duration) || duration <= 0) return;
+
+        player.currentTime = Math.min(resumeTime, Math.max(0, duration - 0.01));
+    };
+
+    const duration = Number(player.duration);
+    if (Number.isFinite(duration) && duration > 0) {
+        seekToResumeTime();
+    } else {
+        player.addEventListener("can-play", seekToResumeTime, { once: true });
+    }
+}
 
 function toggleSidebar() {
     if (window.matchMedia(MOBILE_QUERY).matches) {
@@ -170,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fitMediumTitle();
+    resumeMediaFromQuery();
 });
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
