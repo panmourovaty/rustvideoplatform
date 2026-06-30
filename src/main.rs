@@ -15,7 +15,7 @@ use argon2::password_hash::PasswordHash;
 use askama::Template;
 use axum::{
     body::Body,
-    extract::{DefaultBodyLimit, Form, Multipart, OriginalUri, Path},
+    extract::{DefaultBodyLimit, Form, Multipart, Path},
     http::header::HeaderMap,
     http::header::{ACCEPT_LANGUAGE, ORIGIN, REFERER},
     http::{Method, Request},
@@ -138,41 +138,19 @@ async fn enforce_same_origin(req: Request<Body>, next: Next, allowed_origin: Str
     next.run(req).await
 }
 
-async fn authorize_source_request(
-    req: Request<Body>,
-    next: Next,
-    db: ScyllaDb,
-    redis: RedisConn,
-) -> Response {
-    let original_path = req
-        .extensions()
-        .get::<OriginalUri>()
-        .map(|uri| uri.0.path())
-        .unwrap_or_else(|| req.uri().path());
-    let relative_path = original_path
-        .strip_prefix("/source/")
-        .unwrap_or(original_path.trim_start_matches('/'));
-    let Some(resource_id) = relative_path.split('/').next() else {
-        return StatusCode::NOT_FOUND.into_response();
-    };
+fn content_security_policy(source_origin: Option<&str>) -> String {
+    let source = source_origin
+        .map(|origin| format!(" {origin}"))
+        .unwrap_or_default();
 
-    if matches!(
-        resource_id,
-        "favicon.svg" | "system_style" | "system_pregen"
-    ) {
-        return next.run(req).await;
-    }
-
-    if !is_valid_resource_id(resource_id) {
-        return StatusCode::NOT_FOUND.into_response();
-    }
-    let normally_accessible =
-        can_access_media_request(req.headers(), &db, redis, resource_id).await;
-    if !normally_accessible && !is_public_profile_asset(&db, resource_id, relative_path).await {
-        return StatusCode::NOT_FOUND.into_response();
-    }
-
-    next.run(req).await
+    format!(
+        "default-src 'self'; base-uri 'self'; object-src 'self'{source}; frame-ancestors 'none'; \
+         form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net \
+         https://fonts.gstatic.com{source}; img-src 'self' data: blob:{source}; media-src 'self' \
+         blob:{source}; connect-src 'self' https://cdn.jsdelivr.net{source}; worker-src 'self' blob:"
+    )
 }
 
 fn load_certs_from_pem(cert_pem: &[u8]) -> Vec<CertificateDer<'static>> {
@@ -226,14 +204,25 @@ async fn main() {
     }
     let allowed_origin = configured_origin(&config);
 
-    // Media must pass through this application so visibility checks cannot be bypassed
-    // through an unauthenticated static-file host.
-    if !config.source_server_url.is_empty() {
-        eprintln!(
-            "WARNING: source_server_url is ignored; media is served through authenticated /source routes"
-        );
-        config.source_server_url.clear();
-    }
+    config.source_server_url = config
+        .source_server_url
+        .trim()
+        .trim_end_matches('/')
+        .to_owned();
+    let source_origin = if config.source_server_url.is_empty() {
+        None
+    } else {
+        let source_url = url::Url::parse(&config.source_server_url)
+            .expect("config: source_server_url must be an absolute URL");
+        if !matches!(source_url.scheme(), "http" | "https") {
+            panic!("config: source_server_url must use http or https");
+        }
+        Some(source_url.origin().ascii_serialization())
+    };
+    let content_security_policy =
+        axum::http::HeaderValue::from_str(&content_security_policy(source_origin.as_deref()))
+            .expect("config: source_server_url produced an invalid Content-Security-Policy");
+
     if let Ok(meilisearch_key) = std::env::var("MEILISEARCH_KEY") {
         config.meilisearch_key = Some(meilisearch_key);
     }
@@ -352,15 +341,7 @@ async fn main() {
 
     let has_tls = tls_cert.is_some();
     let public_site_url = config.site_url.trim_end_matches('/').to_owned();
-    let source_db = db.clone();
-    let source_redis = redis_conn.clone();
-    let source_router = static_router("source").layer(axum::middleware::from_fn(
-        move |req: Request<Body>, next: Next| {
-            let db = source_db.clone();
-            let redis = source_redis.clone();
-            async move { authorize_source_request(req, next, db, redis).await }
-        },
-    ));
+    let source_router = static_router("source");
 
     let app = Router::new()
         .route("/robots.txt", get(robots_txt))
@@ -598,53 +579,54 @@ async fn main() {
             },
         ))
         .layer(axum::middleware::from_fn(
-            move |req: axum::http::Request<Body>, next: Next| async move {
-                let mut response = next.run(req).await;
+            move |req: Request<Body>, next: Next| {
+                let content_security_policy = content_security_policy.clone();
+                async move {
+                    let mut response = next.run(req).await;
 
-                if hsts_active {
+                    if hsts_active {
+                        response.headers_mut().insert(
+                            axum::http::header::HeaderName::from_static(
+                                "strict-transport-security",
+                            ),
+                            axum::http::header::HeaderValue::from_static(
+                                "max-age=31536000; includeSubDomains; preload",
+                            ),
+                        );
+                    }
+
+                    if has_tls && enable_http3 {
+                        response.headers_mut().insert(
+                            axum::http::header::HeaderName::from_static("alt-svc"),
+                            axum::http::header::HeaderValue::from_static(r#"h3=":443"; ma=86400"#),
+                        );
+                    }
+
                     response.headers_mut().insert(
-                        axum::http::header::HeaderName::from_static(
-                            "strict-transport-security",
-                        ),
-                        axum::http::header::HeaderValue::from_static(
-                            "max-age=31536000; includeSubDomains; preload",
+                        axum::http::header::X_CONTENT_TYPE_OPTIONS,
+                        axum::http::HeaderValue::from_static("nosniff"),
+                    );
+                    response.headers_mut().insert(
+                        axum::http::header::X_FRAME_OPTIONS,
+                        axum::http::HeaderValue::from_static("DENY"),
+                    );
+                    response.headers_mut().insert(
+                        axum::http::header::REFERRER_POLICY,
+                        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+                    );
+                    response.headers_mut().insert(
+                        axum::http::header::HeaderName::from_static("permissions-policy"),
+                        axum::http::HeaderValue::from_static(
+                            "camera=(), microphone=(), geolocation=(), payment=()",
                         ),
                     );
-                }
-
-                if has_tls && enable_http3 {
                     response.headers_mut().insert(
-                        axum::http::header::HeaderName::from_static("alt-svc"),
-                        axum::http::header::HeaderValue::from_static(r#"h3=":443"; ma=86400"#),
+                        axum::http::header::CONTENT_SECURITY_POLICY,
+                        content_security_policy,
                     );
+
+                    response
                 }
-
-                response.headers_mut().insert(
-                    axum::http::header::X_CONTENT_TYPE_OPTIONS,
-                    axum::http::HeaderValue::from_static("nosniff"),
-                );
-                response.headers_mut().insert(
-                    axum::http::header::X_FRAME_OPTIONS,
-                    axum::http::HeaderValue::from_static("DENY"),
-                );
-                response.headers_mut().insert(
-                    axum::http::header::REFERRER_POLICY,
-                    axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
-                );
-                response.headers_mut().insert(
-                    axum::http::header::HeaderName::from_static("permissions-policy"),
-                    axum::http::HeaderValue::from_static(
-                        "camera=(), microphone=(), geolocation=(), payment=()",
-                    ),
-                );
-                response.headers_mut().insert(
-                    axum::http::header::CONTENT_SECURITY_POLICY,
-                    axum::http::HeaderValue::from_static(
-                        "default-src 'self'; base-uri 'self'; object-src 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:",
-                    ),
-                );
-
-                response
             },
         ))
         .layer(axum::middleware::from_fn(move |req, next| {
@@ -853,5 +835,24 @@ mod security_regression_tests {
             &headers,
             "https://attacker.example"
         ));
+    }
+
+    #[test]
+    fn source_origin_is_allowed_by_the_content_security_policy() {
+        let policy = content_security_policy(Some("https://media.example"));
+
+        for directive in [
+            "object-src",
+            "font-src",
+            "img-src",
+            "media-src",
+            "connect-src",
+        ] {
+            let value = policy
+                .split(';')
+                .find(|value| value.trim_start().starts_with(directive))
+                .unwrap();
+            assert!(value.contains("https://media.example"));
+        }
     }
 }

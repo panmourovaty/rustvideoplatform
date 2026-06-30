@@ -23,9 +23,9 @@ storage, and Meilisearch.
 5. Create writable `source/` and `upload/` directories and run
    `target/release/rustvideoplatform` from the project directory.
 
-The application serves media through `/source` so visibility checks cannot be
-bypassed. Do not expose the `source/` directory through a separate unauthenticated
-web server.
+The application serves media from its public `/source` route by default. Set
+`source_server_url` to the origin of a separate static server or CDN to generate
+media URLs against that server instead.
 
 ## Container deployment
 
@@ -53,6 +53,8 @@ origin because unsafe HTTP methods use strict same-origin validation.
 - `site_url`: absolute public `http` or `https` URL.
 - `session_ttl_seconds`: optional session lifetime; defaults to 24 hours.
 - `custom_session_domain`: omit unless sessions intentionally span subdomains.
-- `source_server_url`: retained for config compatibility but ignored; media is
-  served by the authenticated application route.
+- `source_server_url`: optional absolute `http` or `https` base URL for the
+  server or CDN exposing the public `/source` directory. Do not include
+  `/source` itself. The external server must allow cross-origin media and fetch
+  requests from `site_url`.
 - `enable_hsts`: enable only after HTTPS is working for every relevant subdomain.
