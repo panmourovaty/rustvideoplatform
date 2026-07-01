@@ -198,17 +198,55 @@ function resumeMediaFromQuery() {
     }
 }
 
-function setupPersistentMediaPosters() {
+function setupVideoPlayerSkins() {
     if (!window.customElements) return;
 
     customElements.whenDefined("video-minimal-skin").then(() => {
-        document.querySelectorAll("video-minimal-skin[data-persistent-poster]").forEach((skin) => {
-            if (!skin.shadowRoot || skin.shadowRoot.querySelector("style[data-persistent-poster]")) return;
+        document.querySelectorAll("video-minimal-skin").forEach((skin) => {
+            if (!skin.shadowRoot || skin.shadowRoot.querySelector("style[data-player-customization]")) return;
 
             const style = document.createElement("style");
-            style.dataset.persistentPoster = "";
-            style.textContent = "media-poster { opacity: 1 !important; }";
+            style.dataset.playerCustomization = "";
+            style.textContent = `
+                .media-controls {
+                    inset-inline: 0 !important;
+                    bottom: 0 !important;
+                    width: 100% !important;
+                    max-width: none !important;
+                    margin-inline: 0 !important;
+                    border-radius: 0 !important;
+                }
+
+                .media-button--playback-rate::after {
+                    display: none;
+                }
+
+                .media-button--settings svg {
+                    width: var(--media-icon-size);
+                    height: var(--media-icon-size);
+                    pointer-events: none;
+                }
+
+                ${skin.hasAttribute("data-persistent-poster") ? "media-poster { opacity: 1 !important; }" : ""}
+            `;
             skin.shadowRoot.append(style);
+
+            const settingsButton = skin.shadowRoot.querySelector("media-playback-rate-menu-trigger");
+            if (settingsButton) {
+                settingsButton.classList.add("media-button--settings");
+                settingsButton.setAttribute("label", "Settings");
+                settingsButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 7h10"></path>
+                        <path d="M18 7h2"></path>
+                        <path d="M14 4v6"></path>
+                        <path d="M4 17h2"></path>
+                        <path d="M10 17h10"></path>
+                        <path d="M6 14v6"></path>
+                    </svg>
+                `;
+            }
         });
     });
 }
@@ -425,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fitMediumTitle();
-    setupPersistentMediaPosters();
+    setupVideoPlayerSkins();
     setupMediaCaptions();
     resumeMediaFromQuery();
 });

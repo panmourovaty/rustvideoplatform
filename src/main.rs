@@ -146,10 +146,11 @@ fn content_security_policy(source_origin: Option<&str>) -> String {
     format!(
         "default-src 'self'; base-uri 'self'; object-src 'self'{source}; frame-ancestors 'none'; \
          form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
-         https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         https://unpkg.com https://v10-sandbox.vercel.app; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
          https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net \
          https://fonts.gstatic.com{source}; img-src 'self' data: blob:{source}; media-src 'self' \
-         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net{source}; worker-src 'self' blob:"
+         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net \
+         https://v10-sandbox.vercel.app{source}; worker-src 'self' blob:"
     )
 }
 
@@ -867,5 +868,18 @@ mod security_regression_tests {
         assert!(connect_src
             .split_whitespace()
             .any(|source| source == "blob:"));
+    }
+
+    #[test]
+    fn content_security_policy_allows_videojs_production_deployment() {
+        let policy = content_security_policy(None);
+
+        for directive in ["script-src", "connect-src"] {
+            let value = policy
+                .split(';')
+                .find(|value| value.trim_start().starts_with(directive))
+                .unwrap();
+            assert!(value.contains("https://v10-sandbox.vercel.app"));
+        }
     }
 }
