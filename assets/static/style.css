@@ -15789,14 +15789,19 @@ body.sidebar-collapsed .sidebarbackground {
     aspect-ratio: 16 / 9;
 }
 
-.medium-player,
-.medium-player video-minimal-skin {
-    width: 100%;
-    height: 100%;
-    max-height: 70vh;
+.player-container--playback {
+    aspect-ratio: auto;
+}
+
+.medium-player {
+    display: contents;
 }
 
 .medium-player video-minimal-skin {
+    width: 100%;
+    height: auto;
+    max-width: var(--player-max-width, 124.444vh);
+    max-height: 70vh;
     --media-border-radius: var(--bs-border-radius);
 }
 
