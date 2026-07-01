@@ -15800,8 +15800,8 @@ body.sidebar-collapsed .sidebarbackground {
 .medium-player video-minimal-skin {
     width: 100%;
     height: auto;
-    max-width: var(--player-max-width, 124.444vh);
-    max-height: 70vh;
+    max-width: none;
+    max-height: 95vh;
     --media-border-radius: var(--bs-border-radius);
 }
 

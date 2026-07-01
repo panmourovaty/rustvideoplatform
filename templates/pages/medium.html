@@ -135,8 +135,7 @@
                     class="d-flex justify-content-center player-container{% if medium_type == "video" || medium_type == "audio" %} player-container--playback{% endif %}">
                     {% if medium_type == "video" %}
                     <video-player class="medium-player">
-                        <video-minimal-skin
-                            style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}; --player-max-width: {{ self.medium_video_max_width_vh() }}">
+                        <video-minimal-skin style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
                             {% if is_cmaf %}
                             <hlsjs-video id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
@@ -189,7 +188,7 @@
                     {% else if medium_type == "audio" %}
                     <video-player class="medium-player">
                         <video-minimal-skin data-persistent-poster
-                            style="aspect-ratio: 16 / 9; --media-object-fit: cover; --player-max-width: 124.444vh">
+                            style="aspect-ratio: 16 / 9; --media-object-fit: cover">
                             <audio id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"

@@ -87,12 +87,6 @@ impl MediumTemplate {
     fn medium_video_aspect_ratio(&self) -> String {
         self.medium_video_dimensions().aspect_ratio()
     }
-
-    fn medium_video_max_width_vh(&self) -> String {
-        let dimensions = self.medium_video_dimensions();
-        let aspect_ratio = dimensions.width as f64 / dimensions.height.max(1) as f64;
-        format!("{:.3}vh", 70.0 * aspect_ratio)
-    }
 }
 
 #[derive(Serialize, Deserialize)]
