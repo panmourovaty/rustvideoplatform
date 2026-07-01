@@ -14,10 +14,6 @@
     --bs-font-sans-serif: "Nunito";
     --bs-font-monospace: "Fira Code";
     --bs-font-serif: "Source Serif 4";
-    --video-font-family: var(--bs-font-sans-serif);
-    --media-user-font-family: var(--video-font-family);
-    --media-menu-border-radius: var(--bs-border-radius);
-    --media-cue-border-radius: var(--bs-border-radius);
     --bs-gradient: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.15),
@@ -60,10 +56,6 @@
     --bs-font-sans-serif: "Nunito";
     --bs-font-monospace: "Fira Code";
     --bs-font-serif: "Source Serif 4";
-    --video-font-family: var(--bs-font-sans-serif);
-    --media-user-font-family: var(--video-font-family);
-    --media-menu-border-radius: var(--bs-border-radius);
-    --media-cue-border-radius: var(--bs-border-radius);
     --bs-gradient: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.15),
@@ -14325,11 +14317,6 @@ body.sidebar-collapsed .sidebarbackground {
     }
 }
 
-.video-js {
-    max-height: 70vh;
-    background-color: transparent;
-}
-
 .searchbtn {
     --bs-btn-padding-x: 0.75rem;
     --bs-btn-padding-y: 0.375rem;
@@ -15800,6 +15787,21 @@ body.sidebar-collapsed .sidebarbackground {
 .player-container {
     width: 100%;
     aspect-ratio: 16 / 9;
+}
+
+.medium-player,
+.medium-player video-minimal-skin {
+    width: 100%;
+    height: 100%;
+    max-height: 70vh;
+}
+
+.medium-player video-minimal-skin {
+    --media-border-radius: var(--bs-border-radius);
+}
+
+.medium-player .JASSUB {
+    pointer-events: none;
 }
 
 /* PDF viewer */

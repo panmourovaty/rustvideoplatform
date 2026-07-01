@@ -149,7 +149,7 @@ fn content_security_policy(source_origin: Option<&str>) -> String {
          https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
          https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net \
          https://fonts.gstatic.com{source}; img-src 'self' data: blob:{source}; media-src 'self' \
-         blob:{source}; connect-src 'self' https://cdn.jsdelivr.net{source}; worker-src 'self' blob:"
+         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net{source}; worker-src 'self' blob:"
     )
 }
 
@@ -854,5 +854,18 @@ mod security_regression_tests {
                 .unwrap();
             assert!(value.contains("https://media.example"));
         }
+    }
+
+    #[test]
+    fn content_security_policy_allows_blob_connections() {
+        let policy = content_security_policy(None);
+        let connect_src = policy
+            .split(';')
+            .find(|value| value.trim_start().starts_with("connect-src"))
+            .unwrap();
+
+        assert!(connect_src
+            .split_whitespace()
+            .any(|source| source == "blob:"));
     }
 }

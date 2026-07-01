@@ -28,9 +28,6 @@ module.exports = {
       /^htmx-/,
     ],
     greedy: [],
-    // Vidstack player CSS variables (player loaded from CDN, so vars aren't
-    // seen in scanned content but are consumed by vidstack's own stylesheets)
-    variables: [/^--video-/, /^--media-/],
   },
   // Preserve CSS variables and keyframes
   variables: true,

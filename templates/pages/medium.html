@@ -53,31 +53,24 @@
     {% include "component-dependencies-quill.html" %}
     {% include "component-dependencies-tomselect.html" %}
     {% if medium_type == "video" || medium_type == "audio" %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@vidstack/cdn@1.15.2/styles/player/default/theme.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@vidstack/cdn@1.15.2/styles/player/default/layouts/video.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@vidstack/cdn@1.15.2/player.js" type="module" defer></script>
+    <script type="module"
+        src="https://cdn.jsdelivr.net/npm/@videojs/html/cdn/video-minimal.js"></script>
+    {% if medium_type == "video" && is_cmaf %}
+    <script type="module"
+        src="https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/hls-video.js"></script>
+    {% else if medium_type == "video" %}
+    <script type="module"
+        src="https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/dash-video.js"></script>
     {% endif %}
-    {% if medium_type == "audio" %}
-    <style>
-        media-player[data-started] media-poster {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        media-poster img {
-            object-fit: cover;
-        }
-    </style>
-    {% endif %} {% if medium_custom_font && !medium_has_ass_captions %}
+    {% endif %} {% if medium_custom_font %}
     <style>
         @font-face {
             font-family: "SubtitleFont";
             src: url("{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2") format("woff2");
         }
 
-        :root {
-            --media-user-font-family:
-                "SubtitleFont", var(--bs-font-sans-serif) !important;
+        #medium-media {
+            font-family: "SubtitleFont", var(--bs-font-sans-serif);
         }
     </style>
     {% endif %}
@@ -88,92 +81,82 @@
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
             <div class="card py-3 px-3 text-white" style="min-height: 85vh">
-                <div class="d-flex justify-content-center player-container">
+                <div class="d-flex justify-content-center player-container" {% if medium_type == "video"
+                    %}style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}"{% endif %}>
                     {% if medium_type == "video" %}
-                    <media-player view-type="video" aspect-ratio="{{ self.medium_video_aspect_ratio() }}" load="eager" posterLoad="eager"
-                        stream-type="on-demand" preload="auto" autoplay keep-alive crossorigin playsinline>
-                        <media-provider>
+                    <video-player class="medium-player">
+                        <video-minimal-skin style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
                             {% if is_cmaf %}
-                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
-                                type="application/x-mpegurl" />
-                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                type="application/dash+xml" />
+                            <hls-video id="medium-media" data-media-element {% if medium_captions_exist
+                                %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
+                                %}data-ass-captions{% endif %} {% if medium_custom_font
+                                %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
+                                {% endif %}
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
+                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline>
+                                <video slot="media" preload="auto" autoplay crossorigin="anonymous"
+                                    playsinline></video>
                             {% else %}
-                            <source src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                type="application/dash+xml" />
-                            {% endif %} {% if medium_captions_exist %} {%
-                            for caption in medium_captions_list %} {% if
-                            !caption.is_ass %}
+                            <dash-video id="medium-media" data-media-element {% if medium_captions_exist
+                                %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
+                                %}data-ass-captions{% endif %} {% if medium_custom_font
+                                %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
+                                {% endif %}
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
+                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline>
+                                <video slot="media" preload="auto" autoplay crossorigin="anonymous"
+                                    playsinline></video>
+                            {% endif %} {% if medium_captions_exist %} {% for caption in
+                            medium_captions_list %} {% if !caption.is_ass %}
                             <track
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}" />
+                                kind="subtitles" label="{{ caption.label }}" srclang="{{ caption.label }}" />
                             {% else %}
                             <track
-                                src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}"
-                                data-type="ass" />
+                                data-ass-src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
+                                kind="subtitles" label="{{ caption.label }}" srclang="{{ caption.label }}" />
                             {% endif %} {% endfor %} {% endif %} {% if
                             medium_chapters_exist %}
                             <track src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
                                 kind="chapters" default />
                             {% endif %}
-                            <media-poster class="vds-poster"
+                            {% if medium_previews_exist %}
+                            <track src="/m/{{ medium_id }}/previews.vtt" kind="metadata" label="thumbnails" default />
+                            {% endif %}
+                            {% if is_cmaf %}
+                            </hls-video>
+                            {% else %}
+                            </dash-video>
+                            {% endif %}
+                            <img slot="poster"
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                alt="Cover Image"></media-poster>
-                        </media-provider>
-                        <media-video-layout {% if medium_previews_exist %}thumbnails="/m/{{ medium_id }}/previews.vtt"
-                            {% endif %}></media-video-layout>
-                    </media-player>
-                    {% if medium_has_ass_captions %}
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                            var player = document.querySelector("media-player");
-                            if (!player) return;
-
-                            var workerBlobUrl = URL.createObjectURL(
-                                new Blob(
-                                    ['importScripts("https://cdn.jsdelivr.net/npm/jassub/dist/jassub-worker.js")'],
-                                    { type: 'text/javascript' }
-                                )
-                            );
-
-                            import('https://cdn.jsdelivr.net/npm/@vidstack/cdn@1.15.2/player.js').then(function (vidstack) {
-                                var options = { workerUrl: workerBlobUrl };
-                                {% if medium_custom_font %}
-                                options.availableFonts = { "default": "{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2" };
-                                options.fallbackFont = "default";
-                                {% endif %}
-                                player.textRenderers.add(
-                                    new vidstack.LibASSTextRenderer(
-                                        function () { return import('https://cdn.jsdelivr.net/npm/jassub'); },
-                                        options
-                                    )
-                                );
-                            });
-                        });
-                    </script>
-                    {% endif %}
+                                alt="Cover Image" />
+                        </video-minimal-skin>
+                    </video-player>
                     {% else if medium_type == "audio" %}
-                    <media-player src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-                        view-type="video" aspect-ratio="16/9" load="eager" posterLoad="eager" stream-type="on-demand"
-                        preload="auto" autoplay keep-alive crossorigin playsinline>
-                        <media-provider>
+                    <video-player class="medium-player">
+                        <video-minimal-skin data-persistent-poster
+                            style="aspect-ratio: 16 / 9; --media-object-fit: cover">
+                            <audio id="medium-media" data-media-element {% if medium_captions_exist
+                                %}data-caption-tracks{% endif %}
+                                src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
+                                preload="auto" autoplay crossorigin="anonymous">
                             {% if medium_captions_exist %} {% for caption in
                             medium_captions_list %} {% if !caption.is_ass %}
                             <track
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/captions/{{ caption.filename }}"
-                                kind="subtitles" label="{{ caption.label }}" lang="{{ caption.label }}" />
+                                kind="subtitles" label="{{ caption.label }}" srclang="{{ caption.label }}" />
                             {% endif %} {% endfor %} {% endif %} {% if
                             medium_chapters_exist %}
                             <track src="{{ config.source_server_url }}/source/{{ medium_id }}/chapters.vtt"
                                 kind="chapters" default />
                             {% endif %}
-                            <media-poster class="vds-poster"
+                            </audio>
+                            <img slot="poster"
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
-                                alt="Cover Image"></media-poster>
-                        </media-provider>
-                        <media-video-layout></media-video-layout>
-                    </media-player>
+                                alt="Cover Image" />
+                        </video-minimal-skin>
+                    </video-player>
                     {% else if medium_type == "picture" %}
                     <img src="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"
                         class="medium-picture" />

@@ -169,22 +169,174 @@ function resumeMediaFromQuery() {
     const resumeTime = Number(new URLSearchParams(window.location.search).get("t"));
     if (!Number.isFinite(resumeTime) || resumeTime <= 0) return;
 
-    const player = document.querySelector("media-player");
-    if (!player) return;
+    const mediaElement = document.querySelector("[data-media-element]");
+    if (!mediaElement) return;
+    const player = mediaElement.target || mediaElement;
 
     const seekToResumeTime = () => {
         const duration = Number(player.duration);
-        if (!Number.isFinite(duration) || duration <= 0) return;
+        if (!Number.isFinite(duration) || duration <= 0) return false;
 
         player.currentTime = Math.min(resumeTime, Math.max(0, duration - 0.01));
+        return true;
     };
 
     const duration = Number(player.duration);
     if (Number.isFinite(duration) && duration > 0) {
         seekToResumeTime();
     } else {
-        player.addEventListener("can-play", seekToResumeTime, { once: true });
+        const seekWhenReady = () => {
+            if (!seekToResumeTime()) return;
+            player.removeEventListener("loadedmetadata", seekWhenReady);
+            player.removeEventListener("durationchange", seekWhenReady);
+            player.removeEventListener("canplay", seekWhenReady);
+        };
+
+        player.addEventListener("loadedmetadata", seekWhenReady);
+        player.addEventListener("durationchange", seekWhenReady);
+        player.addEventListener("canplay", seekWhenReady);
     }
+}
+
+function setupPersistentMediaPosters() {
+    if (!window.customElements) return;
+
+    customElements.whenDefined("video-minimal-skin").then(() => {
+        document.querySelectorAll("video-minimal-skin[data-persistent-poster]").forEach((skin) => {
+            if (!skin.shadowRoot || skin.shadowRoot.querySelector("style[data-persistent-poster]")) return;
+
+            const style = document.createElement("style");
+            style.dataset.persistentPoster = "";
+            style.textContent = "media-poster { opacity: 1 !important; }";
+            skin.shadowRoot.append(style);
+        });
+    });
+}
+
+function setupMediaCaptions() {
+    const mediaElement = document.querySelector("[data-media-element][data-caption-tracks]");
+    if (!mediaElement) return;
+
+    const media = mediaElement.target || mediaElement;
+    if (!(media instanceof HTMLMediaElement) || !media.textTracks) return;
+
+    const fallbackFontUrl =
+        "https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.2.7/files/nunito-latin-600-normal.woff2";
+    const jassubModuleUrl = "https://cdn.jsdelivr.net/npm/jassub@2.5.6/+esm";
+    const jassubWorkerModuleUrl =
+        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/worker/worker.js/+esm";
+    const jassubWasmUrl =
+        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/wasm/jassub-worker.wasm";
+    const jassubModernWasmUrl =
+        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/wasm/jassub-worker-modern.wasm";
+
+    let renderer = null;
+    let activeSource = "";
+    let renderGeneration = 0;
+    let syncQueued = false;
+    let workerBlobUrl = "";
+
+    const getWorkerBlobUrl = () => {
+        if (!workerBlobUrl) {
+            workerBlobUrl = URL.createObjectURL(
+                new Blob([`import "${jassubWorkerModuleUrl}";`], { type: "text/javascript" }),
+            );
+        }
+        return workerBlobUrl;
+    };
+
+    const destroyRenderer = async () => {
+        const previousRenderer = renderer;
+        renderer = null;
+        activeSource = "";
+        if (previousRenderer) {
+            await previousRenderer.destroy();
+        }
+    };
+
+    const syncCaptionRenderer = async () => {
+        syncQueued = false;
+
+        const trackElements = Array.from(media.querySelectorAll("track")).filter(
+            (track) => track.kind === "subtitles" || track.kind === "captions",
+        );
+        const selectedTrack = trackElements.find((track) => track.track.mode === "showing");
+
+        for (const track of trackElements) {
+            if (track !== selectedTrack && track.track.mode === "showing") {
+                track.track.mode = "disabled";
+            }
+        }
+
+        const source = selectedTrack?.dataset.assSrc || "";
+        if (!source) {
+            renderGeneration += 1;
+            await destroyRenderer();
+            return;
+        }
+        if (source === activeSource) return;
+        if (!(media instanceof HTMLVideoElement)) return;
+
+        const generation = ++renderGeneration;
+        await destroyRenderer();
+        activeSource = source;
+
+        try {
+            const { default: JASSUB } = await import(jassubModuleUrl);
+            if (generation !== renderGeneration) return;
+
+            const customFontUrl = mediaElement.dataset.assFontUrl;
+            const fonts = [fallbackFontUrl];
+            const availableFonts = { Nunito: fallbackFontUrl };
+            let defaultFont = "Nunito";
+
+            if (customFontUrl) {
+                fonts.unshift(customFontUrl);
+                availableFonts.default = customFontUrl;
+                defaultFont = "default";
+            }
+
+            const nextRenderer = new JASSUB({
+                video: media,
+                subUrl: source,
+                workerUrl: getWorkerBlobUrl(),
+                wasmUrl: jassubWasmUrl,
+                modernWasmUrl: jassubModernWasmUrl,
+                fonts,
+                availableFonts,
+                defaultFont,
+            });
+
+            await nextRenderer.ready;
+            if (generation !== renderGeneration) {
+                await nextRenderer.destroy();
+                return;
+            }
+
+            renderer = nextRenderer;
+            const canvas = media.parentElement?.querySelector("canvas.JASSUB");
+            if (canvas) canvas.style.zIndex = "2";
+        } catch (error) {
+            if (generation === renderGeneration) {
+                activeSource = "";
+                console.error("Failed to initialize ASS subtitles", error);
+            }
+        }
+    };
+
+    const queueCaptionSync = () => {
+        if (syncQueued) return;
+        syncQueued = true;
+        queueMicrotask(syncCaptionRenderer);
+    };
+
+    media.textTracks.addEventListener("change", queueCaptionSync);
+    window.addEventListener("pagehide", () => {
+        renderGeneration += 1;
+        destroyRenderer();
+        if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
+    }, { once: true });
+    queueCaptionSync();
 }
 
 function toggleSidebar() {
@@ -273,6 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fitMediumTitle();
+    setupPersistentMediaPosters();
+    setupMediaCaptions();
     resumeMediaFromQuery();
 });
 
