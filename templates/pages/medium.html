@@ -144,9 +144,10 @@
                                 %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
                                 {% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
-                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline>
+                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline
+                                disableremoteplayback>
                                 <video slot="media" preload="auto" autoplay crossorigin="anonymous"
-                                    playsinline></video>
+                                    playsinline disableremoteplayback></video>
                             {% else %}
                             <dash-video id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
@@ -154,9 +155,10 @@
                                 %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
                                 {% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline>
+                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline
+                                disableremoteplayback>
                                 <video slot="media" preload="auto" autoplay crossorigin="anonymous"
-                                    playsinline></video>
+                                    playsinline disableremoteplayback></video>
                             {% endif %} {% if medium_captions_exist %} {% for caption in
                             medium_captions_list %} {% if !caption.is_ass %}
                             <track
@@ -191,7 +193,7 @@
                             <audio id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/audio.ogg"
-                                preload="auto" autoplay crossorigin="anonymous">
+                                preload="auto" autoplay crossorigin="anonymous" disableremoteplayback>
                             {% if medium_captions_exist %} {% for caption in
                             medium_captions_list %} {% if !caption.is_ass %}
                             <track
