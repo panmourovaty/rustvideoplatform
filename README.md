@@ -27,6 +27,27 @@ The application serves media from its public `/source` route by default. Set
 `source_server_url` to the origin of a separate static server or CDN to generate
 media URLs against that server instead.
 
+## Playback UI
+
+Video and audio playback use the official [Video.js HTML/CSS integration](https://videojs.org/docs/framework/html/how-to/installation),
+pinned to `10.0.0-rc.2`. The CDN scripts and stylesheet are declared in
+`templates/pages/component-dependencies-player.html`. CMAF videos use `hlsjs-video`,
+legacy MPEG-DASH videos use `dash-video`, and audio uses the native `audio` element.
+Video.js v10 is currently a release candidate; its DASH adapter is still beta.
+
+`component-player-controls.html` contains an ejected minimal video skin, following
+the documented [skin customization path](https://videojs.org/docs/framework/html/how-to/customize-skins).
+Its controls render directly in the page and use the versioned `video-minimal.css`;
+application overrides in `assets/static/style.css` preserve the full-width control
+bar and persistent audio cover image. Update the copied markup and all Video.js
+CDN URLs together when upgrading. Upstream attribution is in `LICENSES/videojs.txt`.
+
+The player retains captions, chapters, thumbnail previews, playback settings,
+keyboard/touch controls, fullscreen, picture-in-picture, autoplay, and `?t=`
+timestamp seeking. ASS/SSA subtitles use JASSUB with the uploaded font when
+available; its WebAssembly renderer requires the CSP's `wasm-unsafe-eval` permission.
+Autoplay and picture-in-picture remain subject to browser support and policy.
+
 ## Container deployment
 
 The runtime image uses UID/GID `10001`. Bind-mounted directories must be writable
