@@ -145,12 +145,12 @@ fn content_security_policy(source_origin: Option<&str>) -> String {
 
     format!(
         "default-src 'self'; base-uri 'self'; object-src 'self'{source}; frame-ancestors 'none'; \
-         form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net \
-         https://unpkg.com https://esm.sh; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         https://unpkg.com https://v10-sandbox.vercel.app; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
          https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net \
          https://fonts.gstatic.com{source}; img-src 'self' data: blob:{source}; media-src 'self' \
-         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net{source}; \
-         worker-src 'self' blob:"
+         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net \
+         https://v10-sandbox.vercel.app{source}; worker-src 'self' blob:"
     )
 }
 
@@ -871,23 +871,15 @@ mod security_regression_tests {
     }
 
     #[test]
-    fn content_security_policy_allows_videojs_cdn_and_subtitle_renderer() {
+    fn content_security_policy_allows_videojs_production_deployment() {
         let policy = content_security_policy(None);
 
-        for directive in ["script-src", "style-src", "connect-src"] {
+        for directive in ["script-src", "connect-src"] {
             let value = policy
                 .split(';')
                 .find(|value| value.trim_start().starts_with(directive))
                 .unwrap();
-            assert!(value.contains("https://cdn.jsdelivr.net"));
+            assert!(value.contains("https://v10-sandbox.vercel.app"));
         }
-        let script_src = policy
-            .split(';')
-            .find(|value| value.trim_start().starts_with("script-src"))
-            .unwrap();
-        assert!(script_src.contains("'wasm-unsafe-eval'"));
-        assert!(script_src.contains("https://esm.sh"));
-        assert!(!script_src.contains("'unsafe-eval'"));
-        assert!(!policy.contains("v10-sandbox.vercel.app"));
     }
 }

@@ -165,9 +165,13 @@ document.addEventListener("htmx:afterRequest", (event) => {
     }
 });
 
-function resumeMediaFromQuery(player) {
+function resumeMediaFromQuery() {
     const resumeTime = Number(new URLSearchParams(window.location.search).get("t"));
     if (!Number.isFinite(resumeTime) || resumeTime <= 0) return;
+
+    const mediaElement = document.querySelector("[data-media-element]");
+    if (!mediaElement) return;
+    const player = mediaElement.target || mediaElement;
 
     const seekToResumeTime = () => {
         const duration = Number(player.duration);
@@ -194,34 +198,71 @@ function resumeMediaFromQuery(player) {
     }
 }
 
-async function setupMediumPlayer() {
-    const mediaElement = document.querySelector("[data-media-element]");
-    if (!mediaElement) return;
+function setupVideoPlayerSkins() {
+    if (!window.customElements) return;
 
-    // Deferred app scripts may run before the CDN modules have registered the media.
-    // Use the custom element's documented media API only after it has upgraded.
-    if (mediaElement.localName.includes("-")) {
-        await customElements.whenDefined(mediaElement.localName);
-    }
-    if (!mediaElement.isConnected) return;
+    customElements.whenDefined("video-minimal-skin").then(() => {
+        document.querySelectorAll("video-minimal-skin").forEach((skin) => {
+            if (!skin.shadowRoot || skin.shadowRoot.querySelector("style[data-player-customization]")) return;
 
-    resumeMediaFromQuery(mediaElement);
-    setupMediaCaptions(mediaElement);
+            const style = document.createElement("style");
+            style.dataset.playerCustomization = "";
+            style.textContent = `
+                .media-controls {
+                    inset-inline: 0 !important;
+                    bottom: 0 !important;
+                    width: 100% !important;
+                    max-width: none !important;
+                    margin-inline: 0 !important;
+                    border-radius: 0 !important;
+                }
+
+                .media-button--playback-rate::after {
+                    display: none;
+                }
+
+                .media-button--settings svg {
+                    width: var(--media-icon-size);
+                    height: var(--media-icon-size);
+                    pointer-events: none;
+                }
+
+                ${skin.hasAttribute("data-persistent-poster") ? "media-poster { opacity: 1 !important; }" : ""}
+            `;
+            skin.shadowRoot.append(style);
+
+            const settingsButton = skin.shadowRoot.querySelector("media-playback-rate-menu-trigger");
+            if (settingsButton) {
+                settingsButton.classList.add("media-button--settings");
+                settingsButton.setAttribute("label", "Settings");
+                settingsButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 7h10"></path>
+                        <path d="M18 7h2"></path>
+                        <path d="M14 4v6"></path>
+                        <path d="M4 17h2"></path>
+                        <path d="M10 17h10"></path>
+                        <path d="M6 14v6"></path>
+                    </svg>
+                `;
+            }
+        });
+    });
 }
 
-function setupMediaCaptions(mediaElement) {
-    if (!mediaElement.hasAttribute("data-ass-captions")) return;
+function setupMediaCaptions() {
+    const mediaElement = document.querySelector("[data-media-element][data-caption-tracks]");
+    if (!mediaElement) return;
 
-    // JASSUB needs a native video. We own this slotted element in the HTML template.
-    const media = mediaElement.querySelector('video[slot="media"]');
-    if (!(media instanceof HTMLVideoElement)) return;
+    const media = mediaElement.target || mediaElement;
+    if (!(media instanceof HTMLMediaElement) || !media.textTracks) return;
 
     const fallbackFontUrl =
         "https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.2.7/files/nunito-latin-600-normal.woff2";
-    // Bundle abslink and its worker adapter together so their proxy registry is shared.
-    const jassubModuleUrl = "https://esm.sh/jassub@2.5.6?bundle";
+    const jassubModuleUrl = "https://cdn.jsdelivr.net/npm/jassub@2.5.6/+esm";
     const jassubWorkerModuleUrl =
-        "https://esm.sh/jassub@2.5.6/dist/worker/worker.js?bundle";
+        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/worker/worker.js/+esm";
     const jassubWasmUrl =
         "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/wasm/jassub-worker.wasm";
     const jassubModernWasmUrl =
@@ -265,10 +306,7 @@ function setupMediaCaptions(mediaElement) {
             }
         }
 
-        // Blob workers cannot resolve the relative URLs used by same-origin media.
-        const source = selectedTrack?.dataset.assSrc
-            ? new URL(selectedTrack.dataset.assSrc, document.baseURI).href
-            : "";
+        const source = selectedTrack?.dataset.assSrc || "";
         if (!source) {
             renderGeneration += 1;
             await destroyRenderer();
@@ -285,9 +323,7 @@ function setupMediaCaptions(mediaElement) {
             const { default: JASSUB } = await import(jassubModuleUrl);
             if (generation !== renderGeneration) return;
 
-            const customFontUrl = mediaElement.dataset.assFontUrl
-                ? new URL(mediaElement.dataset.assFontUrl, document.baseURI).href
-                : "";
+            const customFontUrl = mediaElement.dataset.assFontUrl;
             const fonts = [fallbackFontUrl];
             const availableFonts = { Nunito: fallbackFontUrl };
             let defaultFont = "Nunito";
@@ -298,14 +334,8 @@ function setupMediaCaptions(mediaElement) {
                 defaultFont = "default";
             }
 
-            // Keep the overlay outside the media host: adding it to the default slot
-            // makes the host reattach its tracks, which resets the selected language.
-            const canvas = document.createElement("canvas");
-            canvas.className = "JASSUB";
-            mediaElement.closest(".medium-player-skin").append(canvas);
             const nextRenderer = new JASSUB({
                 video: media,
-                canvas,
                 subUrl: source,
                 workerUrl: getWorkerBlobUrl(),
                 wasmUrl: jassubWasmUrl,
@@ -315,16 +345,18 @@ function setupMediaCaptions(mediaElement) {
                 defaultFont,
             });
 
-            renderer = nextRenderer;
             await nextRenderer.ready;
             if (generation !== renderGeneration) {
                 await nextRenderer.destroy();
                 return;
             }
 
+            renderer = nextRenderer;
+            const canvas = media.parentElement?.querySelector("canvas.JASSUB");
+            if (canvas) canvas.style.zIndex = "2";
         } catch (error) {
             if (generation === renderGeneration) {
-                await destroyRenderer();
+                activeSource = "";
                 console.error("Failed to initialize ASS subtitles", error);
             }
         }
@@ -337,7 +369,6 @@ function setupMediaCaptions(mediaElement) {
     };
 
     media.textTracks.addEventListener("change", queueCaptionSync);
-    media.textTracks.addEventListener("addtrack", queueCaptionSync);
     window.addEventListener("pagehide", () => {
         renderGeneration += 1;
         destroyRenderer();
@@ -432,9 +463,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fitMediumTitle();
-    setupMediumPlayer().catch((error) => {
-        console.error("Failed to initialize media playback", error);
-    });
+    setupVideoPlayerSkins();
+    setupMediaCaptions();
+    resumeMediaFromQuery();
 });
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
