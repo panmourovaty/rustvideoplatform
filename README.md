@@ -9,7 +9,7 @@ storage, and Meilisearch.
 - ScyllaDB with `database_schema.cql` applied
 - Redis or Dragonfly
 - Meilisearch
-- FFmpeg and `woff2_compress`
+- FFmpeg, `woff2_compress`, and `woff2_decompress`
 - Node.js/npm for optimized CSS and JavaScript builds
 
 ## Local build
@@ -26,6 +26,39 @@ storage, and Meilisearch.
 The application serves media from its public `/source` route by default. Set
 `source_server_url` to the origin of a separate static server or CDN to generate
 media URLs against that server instead.
+
+## Playback UI
+
+The medium page uses the official Video.js HTML custom elements and CSS,
+with every Video.js CDN asset following the `@videojs/cdn@next` release channel. The player provider
+loads before the UI bundle so the controls attach to the existing player.
+HLS/CMAF uses `hlsjs-video`, older MPEG-DASH media uses `dash-video`, and audio
+uses native Ogg playback. Upstream v10 is a release candidate; its DASH adapter
+is still labeled beta.
+
+`templates/pages/component-player-controls.html` owns the editable minimal
+skin markup, including settings, quality, captions, chapters, thumbnail previews,
+keyboard shortcuts, PiP, and fullscreen. Layout overrides live in
+`assets/static/style.css`; ASS/JASSUB subtitles and timestamp resume links are
+handled in `assets/static/script.js`. Native video elements and their tracks are
+present in the page before the streaming modules load.
+
+ASS subtitles use JASSUB 2 / abslink 1 bundles from esm.sh, with major-only
+version ranges shared by the renderer, worker, and WebAssembly URLs. The CSP permits
+WebAssembly and that worker origin. Uploaded WOFF2 fonts remain available for
+browser captions; `/m/{id}/subtitle-font.ttf` converts them with `woff2_decompress`
+for libass, including existing uploads. Font conversion runs in a temporary file
+with a ten-second timeout. To exercise it, run
+`cargo test uploaded_woff2_is_decoded_for_libass -- --include-ignored` with the
+runtime tool on PATH.
+
+When the Video.js release channel updates, compare the copied controls against
+the new release's minimal skin. The copied markup is Apache-2.0 licensed
+(see `VIDEOJS-LICENSE`). See the official
+[HTML installation](https://videojs.org/docs/framework/html/how-to/installation),
+[CDN](https://videojs.org/docs/framework/html/concepts/cdn), and
+[skin customization](https://videojs.org/docs/framework/html/how-to/customize-skins)
+guides. No sandbox deployment or private shadow-DOM patching is used.
 
 ## Container deployment
 

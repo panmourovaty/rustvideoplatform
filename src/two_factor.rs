@@ -1,6 +1,6 @@
 // two_factor.rs – TOTP and WebAuthn (U2F) two-factor authentication handlers
 
-use totp_rs::{Algorithm, Secret, TOTP};
+use totp_rs::{Algorithm, Builder, Secret, Totp};
 use uuid::Uuid;
 use webauthn_rs::prelude::{
     Passkey, PasskeyAuthentication, PasskeyRegistration, PublicKeyCredential,
@@ -22,19 +22,19 @@ fn generate_totp_secret() -> (Vec<u8>, String) {
 }
 
 fn make_totp(
-    secret_bytes: Vec<u8>,
+    secret_bytes: impl Into<Secret>,
     user_login: &str,
     instance_name: &str,
-) -> Result<TOTP, totp_rs::TotpUrlError> {
-    TOTP::new(
-        Algorithm::SHA1,
-        6,
-        1,
-        30,
-        secret_bytes,
-        Some(instance_name.to_owned()),
-        user_login.to_owned(),
-    )
+) -> Result<Totp, totp_rs::TotpError> {
+    Builder::new()
+        .with_algorithm(Algorithm::SHA1)
+        .with_digits(6)
+        .with_skew(1)
+        .with_step_duration(30)
+        .with_secret(secret_bytes)
+        .with_issuer(Some(instance_name))
+        .with_account_name(user_login)
+        .build()
 }
 
 /// Load all Passkey rows for a user from the database.
@@ -124,7 +124,7 @@ async fn hx_login_2fa_totp(
         None => err_html!("TOTP not configured."),
     };
 
-    let secret_bytes = match Secret::Encoded(totp_secret).to_bytes() {
+    let secret_bytes = match Secret::try_from_base32(totp_secret) {
         Ok(b) => b,
         Err(_) => err_html!("Internal error (secret)."),
     };
@@ -134,7 +134,7 @@ async fn hx_login_2fa_totp(
         Err(_) => err_html!("Internal error (totp)."),
     };
 
-    if !totp.check_current(&form.totp_code).unwrap_or(false) {
+    if totp.check_current(&form.totp_code).is_none() {
         err_html!("Invalid code. Please try again.");
     }
 
@@ -202,7 +202,7 @@ async fn hx_settings_2fa_totp_setup(
         }
     };
 
-    let qr_base64 = match totp.get_qr_base64() {
+    let qr_base64 = match totp.to_qr_base64() {
         Ok(q) => q,
         Err(_) => {
             return Html(minifi_html(
@@ -279,7 +279,7 @@ async fn hx_settings_2fa_totp_verify_setup(
     }
     let secret_base32 = parts[1].to_string();
 
-    let secret_bytes = match Secret::Encoded(secret_base32.clone()).to_bytes() {
+    let secret_bytes = match Secret::try_from_base32(&secret_base32) {
         Ok(b) => b,
         Err(_) => {
             return Html(minifi_html(
@@ -297,7 +297,7 @@ async fn hx_settings_2fa_totp_verify_setup(
         }
     };
 
-    if !totp.check_current(&form.totp_code).unwrap_or(false) {
+    if totp.check_current(&form.totp_code).is_none() {
         return Html(minifi_html(
             "<b class=\"text-danger\">Invalid code. Check your authenticator and try again.</b>"
                 .to_owned(),

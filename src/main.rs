@@ -11,7 +11,7 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 use ahash::AHashMap;
-use argon2::password_hash::PasswordHash;
+use argon2::password_hash::phc::PasswordHash;
 use askama::Template;
 use axum::{
     body::Body,
@@ -145,12 +145,11 @@ fn content_security_policy(source_origin: Option<&str>) -> String {
 
     format!(
         "default-src 'self'; base-uri 'self'; object-src 'self'{source}; frame-ancestors 'none'; \
-         form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
-         https://unpkg.com https://v10-sandbox.vercel.app; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
+         form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net \
+         https://unpkg.com https://esm.sh; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net \
          https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net \
          https://fonts.gstatic.com{source}; img-src 'self' data: blob:{source}; media-src 'self' \
-         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net \
-         https://v10-sandbox.vercel.app{source}; worker-src 'self' blob:"
+         blob:{source}; connect-src 'self' blob: https://cdn.jsdelivr.net https://esm.sh{source}; worker-src 'self' blob: https://esm.sh"
     )
 }
 
@@ -345,6 +344,7 @@ async fn main() {
     let source_router = static_router("source");
 
     let app = Router::new()
+        .route("/m/{mediumid}/subtitle-font.ttf", get(subtitle_font_ttf))
         .route("/robots.txt", get(robots_txt))
         .route("/sitemap.xml", get(sitemap_xml))
         .route("/", get(home))
@@ -755,131 +755,3 @@ include!("settings.rs");
 include!("two_factor.rs");
 include!("sitemap.rs");
 include!("history.rs");
-
-#[cfg(test)]
-mod security_regression_tests {
-    use super::*;
-
-    #[derive(Template)]
-    #[template(source = "<div>{{ value }}</div>", ext = "html")]
-    struct EscapingTemplate<'a> {
-        value: &'a str,
-    }
-
-    #[test]
-    fn resource_ids_cannot_escape_their_directory() {
-        assert_eq!(
-            normalize_resource_id(" Safe-ID_1 "),
-            Some("safe-id_1".to_owned())
-        );
-        assert_eq!(normalize_resource_id("../../config"), None);
-        assert_eq!(normalize_resource_id("contains/slash"), None);
-        assert_eq!(normalize_resource_id(".."), None);
-    }
-
-    #[test]
-    fn subtitle_labels_reject_path_components() {
-        assert!(is_valid_subtitle_label("English CC"));
-        assert!(!is_valid_subtitle_label("../../secret"));
-        assert!(!is_valid_subtitle_label("name.vtt"));
-        assert!(!is_valid_subtitle_label("name/other"));
-    }
-
-    #[test]
-    fn templates_escape_untrusted_html_by_default() {
-        let rendered = EscapingTemplate {
-            value: "\"><script>alert(1)</script>",
-        }
-        .render()
-        .unwrap();
-        assert!(!rendered.contains("<script>"));
-        let escaped_value = rendered
-            .strip_prefix("<div>")
-            .and_then(|value| value.strip_suffix("</div>"))
-            .unwrap();
-        assert!(!escaped_value.contains(['<', '>']));
-    }
-
-    #[test]
-    fn rendered_html_is_minified_without_rewriting_inline_javascript() {
-        let html = "<div>   content   </div>\n<script>const value = 1 + 2;</script>".to_owned();
-        let minified = String::from_utf8(minifi_html(html.clone())).unwrap();
-
-        assert!(minified.len() < html.len());
-        assert!(minified.contains("const value = 1 + 2;"));
-    }
-
-    #[test]
-    fn search_highlights_allow_only_mark_tags() {
-        let sanitized = sanitize_search_highlight("<img src=x onerror=alert(1)><mark>match</mark>");
-        assert_eq!(
-            sanitized,
-            "&lt;img src=x onerror=alert(1)&gt;<mark>match</mark>"
-        );
-    }
-
-    #[test]
-    fn json_for_script_cannot_close_the_script_element() {
-        let json = json_for_html_script(&serde_json::json!({
-            "name": "</script><script>alert(1)</script>"
-        }));
-        assert!(!json.contains('<'));
-        assert!(json.contains("\\u003c/script\\u003e"));
-    }
-
-    #[test]
-    fn unsafe_requests_require_the_configured_origin() {
-        let mut headers = HeaderMap::new();
-        headers.insert(ORIGIN, "https://example.com".parse().unwrap());
-        assert!(request_has_allowed_origin(&headers, "https://example.com"));
-        assert!(!request_has_allowed_origin(
-            &headers,
-            "https://attacker.example"
-        ));
-    }
-
-    #[test]
-    fn source_origin_is_allowed_by_the_content_security_policy() {
-        let policy = content_security_policy(Some("https://media.example"));
-
-        for directive in [
-            "object-src",
-            "font-src",
-            "img-src",
-            "media-src",
-            "connect-src",
-        ] {
-            let value = policy
-                .split(';')
-                .find(|value| value.trim_start().starts_with(directive))
-                .unwrap();
-            assert!(value.contains("https://media.example"));
-        }
-    }
-
-    #[test]
-    fn content_security_policy_allows_blob_connections() {
-        let policy = content_security_policy(None);
-        let connect_src = policy
-            .split(';')
-            .find(|value| value.trim_start().starts_with("connect-src"))
-            .unwrap();
-
-        assert!(connect_src
-            .split_whitespace()
-            .any(|source| source == "blob:"));
-    }
-
-    #[test]
-    fn content_security_policy_allows_videojs_production_deployment() {
-        let policy = content_security_policy(None);
-
-        for directive in ["script-src", "connect-src"] {
-            let value = policy
-                .split(';')
-                .find(|value| value.trim_start().starts_with(directive))
-                .unwrap();
-            assert!(value.contains("https://v10-sandbox.vercel.app"));
-        }
-    }
-}

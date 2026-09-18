@@ -1,3 +1,55 @@
+// libass needs an SFNT font, while browser captions use the stored WOFF2 font.
+// Convert on demand so existing uploads also work without a migration.
+async fn subtitle_font_ttf(Path(mediumid): Path<String>) -> Response<Body> {
+    if !is_valid_resource_id(&mediumid) {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+    let path = format!("source/{}/captions/font.woff2", mediumid);
+    let Ok(font) = tokio::fs::read(path).await else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    match decompress_subtitle_font(&font).await {
+        Some(ttf) => Response::builder()
+            .header(axum::http::header::CONTENT_TYPE, "font/ttf")
+            .header(axum::http::header::CACHE_CONTROL, "no-cache")
+            .body(Body::from(ttf))
+            .unwrap(),
+        None => StatusCode::UNPROCESSABLE_ENTITY.into_response(),
+    }
+}
+
+async fn decompress_subtitle_font(font: &[u8]) -> Option<Vec<u8>> {
+    let input = std::env::temp_dir().join(format!(
+        "rustvp-ass-font-{}.woff2",
+        generate_secure_string()
+    ));
+    let output = input.with_extension("ttf");
+    let result = async {
+        tokio::fs::write(&input, font).await.ok()?;
+        let status = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            tokio::process::Command::new("woff2_decompress")
+                .arg(&input)
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .kill_on_drop(true)
+                .status(),
+        )
+        .await
+        .ok()?
+        .ok()?;
+        if !status.success() {
+            return None;
+        }
+        tokio::fs::read(&output).await.ok()
+    }
+    .await;
+    let _ = tokio::fs::remove_file(input).await;
+    let _ = tokio::fs::remove_file(output).await;
+    result
+}
+
 async fn convert_subtitle_to_vtt(content: Vec<u8>, input_format: &str) -> Option<Vec<u8>> {
     use tokio::io::AsyncWriteExt;
 
@@ -774,4 +826,28 @@ async fn studio_subtitles_delete(
         .header(axum::http::header::CONTENT_TYPE, "application/json")
         .body(Body::from("{\"ok\":true}"))
         .unwrap()
+}
+
+#[cfg(test)]
+mod subtitle_font_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn subtitle_font_rejects_path_traversal() {
+        let response = subtitle_font_ttf(Path("../secret".to_owned())).await;
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    #[ignore = "requires the runtime woff2_decompress executable"]
+    async fn uploaded_woff2_is_decoded_for_libass() {
+        let font = include_bytes!("../tests/fixtures/subtitle-font.woff2");
+        let decoded = decompress_subtitle_font(font)
+            .await
+            .expect("font conversion failed");
+        assert_eq!(&decoded[..4], &[0, 1, 0, 0]);
+        assert!(decoded.windows(4).any(|tag| tag == b"glyf"));
+        assert!(decoded.windows(4).any(|tag| tag == b"name"));
+        assert!(decompress_subtitle_font(b"not a font").await.is_none());
+    }
 }

@@ -53,65 +53,17 @@
     {% include "component-dependencies-quill.html" %}
     {% include "component-dependencies-tomselect.html" %}
     {% if medium_type == "video" || medium_type == "audio" %}
-    <script type="module">
-        const videojsProductionOrigin = "https://v10-sandbox.vercel.app";
-        const videojsBundles = ["video-minimal"];
-        {% if medium_type == "video" && is_cmaf %}
-        videojsBundles.push("hlsjs-video");
-        {% else if medium_type == "video" %}
-        videojsBundles.push("dash-video");
-        {% endif %}
-
-        async function loadVideojsProductionBundles() {
-            // Production publishes hashed Vite assets, so resolve their current names from the CDN sandbox entry.
-            const sandboxResponse = await fetch(`${videojsProductionOrigin}/cdn/`, { cache: "no-store" });
-            if (!sandboxResponse.ok) throw new Error(`Video.js sandbox returned ${sandboxResponse.status}`);
-
-            const sandboxDocument = new DOMParser().parseFromString(await sandboxResponse.text(), "text/html");
-            const entrySource = sandboxDocument.querySelector('script[type="module"][src]')?.getAttribute("src");
-            if (!entrySource) throw new Error("Video.js sandbox entry module was not found");
-
-            const entryUrl = new URL(entrySource, videojsProductionOrigin);
-            const entryResponse = await fetch(entryUrl, { cache: "no-store" });
-            if (!entryResponse.ok) throw new Error(`Video.js entry module returned ${entryResponse.status}`);
-
-            const entryCode = await entryResponse.text();
-            const deployedModules = Array.from(entryCode.matchAll(/import\(`\.\/([^`]+\.js)`\)/g), (match) => match[1]);
-            const bundleUrls = videojsBundles.map((bundleName) => {
-                const deployedModule = deployedModules.find((moduleName) =>
-                    moduleName.startsWith(`${bundleName}-`)
-                );
-                if (!deployedModule) throw new Error(`Video.js bundle "${bundleName}" was not found`);
-                return new URL(deployedModule, entryUrl).href;
-            });
-
-            await Promise.all(bundleUrls.map((bundleUrl) => import(bundleUrl)));
-        }
-
-        async function loadVideojsNpmFallback() {
-            await import("https://cdn.jsdelivr.net/npm/@videojs/html/cdn/video-minimal.js");
-            {% if medium_type == "video" && is_cmaf %}
-            try {
-                await import("https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/hlsjs-video.js");
-            } catch {
-                await import("https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/hls-video.js");
-                const HlsVideo = customElements.get("hls-video");
-                if (HlsVideo && !customElements.get("hlsjs-video")) {
-                    customElements.define("hlsjs-video", class extends HlsVideo {});
-                }
-            }
-            {% else if medium_type == "video" %}
-            await import("https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/dash-video.js");
-            {% endif %}
-        }
-
-        try {
-            await loadVideojsProductionBundles();
-        } catch (error) {
-            console.warn("Unable to load the Video.js production deployment; using npm latest", error);
-            await loadVideojsNpmFallback();
-        }
-    </script>
+    {# Keep all Video.js bundles and styles on the same release. #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/global.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-minimal.css" />
+    {# Register the provider before upgrading the light-DOM controls. #}
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-player.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-minimal.js"></script>
+    {% if medium_type == "video" && is_cmaf %}
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/media/hlsjs-video.js"></script>
+    {% else if medium_type == "video" %}
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/media/dash-video.js"></script>
+    {% endif %}
     {% endif %} {% if medium_custom_font %}
     <style>
         @font-face {
@@ -135,29 +87,29 @@
                     class="d-flex justify-content-center player-container{% if medium_type == "video" || medium_type == "audio" %} player-container--playback{% endif %}">
                     {% if medium_type == "video" %}
                     <video-player class="medium-player">
-                        <video-minimal-skin style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
+                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="minimal" data-preset="video" style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
                             {% if is_cmaf %}
                             <hlsjs-video id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
                                 %}data-ass-captions{% endif %} {% if medium_custom_font
-                                %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
+                                %}data-ass-font-url="/m/{{ medium_id }}/subtitle-font.ttf"
                                 {% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.m3u8"
-                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline
+                                preload="auto" autoplay crossorigin="anonymous" playsinline
                                 disableremoteplayback>
                                 <video slot="media" preload="auto" autoplay crossorigin="anonymous"
-                                    playsinline disableremoteplayback></video>
+                                    playsinline disableremoteplayback>
                             {% else %}
                             <dash-video id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
                                 %}data-ass-captions{% endif %} {% if medium_custom_font
-                                %}data-ass-font-url="{{ config.source_server_url }}/source/{{ medium_id }}/captions/font.woff2"
+                                %}data-ass-font-url="/m/{{ medium_id }}/subtitle-font.ttf"
                                 {% endif %}
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/video/video.mpd"
-                                preload="auto" autoplay keep-alive crossorigin="anonymous" playsinline
+                                preload="auto" autoplay crossorigin="anonymous" playsinline
                                 disableremoteplayback>
                                 <video slot="media" preload="auto" autoplay crossorigin="anonymous"
-                                    playsinline disableremoteplayback></video>
+                                    playsinline disableremoteplayback>
                             {% endif %} {% if medium_captions_exist %} {% for caption in
                             medium_captions_list %} {% if !caption.is_ass %}
                             <track
@@ -175,19 +127,23 @@
                             {% if medium_previews_exist %}
                             <track src="/m/{{ medium_id }}/previews.vtt" kind="metadata" label="thumbnails" default />
                             {% endif %}
+                            </video>
                             {% if is_cmaf %}
                             </hlsjs-video>
                             {% else %}
                             </dash-video>
                             {% endif %}
-                            <img slot="poster"
+                            <media-poster class="media-poster">
+                            <img class="media-poster-image"
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
                                 alt="Cover Image" />
-                        </video-minimal-skin>
+                            </media-poster>
+                            {% include "component-player-controls.html" %}
+                        </media-container>
                     </video-player>
                     {% else if medium_type == "audio" %}
                     <video-player class="medium-player">
-                        <video-minimal-skin data-persistent-poster
+                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="minimal" data-preset="video" data-persistent-poster
                             style="aspect-ratio: 16 / 9; --media-object-fit: cover">
                             <audio id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %}
@@ -204,10 +160,13 @@
                                 kind="chapters" default />
                             {% endif %}
                             </audio>
-                            <img slot="poster"
+                            <media-poster class="media-poster">
+                            <img class="media-poster-image"
                                 src="{{ config.source_server_url }}/source/{{ medium_id }}/thumbnail.avif"
                                 alt="Cover Image" />
-                        </video-minimal-skin>
+                            </media-poster>
+                            {% include "component-player-controls.html" %}
+                        </media-container>
                     </video-player>
                     {% else if medium_type == "picture" %}
                     <img src="{{ config.source_server_url }}/source/{{ medium_id }}/picture.avif"

@@ -8,39 +8,39 @@ strip = true
 lto = true
 
 [dependencies]
-mimalloc = { version = "*", features = ["secure"] }
+mimalloc = { version = "0", features = ["secure"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "process", "io-util"] }
-tokio-util = { version = "0.7", features = ["io"] }
-axum = { version = "0.8", features = ["multipart", "json"] }
-tower = "*"
-tower-http = { version = "*", features = ["fs", "compression-br", "compression-zstd"] }
-axum-server = { version = "0.8", features = ["tls-rustls"] }
-axum-h3 = "*"
-h3-util = { version = "0.0.5", features = ["quinn"] }
-h3-quinn = "0.0.10"
-quinn = "0.11"
+tokio-util = { version = "0", features = ["io"] }
+axum = { version = "0", features = ["multipart", "json"] }
+tower = "0"
+tower-http = { version = "0", features = ["fs", "compression-br", "compression-zstd"] }
+axum-server = { version = "0", features = ["tls-rustls"] }
+axum-h3 = "0"
+h3-util = { version = "0", features = ["quinn"] }
+h3-quinn = "0"
+quinn = "0"
 rustls-pemfile = "2"
-rustls = { version = "0.23", features = ["ring"] }
-memory-serve = "2.1"
-serde = { version = "1.0", features = ["derive"] }
-scylla = "1.7"
-askama = { version = "0.16", features = ["serde_json"] }
-serde_json = "*"
-minify-html-onepass = "0.18"
-chrono = "0.4"
-ahash = "*"
-argon2 = "0.5"
-rand = "0.10"
-meilisearch-sdk = "0.33"
-redis = { version = "1.0", features = ["tokio-comp", "connection-manager"] }
-openssl = { version = "0.10", features = ["vendored"] }
-totp-rs = { version = "5", features = ["qr", "otpauth"] }
-webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
+rustls = { version = "0", features = ["ring"] }
+memory-serve = "2"
+serde = { version = "1", features = ["derive"] }
+scylla = "1"
+askama = { version = "0", features = ["serde_json"] }
+serde_json = "1"
+minify-html-onepass = "0"
+chrono = "0"
+ahash = "0"
+argon2 = "0"
+rand = "0"
+meilisearch-sdk = "0"
+redis = { version = "1", features = ["tokio-comp", "connection-manager"] }
+openssl = { version = "0", features = ["vendored"] }
+totp-rs = { version = "6", features = ["qr", "otpauth"] }
+webauthn-rs = { version = "0", features = ["danger-allow-state-serialisation"] }
 uuid = { version = "1", features = ["v4", "v5", "serde"] }
 url = "2"
-base32 = "0.5"
-fluent-bundle = "0.16"
-unic-langid = "0.9"
+base32 = "0"
+fluent-bundle = "0"
+unic-langid = "0"
 
 [build-dependencies]
-memory-serve = "2.1"
+memory-serve = "2"

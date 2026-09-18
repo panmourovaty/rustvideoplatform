@@ -15797,12 +15797,33 @@ body.sidebar-collapsed .sidebarbackground {
     display: contents;
 }
 
-.medium-player video-minimal-skin {
+.medium-player .medium-player-skin {
+    position: relative;
+    display: grid;
     width: 100%;
     height: auto;
     max-width: none;
     max-height: 95vh;
     --media-border-radius: var(--bs-border-radius);
+}
+
+.medium-player .medium-player-skin:fullscreen {
+    height: 100%;
+    max-height: none;
+}
+
+/* These selectors belong to our editable HTML skin. */
+.medium-player-skin .video-controls {
+    inset-inline: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    border-radius: 0;
+}
+
+.medium-player-skin[data-persistent-poster] .media-poster {
+    opacity: 1;
 }
 
 .medium-player .JASSUB {

@@ -171,7 +171,7 @@ function resumeMediaFromQuery() {
 
     const mediaElement = document.querySelector("[data-media-element]");
     if (!mediaElement) return;
-    const player = mediaElement.target || mediaElement;
+    const player = mediaElement.querySelector("video[slot=media]") || mediaElement;
 
     const seekToResumeTime = () => {
         const duration = Number(player.duration);
@@ -198,75 +198,23 @@ function resumeMediaFromQuery() {
     }
 }
 
-function setupVideoPlayerSkins() {
-    if (!window.customElements) return;
-
-    customElements.whenDefined("video-minimal-skin").then(() => {
-        document.querySelectorAll("video-minimal-skin").forEach((skin) => {
-            if (!skin.shadowRoot || skin.shadowRoot.querySelector("style[data-player-customization]")) return;
-
-            const style = document.createElement("style");
-            style.dataset.playerCustomization = "";
-            style.textContent = `
-                .media-controls {
-                    inset-inline: 0 !important;
-                    bottom: 0 !important;
-                    width: 100% !important;
-                    max-width: none !important;
-                    margin-inline: 0 !important;
-                    border-radius: 0 !important;
-                }
-
-                .media-button--playback-rate::after {
-                    display: none;
-                }
-
-                .media-button--settings svg {
-                    width: var(--media-icon-size);
-                    height: var(--media-icon-size);
-                    pointer-events: none;
-                }
-
-                ${skin.hasAttribute("data-persistent-poster") ? "media-poster { opacity: 1 !important; }" : ""}
-            `;
-            skin.shadowRoot.append(style);
-
-            const settingsButton = skin.shadowRoot.querySelector("media-playback-rate-menu-trigger");
-            if (settingsButton) {
-                settingsButton.classList.add("media-button--settings");
-                settingsButton.setAttribute("label", "Settings");
-                settingsButton.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M4 7h10"></path>
-                        <path d="M18 7h2"></path>
-                        <path d="M14 4v6"></path>
-                        <path d="M4 17h2"></path>
-                        <path d="M10 17h10"></path>
-                        <path d="M6 14v6"></path>
-                    </svg>
-                `;
-            }
-        });
-    });
-}
-
 function setupMediaCaptions() {
     const mediaElement = document.querySelector("[data-media-element][data-caption-tracks]");
     if (!mediaElement) return;
 
-    const media = mediaElement.target || mediaElement;
+    const media = mediaElement.querySelector("video[slot=media]") || mediaElement;
     if (!(media instanceof HTMLMediaElement) || !media.textTracks) return;
 
     const fallbackFontUrl =
-        "https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.2.7/files/nunito-latin-600-normal.woff2";
-    const jassubModuleUrl = "https://cdn.jsdelivr.net/npm/jassub@2.5.6/+esm";
+        "https://cdn.jsdelivr.net/gh/google/fonts@8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/nunito/Nunito[wght].ttf";
+    // Bundle abslink with each entry to avoid duplicate proxy symbols in CDN subpath modules.
+    const jassubModuleUrl = "https://esm.sh/jassub@2?bundle&deps=abslink@1";
     const jassubWorkerModuleUrl =
-        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/worker/worker.js/+esm";
+        "https://esm.sh/jassub@2/dist/worker/worker.js?bundle&deps=abslink@1";
     const jassubWasmUrl =
-        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/wasm/jassub-worker.wasm";
+        "https://cdn.jsdelivr.net/npm/jassub@2/dist/wasm/jassub-worker.wasm";
     const jassubModernWasmUrl =
-        "https://cdn.jsdelivr.net/npm/jassub@2.5.6/dist/wasm/jassub-worker-modern.wasm";
+        "https://cdn.jsdelivr.net/npm/jassub@2/dist/wasm/jassub-worker-modern.wasm";
 
     let renderer = null;
     let activeSource = "";
@@ -306,7 +254,9 @@ function setupMediaCaptions() {
             }
         }
 
-        const source = selectedTrack?.dataset.assSrc || "";
+        const assSource = selectedTrack?.dataset.assSrc;
+        // Blob workers need absolute URLs, including when the source server is same-origin.
+        const source = assSource ? new URL(assSource, document.baseURI).href : "";
         if (!source) {
             renderGeneration += 1;
             await destroyRenderer();
@@ -323,16 +273,28 @@ function setupMediaCaptions() {
             const { default: JASSUB } = await import(jassubModuleUrl);
             if (generation !== renderGeneration) return;
 
-            const customFontUrl = mediaElement.dataset.assFontUrl;
-            const fonts = [fallbackFontUrl];
-            const availableFonts = { Nunito: fallbackFontUrl };
-            let defaultFont = "Nunito";
+            const customFontUrl = mediaElement.dataset.assFontUrl
+                ? new URL(mediaElement.dataset.assFontUrl, document.baseURI).href : "";
+            const loadFont = async (url) => {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Subtitle font returned ${response.status}`);
+                return new Uint8Array(await response.arrayBuffer());
+            };
+            const fallbackFont = await loadFont(fallbackFontUrl);
+            const fonts = [fallbackFont];
+            const availableFonts = { "Nunito ExtraLight": fallbackFont };
+            const defaultFont = "Nunito ExtraLight";
 
             if (customFontUrl) {
-                fonts.unshift(customFontUrl);
-                availableFonts.default = customFontUrl;
-                defaultFont = "default";
+                try {
+                    const customFont = await loadFont(customFontUrl);
+                    fonts.unshift(customFont);
+                    availableFonts.default = customFont;
+                } catch (error) {
+                    console.warn("Unable to load the uploaded subtitle font", error);
+                }
             }
+            if (generation !== renderGeneration) return;
 
             const nextRenderer = new JASSUB({
                 video: media,
@@ -352,6 +314,15 @@ function setupMediaCaptions() {
             }
 
             renderer = nextRenderer;
+            // A paused video will not deliver a new video-frame callback when captions change.
+            if (media.paused && media.videoWidth && media.videoHeight) {
+                await renderer.manualRender({
+                    expectedDisplayTime: performance.now(),
+                    width: media.videoWidth,
+                    height: media.videoHeight,
+                    mediaTime: media.currentTime,
+                }, true);
+            }
             const canvas = media.parentElement?.querySelector("canvas.JASSUB");
             if (canvas) canvas.style.zIndex = "2";
         } catch (error) {
@@ -463,7 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fitMediumTitle();
-    setupVideoPlayerSkins();
     setupMediaCaptions();
     resumeMediaFromQuery();
 });
