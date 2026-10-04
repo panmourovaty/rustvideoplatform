@@ -16,7 +16,7 @@
     <meta property="og:site_name" content="{{ config.instancename }}" />
 </head>
 
-<body hx-ext="preload">
+<body>
     {% set page_title = locale.t("settings-page-title") %}
     {{ sidebar|safe }}
     {% include "component-navbar.html" %}
@@ -30,7 +30,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-signature me-2"></i>{{ locale.t("settings-tab-channel-name") }}
                         </button>
                     </li>
@@ -40,7 +40,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/password"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-shield-halved me-2"></i>{{ locale.t("settings-tab-authentication") }}
                         </button>
                     </li>
@@ -50,7 +50,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/profile-picture"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-user-circle me-2"></i>{{ locale.t("settings-tab-profile-picture") }}
                         </button>
                     </li>
@@ -60,7 +60,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/channel-picture"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-image me-2"></i>{{ locale.t("settings-tab-channel-picture") }}
                         </button>
                     </li>
@@ -70,7 +70,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/theme"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-palette me-2"></i>{{ locale.t("settings-tab-theme") }}
                         </button>
                     </li>
@@ -80,7 +80,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/language"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-language me-2"></i>{{ locale.t("settings-tab-language") }}
                         </button>
                     </li>
@@ -90,7 +90,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/settings/diagnostics"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-stethoscope me-2"></i>{{ locale.t("settings-tab-diagnostics") }}
                         </button>
                     </li>

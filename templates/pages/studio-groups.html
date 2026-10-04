@@ -16,7 +16,7 @@
     <meta property="og:site_name" content="{{ config.instancename }}" />
 </head>
 
-<body hx-ext="preload">
+<body>
     {{ sidebar|safe }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
@@ -25,7 +25,7 @@
                 <div class="row justify-content-between align-items-center">
                     <h3 class="my-2 mx-3" style="width:auto;"><i class="fa-solid fa-users"></i>&nbsp;{{ locale.t("studio-tab-groups") }}</h3>
                     <div style="width:auto;">
-                        <a href="/studio" class="btn btn-primary mx-1" preload="mouseover">
+                        <a href="/studio" class="btn btn-primary mx-1" data-prefetch="mouseover">
                             <i class="fa-solid fa-arrow-left"></i>&nbsp;{{ locale.t("studio-edit-back") }}
                         </a>
                     </div>

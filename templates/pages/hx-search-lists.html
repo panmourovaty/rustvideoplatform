@@ -5,7 +5,7 @@
 </div>
 {% endif %}
 {% for hit in search_results %}
-<a href="/l/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/l/{{ hit.id }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail" style="display:flex;align-items:center;justify-content:center;">
         <i class="fa-solid fa-list fa-3x text-secondary"></i>
     </div>

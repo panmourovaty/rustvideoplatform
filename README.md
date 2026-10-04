@@ -29,14 +29,14 @@ media URLs against that server instead.
 
 ## Playback UI
 
-The medium page uses the official Video.js HTML custom elements and CSS,
-with every Video.js CDN asset following the `@videojs/cdn@next` release channel. The player provider
-loads before the UI bundle so the controls attach to the existing player.
+The medium page uses the official Video.js 10 HTML custom elements and CSS,
+with every Video.js CDN asset pinned to `@videojs/cdn@10.0.1`. The Neutral skin
+bundle registers the player and the components used by the editable controls.
 HLS/CMAF uses `hlsjs-video`, older MPEG-DASH media uses `dash-video`, and audio
-uses native Ogg playback. Upstream v10 is a release candidate; its DASH adapter
-is still labeled beta.
+uses native Ogg playback. Video.js 10 is stable; its DASH adapter is still labeled
+unstable upstream.
 
-`templates/pages/component-player-controls.html` owns the editable minimal
+`templates/pages/component-player-controls.html` owns the editable Neutral
 skin markup, including settings, quality, captions, chapters, thumbnail previews,
 keyboard shortcuts, PiP, and fullscreen. Layout overrides live in
 `assets/static/style.css`; ASS/JASSUB subtitles and timestamp resume links are
@@ -52,13 +52,22 @@ with a ten-second timeout. To exercise it, run
 `cargo test uploaded_woff2_is_decoded_for_libass -- --include-ignored` with the
 runtime tool on PATH.
 
-When the Video.js release channel updates, compare the copied controls against
-the new release's minimal skin. The copied markup is Apache-2.0 licensed
+When upgrading Video.js, keep every CDN URL on the same version and compare the
+copied controls against that release's Neutral skin. The copied markup is Apache-2.0 licensed
 (see `VIDEOJS-LICENSE`). See the official
-[HTML installation](https://videojs.org/docs/framework/html/how-to/installation),
-[CDN](https://videojs.org/docs/framework/html/concepts/cdn), and
-[skin customization](https://videojs.org/docs/framework/html/how-to/customize-skins)
+[HTML installation](https://videojs.org/docs/guides/installation/cdn?framework=html),
+[CDN](https://videojs.org/docs/framework/html/guides/cdn), and
+[skin customization](https://videojs.org/docs/framework/html/guides/customize-skins)
 guides. No sandbox deployment or private shadow-DOM patching is used.
+
+## HTMX
+
+Pages load HTMX `4.0.0` and its bundled `hx-preload` extension. Tab requests use
+`hx-preload="mouseover"`; ordinary navigation links use browser prefetching.
+Lifecycle listeners use the HTMX 4 event names and request context. Error responses
+keep the existing content, and Back/Forward navigation reloads the full page so
+page scripts and media initialize correctly. Attributes use explicit inheritance
+when needed. See the [HTMX 4 migration guide](https://four.htmx.org/docs/whats-new-in-htmx-4/).
 
 ## Container deployment
 

@@ -5,7 +5,7 @@
 </div>
 {% endif %}
 {% for hit in search_results %}
-<a href="/u/{{ hit.login }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/u/{{ hit.login }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail" style="display:flex;align-items:center;justify-content:center;">
         {% if hit.profile_picture.is_some() %}
         <img src="{{ config.source_server_url }}/source/{{ hit.profile_picture.clone().unwrap() }}/thumbnail-sm.avif" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />

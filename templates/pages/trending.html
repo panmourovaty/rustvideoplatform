@@ -17,14 +17,14 @@
     <script type="application/ld+json">{{ schema_org_json|safe }}</script>
 </head>
 
-<body hx-ext="preload">
+<body>
     {% set page_title = locale.t("trending-page-title") %}
     {{ sidebar|safe }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
             <div class="card py-3 px-3 text-white" style="min-height:100vh;">
-                <div hx-get="/hx/trending" hx-trigger="load" class="row mb-3 hx-placeholder" preload="always">
+                <div hx-get="/hx/trending" hx-trigger="load" class="row mb-3 hx-placeholder">
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@
 </div>
 {% endif %}
 {% for hit in search_results %}
-<a href="/m/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/m/{{ hit.id }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail">
         <img src="{{ config.source_server_url }}/source/{{ hit.id }}/thumbnail-sm.avif" alt="{{ hit.name }}" loading="lazy" />
         <div class="search-card-type-badge">

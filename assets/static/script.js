@@ -158,9 +158,29 @@ document.addEventListener("click", (event) => {
     tab.classList.add("active");
 }, true);
 
-document.addEventListener("htmx:afterRequest", (event) => {
-    const trigger = event.detail?.elt;
-    if (trigger?.hasAttribute("data-remove-after-request")) {
+// HTMX's preload extension handles hx-get elements; ordinary links use browser prefetching.
+const prefetchedPages = new Set();
+function prefetchPage(event) {
+    const link = event.target.closest?.('a[data-prefetch="mouseover"]');
+    if (!link || link.contains(event.relatedTarget)) return;
+
+    const url = new URL(link.href, document.baseURI);
+    if (url.origin !== location.origin || prefetchedPages.has(url.href)) return;
+    prefetchedPages.add(url.href);
+
+    const prefetch = document.createElement("link");
+    prefetch.rel = "prefetch";
+    prefetch.href = url.href;
+    document.head.appendChild(prefetch);
+}
+document.addEventListener("pointerover", prefetchPage);
+document.addEventListener("focusin", prefetchPage);
+
+document.addEventListener("htmx:finally:request", (event) => {
+    const ctx = event.detail?.ctx;
+    const trigger = ctx?.sourceElement;
+    if (ctx?.status === "swapped" && ctx.response.status < 400 &&
+        trigger?.hasAttribute("data-remove-after-request")) {
         trigger.remove();
     }
 });
@@ -408,26 +428,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.body.addEventListener('htmx:afterSwap', (event) => {
-        const target = event.detail.target;
-        if (target.id === 'suggestions' && document.getElementById('searchInput') === document.activeElement) {
+    document.addEventListener('htmx:after:swap', (event) => {
+        const target = event.detail.ctx?.target;
+        if (target?.id === 'suggestions' && document.getElementById('searchInput') === document.activeElement) {
             target.style.display = target.children.length > 0 ? '' : 'none';
         }
     });
 
     // Fade-in lazy-loaded HTMX content to reduce flicker
-    document.body.addEventListener('htmx:beforeSwap', (event) => {
-        const t = event.detail.target;
-        if (t && t.classList && (
-            t.classList.contains('hx-placeholder') ||
-            t.classList.contains('subscribe-placeholder')
-        )) {
-            t.style.opacity = '0';
+    document.addEventListener('htmx:before:swap', (event) => {
+        for (const { target } of event.detail.tasks) {
+            if (target?.classList && (
+                target.classList.contains('hx-placeholder') ||
+                target.classList.contains('subscribe-placeholder')
+            )) {
+                target.style.opacity = '0';
+            }
         }
     });
 
-    document.body.addEventListener('htmx:afterSettle', (event) => {
-        const t = event.detail.target;
+    document.addEventListener('htmx:after:settle', (event) => {
+        const t = event.detail.task.target;
         if (t && t.style && t.style.opacity === '0') {
             requestAnimationFrame(() => { t.style.opacity = '1'; });
         }

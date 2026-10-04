@@ -20,7 +20,7 @@
         <meta property="og:site_name" content="{{ config.instancename }}" />
     </head>
 
-    <body hx-ext="preload">
+    <body>
         {{ sidebar|safe }} {% include "component-navbar.html" %}
         <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
@@ -28,10 +28,10 @@
                     <div class="row justify-content-between align-items-center">
                         <h3 class="my-2 mx-3" style="width: auto">{{ locale.t("studio-edit-heading") }}</h3>
                         <div style="width: auto">
-                            <a href="/studio" class="btn btn-secondary mx-1" preload="mouseover">
+                            <a href="/studio" class="btn btn-secondary mx-1" data-prefetch="mouseover">
                                 <i class="fa-solid fa-arrow-left"></i>&nbsp;{{ locale.t("studio-edit-back") }}
                             </a>
-                            <a href="/m/{{ medium.id }}" class="btn btn-primary mx-1" preload="mouseover">
+                            <a href="/m/{{ medium.id }}" class="btn btn-primary mx-1" data-prefetch="mouseover">
                                 <i class="fa-solid fa-eye"></i>&nbsp;{{ locale.t("studio-edit-view") }}
                             </a>
                         </div>
@@ -42,7 +42,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/description"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-align-left me-2"></i>{{ locale.t("studio-edit-tab-description") }}
                             </button>
                         </li>
@@ -52,7 +52,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/chapters"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-list-ol me-2"></i>{{ locale.t("studio-edit-tab-chapters") }}
                             </button>
                         </li>
@@ -61,7 +61,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/subtitles"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-closed-captioning me-2"></i>{{ locale.t("studio-edit-tab-subtitles") }}
                             </button>
                         </li>
@@ -71,7 +71,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/thumbnail"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-image me-2"></i>{{ locale.t("studio-edit-tab-thumbnail") }}
                             </button>
                         </li>
@@ -81,7 +81,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/textures"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-palette me-2"></i>{{ locale.t("studio-edit-tab-textures") }}
                             </button>
                         </li>
@@ -91,7 +91,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/permissions"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-lock me-2"></i>{{ locale.t("studio-edit-tab-permissions") }}
                             </button>
                         </li>
@@ -100,7 +100,7 @@
                                     hx-get="/hx/studio/edit/{{ medium.id }}/danger"
                                     hx-target="#tab-content"
                                     hx-swap="innerHTML"
-                                    preload="mouseover">
+                                    hx-preload="mouseover">
                                 <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ locale.t("studio-edit-tab-danger") }}
                             </button>
                         </li>

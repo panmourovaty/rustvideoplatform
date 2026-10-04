@@ -16,7 +16,7 @@
     <meta property="og:site_name" content="{{ config.instancename }}" />
 </head>
 
-<body hx-ext="preload">
+<body>
     {{ sidebar|safe }}
     {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
@@ -25,14 +25,14 @@
                 <div class="row justify-content-between">
                     <h3 class="my-2 mx-3" style="width:200px;">{{ locale.t("studio-tab-lists") }}</h3>
                     <div style="width:400px;">
-                    <a href="/studio" class="btn btn-primary mx-3" style="width:150px;height:40px;" preload="mouseover"><i
+                    <a href="/studio" class="btn btn-primary mx-3" style="width:150px;height:40px;" data-prefetch="mouseover"><i
                             class="fa-solid fa-photo-film"></i>&nbsp;{{ locale.t("studio-tab-media") }}</a>
-                    <a href="/studio/concepts" class="btn btn-primary mx-3" style="width:150px;height:40px;" preload="mouseover"><i
+                    <a href="/studio/concepts" class="btn btn-primary mx-3" style="width:150px;height:40px;" data-prefetch="mouseover"><i
                             class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;{{ locale.t("studio-tab-concepts") }}</a>
                     </div>
                 </div>
                 <hr>
-                <div hx-get="/hx/studio/lists" hx-trigger="load" class="row mb-3 hx-placeholder" preload="always">
+                <div hx-get="/hx/studio/lists" hx-trigger="load" class="row mb-3 hx-placeholder">
                 </div>
             </div>
         </div>

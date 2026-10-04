@@ -54,15 +54,14 @@
     {% include "component-dependencies-tomselect.html" %}
     {% if medium_type == "video" || medium_type == "audio" %}
     {# Keep all Video.js bundles and styles on the same release. #}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/global.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-minimal.css" />
-    {# Register the provider before upgrading the light-DOM controls. #}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-player.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/video-minimal.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/global.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/video-neutral.css" />
+    {# The skin bundle registers the player and all components used by our light-DOM skin. #}
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/video-neutral.js"></script>
     {% if medium_type == "video" && is_cmaf %}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/media/hlsjs-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/hlsjs-video.js"></script>
     {% else if medium_type == "video" %}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@next/media/dash-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/dash-video.js"></script>
     {% endif %}
     {% endif %} {% if medium_custom_font %}
     <style>
@@ -78,7 +77,7 @@
     {% endif %}
 </head>
 
-<body hx-ext="preload">
+<body>
     {{ sidebar|safe }} {% include "component-navbar.html" %}
     <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
         <div class="col-12 col-sm-12 col-md-12 col-lg-9">
@@ -87,7 +86,7 @@
                     class="d-flex justify-content-center player-container{% if medium_type == "video" || medium_type == "audio" %} player-container--playback{% endif %}">
                     {% if medium_type == "video" %}
                     <video-player class="medium-player">
-                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="minimal" data-preset="video" style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
+                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="neutral" data-preset="video" style="aspect-ratio: {{ self.medium_video_aspect_ratio() }}">
                             {% if is_cmaf %}
                             <hlsjs-video id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %} {% if medium_has_ass_captions
@@ -143,7 +142,7 @@
                     </video-player>
                     {% else if medium_type == "audio" %}
                     <video-player class="medium-player">
-                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="minimal" data-preset="video" data-persistent-poster
+                        <media-container class="medium-player-skin media-skin media-container video-skin" data-theme="neutral" data-preset="video" data-persistent-poster
                             style="aspect-ratio: 16 / 9; --media-object-fit: cover">
                             <audio id="medium-media" data-media-element {% if medium_captions_exist
                                 %}data-caption-tracks{% endif %}
@@ -193,7 +192,7 @@
                     <div class="medium-channel-col d-flex align-items-center mt-1">
                         <a href="/u/{{ medium_owner }}"
                             class="text-secondary text-decoration-none d-flex align-items-center gap-2"
-                            preload="mouseover">
+                            data-prefetch="mouseover">
                             {% if medium_owner_picture.is_some() %}
                             <img src="{{ config.source_server_url }}/source/{{ medium_owner_picture.clone().unwrap() }}/thumbnail-small.avif"
                                 style="

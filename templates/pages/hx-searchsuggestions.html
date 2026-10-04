@@ -3,7 +3,7 @@
     <i class="fa-solid fa-user me-2"></i>{{ locale.t("search-suggestions-users") }}
 </li>
 {% for user in users %}
-<a href="/u/{{ user.login }}" class="text-decoration-none suggestionitem" preload="mouseover">
+<a href="/u/{{ user.login }}" class="text-decoration-none suggestionitem" data-prefetch="mouseover">
     <li class="d-flex align-items-center gap-2 py-1 px-2">
         {% if user.profile_picture.is_some() %}
         <img src="{{ config.source_server_url }}/source/{{ user.profile_picture.as_ref().unwrap() }}/thumbnail-sm.avif" class="rounded-circle" width="32" height="32" style="object-fit:cover;flex-shrink:0;" alt="">
@@ -26,7 +26,7 @@
     <i class="fa-solid fa-list me-2"></i>{{ locale.t("search-suggestions-lists") }}
 </li>
 {% for list in lists %}
-<a href="/l/{{ list.id }}" class="text-decoration-none suggestionitem" preload="mouseover">
+<a href="/l/{{ list.id }}" class="text-decoration-none suggestionitem" data-prefetch="mouseover">
     <li class="d-flex align-items-center gap-2 py-1 px-2">
         <div class="d-flex align-items-center justify-content-center bg-secondary rounded" style="width:32px;height:32px;flex-shrink:0;">
             <i class="fa-solid fa-list fa-xs text-white"></i>

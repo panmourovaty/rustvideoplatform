@@ -21,7 +21,7 @@
         <meta property="og:site_name" content="{{ config.instancename }}" />
     </head>
 
-    <body hx-ext="preload">
+    <body>
         {% set page_title = locale.t("subscriptions-page-title") %}
         {{ sidebar|safe }} {% include "component-navbar.html" %}
         <div class="row maincontentrow g-3 py-2 ps-2 w-100" role="main">
@@ -34,7 +34,6 @@
                         hx-get="/hx/subscriptions"
                         hx-trigger="load"
                         class="row mb-3 hx-placeholder"
-                        preload="always"
                     ></div>
                 </div>
             </div>

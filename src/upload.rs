@@ -245,7 +245,7 @@ async fn hx_upload(
                 <tr><th>Size</th><td>{}</td></tr>
                 <tr><th>Type</th><td>{}</td></tr>
             </table>
-            <a href="/studio/concepts" class="btn btn-primary mt-3" preload="mouseover">
+            <a href="/studio/concepts" class="btn btn-primary mt-3" data-prefetch="mouseover">
                 <i class="fa-solid fa-arrow-right"></i> View Concepts
             </a>
         </div>"#,

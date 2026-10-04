@@ -16,7 +16,7 @@
     <meta property="og:site_name" content="{{ config.instancename }}" />
 </head>
 
-<body hx-ext="preload">
+<body>
     {% set page_title = locale.t("studio-page-title") %}
     {{ sidebar|safe }}
     {% include "component-navbar.html" %}
@@ -30,7 +30,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio"
-                                preload="mouseover"
+                                hx-preload="mouseover"
                                 data-block-while-uploading>
                             <i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("studio-tab-media") }}
                         </button>
@@ -41,7 +41,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/upload"
-                                preload="mouseover">
+                                hx-preload="mouseover">
                             <i class="fa-solid fa-upload me-2"></i>{{ locale.t("studio-tab-upload") }}
                         </button>
                     </li>
@@ -51,7 +51,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/concepts"
-                                preload="mouseover"
+                                hx-preload="mouseover"
                                 data-block-while-uploading>
                             <i class="fa-solid fa-wand-magic-sparkles me-2"></i>{{ locale.t("studio-tab-concepts") }}
                         </button>
@@ -62,7 +62,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/lists"
-                                preload="mouseover"
+                                hx-preload="mouseover"
                                 data-block-while-uploading>
                             <i class="fa-solid fa-list me-2"></i>{{ locale.t("studio-tab-lists") }}
                         </button>
@@ -73,7 +73,7 @@
                                 hx-target="#tab-content"
                                 hx-swap="innerHTML"
                                 hx-push-url="/studio/groups"
-                                preload="mouseover"
+                                hx-preload="mouseover"
                                 data-block-while-uploading>
                             <i class="fa-solid fa-users me-2"></i>{{ locale.t("studio-tab-groups") }}
                         </button>
@@ -81,19 +81,19 @@
                 </ul>
                 <div id="tab-content" class="row">
                     {% if active_tab == "upload" %}
-                    <div hx-get="/hx/studio/upload" hx-trigger="load" class="mb-3 hx-placeholder" preload="always">
+                    <div hx-get="/hx/studio/upload" hx-trigger="load" class="mb-3 hx-placeholder">
                     </div>
                     {% else if active_tab == "concepts" %}
-                    <div hx-get="/hx/studio/concepts" hx-trigger="load" class="mb-3 hx-placeholder row" preload="always">
+                    <div hx-get="/hx/studio/concepts" hx-trigger="load" class="mb-3 hx-placeholder row">
                     </div>
                     {% else if active_tab == "lists" %}
-                    <div hx-get="/hx/studio/lists" hx-trigger="load" class="mb-3 hx-placeholder row" preload="always">
+                    <div hx-get="/hx/studio/lists" hx-trigger="load" class="mb-3 hx-placeholder row">
                     </div>
                     {% else if active_tab == "groups" %}
-                    <div hx-get="/hx/studio/groups" hx-trigger="load" class="mb-3 hx-placeholder row" preload="always">
+                    <div hx-get="/hx/studio/groups" hx-trigger="load" class="mb-3 hx-placeholder row">
                     </div>
                     {% else %}
-                    <div hx-get="/hx/studio" hx-trigger="load" class="mb-3 hx-placeholder row" preload="always">
+                    <div hx-get="/hx/studio" hx-trigger="load" class="mb-3 hx-placeholder row">
                     </div>
                     {% endif %}
                 </div>

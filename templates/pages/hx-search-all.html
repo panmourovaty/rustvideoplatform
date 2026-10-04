@@ -8,7 +8,7 @@
     <h5 class="search-section-title"><i class="fa-solid fa-users me-2"></i>{{ locale.t("search-users-header") }} <span class="text-secondary">({{ users_total }})</span></h5>
 </div>
 {% for hit in users %}
-<a href="/u/{{ hit.login }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/u/{{ hit.login }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail" style="display:flex;align-items:center;justify-content:center;">
         {% if hit.profile_picture.is_some() %}
         <img src="{{ config.source_server_url }}/source/{{ hit.profile_picture.clone().unwrap() }}/thumbnail-sm.avif" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />
@@ -38,7 +38,7 @@
     <h5 class="search-section-title"><i class="fa-solid fa-list me-2"></i>{{ locale.t("search-lists-header") }} <span class="text-secondary">({{ lists_total }})</span></h5>
 </div>
 {% for hit in lists %}
-<a href="/l/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/l/{{ hit.id }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail" style="display:flex;align-items:center;justify-content:center;">
         <i class="fa-solid fa-list fa-3x text-secondary"></i>
     </div>
@@ -65,7 +65,7 @@
     <h5 class="search-section-title"><i class="fa-solid fa-photo-film me-2"></i>{{ locale.t("search-media-header") }} <span class="text-secondary">({{ media_total }})</span></h5>
 </div>
 {% for hit in media %}
-<a href="/m/{{ hit.id }}" class="search-result-card inf-scroll-reveal" preload="mouseover">
+<a href="/m/{{ hit.id }}" class="search-result-card inf-scroll-reveal" data-prefetch="mouseover">
     <div class="search-card-thumbnail">
         <img src="{{ config.source_server_url }}/source/{{ hit.id }}/thumbnail-sm.avif" alt="{{ hit.name }}" loading="lazy" />
         <div class="search-card-type-badge">

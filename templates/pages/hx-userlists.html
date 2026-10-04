@@ -1,6 +1,6 @@
 {% for list in lists %}
 <div class="col-xl-3 col-lg-4 col-6 my-3 inf-scroll-reveal">
-    <a href="/l/{{ list.id }}" class="text-decoration-none" preload="mouseover">
+    <a href="/l/{{ list.id }}" class="text-decoration-none" data-prefetch="mouseover">
         <div class="bg-hover rounded border p-3" style="min-height: 80px;">
             <b class="text-white"><i class="fa-solid fa-list me-2"></i>{{ list.name }}</b>
             <p class="text-secondary mb-0">{{ list.item_count.unwrap_or(0) }} {{ locale.t("unit-items") }}

@@ -20,7 +20,7 @@
                 </div>
             </div>
             <ul id="suggestions" class="list-group text-white p-2 m- border" style="display: none;" role="listbox" aria-label="Search suggestions">
-              <a href="/search" class="suggestionitem p-2" preload="mouseover">
+              <a href="/search" class="suggestionitem p-2" data-prefetch="mouseover">
                 <li role="option">
                     <i class="fa-solid fa-magnifying-glass me-2" aria-hidden="true"></i><b>{{ locale.t("search-advanced-link") }}</b>
                 </li>
@@ -44,16 +44,16 @@
                         <span class="text-white user-name-clamp">{{ nav_user.name }}</span>
                     </button>
                     <div class="dropdown-content border shadow">
-                        <a class="dropdown-item" href="/u/{{ nav_user.login }}" preload="mouseover"><i class="fa-solid fa-house-flag mx-2"></i>{{ locale.t("usernav-my-channel") }}</a>
-                        <a class="dropdown-item" href="/studio" preload="mouseover"><i class="fa-solid fa-pen-ruler mx-2"></i>{{ locale.t("nav-studio") }}</a>
-                        <a class="dropdown-item" href="/settings" preload="mouseover"><i class="fa-solid fa-gear mx-2"></i>{{ locale.t("nav-settings") }}</a>
+                        <a class="dropdown-item" href="/u/{{ nav_user.login }}" data-prefetch="mouseover"><i class="fa-solid fa-house-flag mx-2"></i>{{ locale.t("usernav-my-channel") }}</a>
+                        <a class="dropdown-item" href="/studio" data-prefetch="mouseover"><i class="fa-solid fa-pen-ruler mx-2"></i>{{ locale.t("nav-studio") }}</a>
+                        <a class="dropdown-item" href="/settings" data-prefetch="mouseover"><i class="fa-solid fa-gear mx-2"></i>{{ locale.t("nav-settings") }}</a>
                         <form class="m-0" method="post" action="/hx/logout">
                             <button class="dropdown-item" type="submit"><i class="fa-solid fa-arrow-right-from-bracket mx-2"></i>{{ locale.t("usernav-log-out") }}</button>
                         </form>
                     </div>
                 </div>
                 {% else %}
-                <a href="/login" preload="mouseover"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>{{ locale.t("nav-login") }}</button></a>
+                <a href="/login" data-prefetch="mouseover"><button class="btn text-white"><i class="fa-solid fa-user mx-2" aria-hidden="true"></i>{{ locale.t("nav-login") }}</button></a>
                 {% endif %}
             </div>
             <button class="btn btn-primary ms-3" onclick="toggleSidebar()" aria-label="{{ locale.t("nav-toggle-sidebar") }}" aria-expanded="true" aria-controls="sidebar"><i class="fa-solid fa-bars fa-xl" aria-hidden="true"></i></button>
