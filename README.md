@@ -30,7 +30,8 @@ media URLs against that server instead.
 ## Playback UI
 
 The medium page uses the official Video.js 10 HTML custom elements and CSS,
-with every Video.js CDN asset pinned to `@videojs/cdn@10.0.1`. The Neutral skin
+with every Video.js CDN asset using `@videojs/cdn@latest` to follow the latest
+stable release. The Neutral skin
 bundle registers the player and the components used by the editable controls.
 HLS/CMAF uses `hlsjs-video`, older MPEG-DASH media uses `dash-video`, and audio
 uses native Ogg playback. Video.js 10 is stable; its DASH adapter is still labeled
@@ -52,8 +53,8 @@ with a ten-second timeout. To exercise it, run
 `cargo test uploaded_woff2_is_decoded_for_libass -- --include-ignored` with the
 runtime tool on PATH.
 
-When upgrading Video.js, keep every CDN URL on the same version and compare the
-copied controls against that release's Neutral skin. The copied markup is Apache-2.0 licensed
+Keep every Video.js CDN URL on the `latest` tag and compare the copied controls
+against the Neutral skin when upstream releases change. The copied markup is Apache-2.0 licensed
 (see `VIDEOJS-LICENSE`). See the official
 [HTML installation](https://videojs.org/docs/guides/installation/cdn?framework=html),
 [CDN](https://videojs.org/docs/framework/html/guides/cdn), and

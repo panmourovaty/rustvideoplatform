@@ -53,15 +53,15 @@
     {% include "component-dependencies-quill.html" %}
     {% include "component-dependencies-tomselect.html" %}
     {% if medium_type == "video" || medium_type == "audio" %}
-    {# Keep all Video.js bundles and styles on the same release. #}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/global.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/video-neutral.css" />
+    {# Load all Video.js bundles and styles from the latest stable release. #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@latest/global.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@latest/video-neutral.css" />
     {# The skin bundle registers the player and all components used by our light-DOM skin. #}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/video-neutral.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@latest/video-neutral.js"></script>
     {% if medium_type == "video" && is_cmaf %}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/hlsjs-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@latest/media/hlsjs-video.js"></script>
     {% else if medium_type == "video" %}
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.1/media/dash-video.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@latest/media/dash-video.js"></script>
     {% endif %}
     {% endif %} {% if medium_custom_font %}
     <style>
